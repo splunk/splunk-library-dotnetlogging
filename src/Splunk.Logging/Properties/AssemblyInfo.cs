@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SplunkLoggingDotNet")]
+[assembly: AssemblyTitle("Splunk.Logging")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("SplunkLoggingDotNet")]
+[assembly: AssemblyProduct("Splunk.Logging")]
 [assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("c52264f5-d9d2-4967-8dfb-b4eb1609c80e")]
+[assembly: Guid("0e505878-b243-4263-b2cb-207b98be34e0")]
 
 // Version information for an assembly consists of the following four values:
 //
