@@ -1,11 +1,10 @@
-﻿using System.Net.Sockets;
-using System.Net;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Splunk.Logging;
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using Splunk.Logging;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UdpTraceListenerUnitTests
 {
@@ -15,13 +14,13 @@ namespace UdpTraceListenerUnitTests
         [TestMethod]
         public void TraceToOpenUdpSocketWorks()
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             var receivingUdpClient = new UdpClient(0);
             int port = ((IPEndPoint)receivingUdpClient.Client.LocalEndPoint).Port;
 
             var receiver = new Thread((object r) =>
             {
-                IPEndPoint endpoint = new IPEndPoint(IPAddress.Loopback, port);
+                var endpoint = new IPEndPoint(IPAddress.Loopback, port);
                 var receivedBytes = receivingUdpClient.Receive(ref endpoint);
                 ((StringBuilder)r).Append(Encoding.UTF8.GetString(receivedBytes));
             });
