@@ -40,5 +40,12 @@ namespace Splunk.Logging
             UdpSocket.Send(Encoding.UTF8.GetBytes(buffer.ToString()));
             buffer.Clear();
         }
+
+        public override void Close()
+        {
+            base.Close();
+            UdpSocket.Close();
+            UdpSocket.Dispose();
+        }
     }
 }
