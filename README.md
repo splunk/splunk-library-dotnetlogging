@@ -19,71 +19,81 @@ The Splunk developer platform enables developers to take advantage of the
 same technology used by the Splunk product to build exciting new applications
 that are enabled by Splunk's unique capabilities.
 
+## Supported platforms
+
+.NET 4.5 / Windows 8.1
+
 ## Getting started with the Splunk Library for .NET Logging
 
-This section will get you up to speed using the Splunk Library for .NET Logging.
+The Splunk SDK for C# contains a library for logging events to a Splunk Enterprise instance from within your .NET applications.  
+
+The information in this Readme provides steps to get going quickly. In the 
+future we plan to roll out more in-depth documentation.
 
 ### Requirements
 
 Here's what you need to get going with the Splunk Library for .NET Logging.
 
-#### Splunk
+#### Splunk Enterprise
 
-If you haven't already installed Splunk, download it 
-[here](http://www.splunk.com/download). For more about installing and running 
-Splunk and system requirements, see 
-[Installing & Running Splunk](http://dev.splunk.com/view/SP-CAAADRV). 
+If you haven't already installed Splunk Enterprise, download it at 
+<http://www.splunk.com/download>. For more information about installing and 
+running Splunk Enterprise and system requirements, see the
+[Splunk Installation Manual](http://docs.splunk.com/Documentation/Splunk/latest/Installation). 
+
+#### Developer environments
+
+The Splunk SDK for C# supports development in the following environments:
+
+##### Visual Studio
+The Splunk SDK for C# supports development in [Microsoft Visual Studio](http://www.microsoft.com/visualstudio/downloads) 2012 and later
+
+You will need to install [Code Contracts for .NET](http://visualstudiogallery.msdn.microsoft.com/1ec7db13-3363-46c9-851f-1ce455f66970)
+(be sure to close Visual Studio before you install it or the install will not work, despite appearing to) 
+
+To run the unit tests you will need to install an [xUnit](https://github.com/xunit/xunit) runner:
+* If you use resharper, install its [xUnit.net Test Support](https://resharper-plugins.jetbrains.com/packages/xunitcontrib/1.6.2).
+* Otherwise, install the [xUnit.net runner for Visual Studio 2012 and 2013](http://visualstudiogallery.msdn.microsoft.com/463c5987-f82b-46c8-a97e-b1cde42b9099).
 
 ### Splunk Library for .NET Logging
 
-The preferred way to get the Splunk Library for .NET Logging is via NuGet. In
-Visual Studio, 
+#### MyGet feed
 
-1. Install the 'NuGet Package Manager for Visual Studio 2013' (or the
-   appropriate version of Visual Studio) via the Tools->Extensions and Updates
-   menu.
-2. In your project, right click on 'References' in your project and click
-   'Manage NuGet Packages'. Search for 'Splunk.Logging', and install it.
+Before the intial release, you can download the Splunk SDK C# NuGet packages from [MyGet](http://www.myget.org). Add the following feed to your package sources in Visual Studio: https://www.myget.org/F/splunk-library-dotnetlogging. The feed contains the Splunk.Logging package.
 
-You can also get the source from GitHub at
+*Note*: This will be published to NuGet when the SDK releases.
 
-    https://github.com/splunk/splunk-library-dotnetlogging
+#### Getting the source
 
-The repository is organized as a Visual Studio solution. The easiest way to
-build it is to open the solution in Visual Studio and run 'Build solution'
-from the Build menu.
+[Get the Splunk Logging library for .NET](https://github.com/splunk/splunk-library-dotnetlogging). Download the ZIP file and extract its contents.
 
-### Adding logging to Splunk via a TraceListener
+If you are interested in contributing to the Splunk Logging Library for .NET, you can 
+[get it from GitHub](https://github.com/splunk/splunk-library-dotnetlogging) and clone the 
+resources to your computer.
 
+#### Building the SDK
 
-### Adding logging to Splunk via a SLAB event sink
+To build from source after extracting or cloning the SDK, do the following"
 
+1. At the root level of the **splunk-library-dotnetlogging** directory, open the 
+**splunk-library-dotnetlogging.sln** file in Visual Studio.
+2. On the **BUILD** menu, click **Build Solution**.
 
+This will build the SDK, the examples, and the unit tests.
 
-## Building the library
-
-The Splunk Library for .NET Logging is organized as a Visual Studio solution.
-To build it, open the solution in Visual Studio and run 'Build solution' from
-the Build menu. This will generate a dll containing both listeners.
-
-## Run the unit tests
-
-The Splunk Library for .NET Logging has unit tests which depend on xUnit. To
-run them:
-
-1. Install the 'xUnit.net runner for Visual Studio 2012 and 2013' from the
-   Tools->Extensions and Updates menu in Visual Studio.
-2. Build the project.
-3. Open the Test Explorer via the Test->Windows->Test Explorer menu item.
-
-The tests should be listed in the Test Explorer. Click 'Run All' to run them.
-They should require no additional configuration.
-
-## Repository
+#### Solution Layout
 
 The solution is organized into `src` and `test` folders. `src` contains a single
 Visual Studio project `Splunk.Logging`. `test` contains a single project, 
 `unit-tests`.
+
+#### Examples and unit tests
+
+The Splunk Logging Library for .NET includes full unit tests which run using [xunit](https://github.com/xunit/xunit) as well as several examples.
+
+### Adding logging to Splunk via a TraceListener
+
+### Adding logging to Splunk via a SLAB event sink
 
 ### Changelog
 
@@ -103,11 +113,13 @@ on our Wiki at
 
 ## Documentation and resources
 
-If you need to know more: 
+If you need to know more:
 
-* For all things developer with Splunk, your main resource is the [Splunk Developer Portal](http://dev.splunk.com).
+* For all things developer with Splunk, your main resource is the [Splunk
+  Developer Portal](http://dev.splunk.com).
 
-* For more about the Splunk REST API, see the [REST API Reference](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI).
+* For more about the Splunk REST API, see the [REST API 
+  Reference](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI).
 
 * For more about about Splunk in general, see [Splunk>Docs](http://docs.splunk.com/Documentation/Splunk).
 
@@ -118,66 +130,50 @@ Stay connected with other developers building on Splunk.
 <table>
 
 <tr>
-<td><b>Email</b></td>
-<td>devinfo@splunk.com</td>
+<td><em>Email</em></td>
+<td><a href="mailto:devinfo@splunk.com">devinfo@splunk.com</a></td>
 </tr>
 
 <tr>
-<td><b>Issues</b>
-<td><span>https://github.com/splunk/splunk-library-dotnetlogging/issues/</span></td>
+<td><em>Issues</em>
+<td><a href="https://github.com/splunk/splunk-sdk-csharp-pcl/issues/">
+https://github.com/splunk/splunk-sdk-csharp/issues</a></td>
 </tr>
 
 <tr>
-<td><b>Blog</b>
-<td><span>http://blogs.splunk.com/dev/</span></td>
+<td><em>Answers</em>
+<td><a href="http://splunk-base.splunk.com/tags/csharp/">
+http://splunk-base.splunk.com/tags/csharp/</a></td>
 </tr>
 
 <tr>
-<td><b>Twitter</b>
-<td>@splunkdev</td>
+<td><em>Blog</em>
+<td><a href="http://blogs.splunk.com/dev/">http://blogs.splunk.com/dev/</a></td>
+</tr>
+
+<tr>
+<td><em>Twitter</em>
+<td><a href="http://twitter.com/splunkdev">@splunkdev</a></td>
 </tr>
 
 </table>
 
 
-### How to contribute
+### Contributions
 
-If you would like to contribute to the library, go here for more information:
-
-* [Splunk and open source](http://dev.splunk.com/view/opensource/SP-CAAAEDM)
-
-* [Individual contributions](http://dev.splunk.com/goto/individualcontributions)
-
-* [Company contributions](http://dev.splunk.com/view/companycontributions/SP-CAAAEDR)
+If you want to make a code contribution, go to the 
+[Open Source](http://dev.splunk.com/view/opensource/SP-CAAAEDM)
+page for more information.
 
 ### Support
 
-1. You will be granted support if you or your company are already covered 
-   under an existing maintenance/support agreement. Send an email to 
-   _support@splunk.com_ and include "Splunk Library for .NET Logging" in
-   the subject line. 
-
-2. If you are not covered under an existing maintenance/support agreement, you 
-   can find help through the broader community at:
-
-   <ul>
-   <li><a href='http://splunk-base.splunk.com/answers/'>Splunk Answers</a> (use
-    the (TODO: What tags?) tags to identify your questions)</li>
-   <li><a href='http://groups.google.com/group/splunkdev'>Splunkdev Google 
-   Group</a></li>
-   </ul>
-3. Splunk will NOT provide support for the library if it has been modified. If
-   you modify a library and want support, you can find help through the broader
-   community and Splunk answers (see above). We would also like to know why you
-   modified the core library&mdash;please send feedback to _devinfo@splunk.com_.
-4. File any issues on [GitHub](https://github.com/splunk/splunk-library-dotnetlogging/issues).
-
+This product is currently in development and officially unsupported. We will be triaging any issues filed by the community however and addressing them as appropriate. Please [file](https://github.com/splunk/splunk-sdk-csharp-pcl) issues for any problems that you encounter.
 
 ### Contact Us
 
-You can reach the Developer Platform team at _devinfo@splunk.com_.
+You can reach the Dev Platform team at devinfo@splunk.com.
 
 ## License
 
-The Splunk Library for .NET Logging is licensed under the Apache
-License 2.0. Details can be found in the LICENSE file.
+The Splunk Logging Library for .NET is licensed under the Apache License 2.0. Details can be 
+found in the LICENSE file.
