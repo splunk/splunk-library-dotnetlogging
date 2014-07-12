@@ -136,8 +136,8 @@ Stay connected with other developers building on Splunk.
 
 <tr>
 <td><em>Issues</em>
-<td><a href="https://github.com/splunk/splunk-sdk-csharp-pcl/issues/">
-https://github.com/splunk/splunk-sdk-csharp/issues</a></td>
+<td><a href="https://github.com/splunk/splunk-library-dotnetlogging/issues/">
+https://github.com/splunk/splunk-library-dotnetlogging</a></td>
 </tr>
 
 <tr>
