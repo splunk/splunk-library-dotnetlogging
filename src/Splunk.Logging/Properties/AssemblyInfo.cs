@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Splunk.Logging")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Listeners and sinks to log to Splunk from .NET logging frameworks")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Splunk, Inc.")]
 [assembly: AssemblyProduct("Splunk.Logging")]
 [assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
