@@ -109,15 +109,14 @@ Visual Studio project `Splunk.Logging`. `test` contains a single project,
 The Splunk Logging Library for .NET includes full unit tests which run using [xunit](https://github.com/xunit/xunit) as well as several examples.
 
 ### Adding logging to Splunk via a TraceListener
-
+Below is a snippet showing creating a `TraceSource` and then attaching a UpdTraceListener configured to talk to localhost on port 10000. Next an event is generated which is sent to Splunk.
 ```csharp
 
 //setup
 var traceSource = new TraceSource("TestLogger");
 traceSource.Listeners.Remove("Default");
 traceSource.Switch.Level = SourceLevels.All;
-traceSource.Listeners.Add(new UdpTraceListener(host, port));
-TraceSource traceSource = ConfigureLogging(IPAddress.Loopback, 10000);
+traceSource.Listeners.Add(new UdpTraceListener(IPAddress.Loopback, 10000));
 
 //log an event
 traceSource.TraceEvent(TraceEventType.Information, 1, "Test event");
@@ -125,6 +124,7 @@ traceSource.TraceEvent(TraceEventType.Information, 1, "Test event");
 ```
 
 ### Adding logging to Splunk via a SLAB event sink
+Below is a snippet showing creating an `ObservableEventListener` and then subscribing to events with a UdpEventSink configured to talk to localhost on port 1000. Next a SimpleEventSource is instantiated and a test event is generated.
 
 ```csharp
 var listener = new ObservableEventListener();
