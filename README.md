@@ -2,9 +2,13 @@
 
 #### Version 1.0 prerelease
 
-The Splunk Library for .NET Logging contains library code to enable developers
+The Splunk Library for .NET Logging enables developers
 to easily log to Splunk via TraceListeners or the Semantic Logging Application
 Block from Microsoft.
+
+In particular, it provides:
+
+* A `UdpTraceListener` which is a [.NET Trace Listener] (http://msdn.microsoft.com/en-us/library/4y5y10s7(v=vs.110).aspx) that logs events to Splunk over UDP. Popular logging frameworks support appending to the Trace Infrastructure including [Log4Net](http://logging.apache.org/log4net/release/sdk/log4net.Appender.TraceAppender.html), NLog (http://nlog-project.org/documentation/v2.0.1/html/T_NLog_Targets_TraceTarget.htm)  and Enterprise Library all support outputting to the Trace infrastructure thus allowing them to leverage this new listener. 
 
 Splunk is a search engine and analytic environment that uses a distributed
 map-reduce architecture to efficiently index, search and process large 
