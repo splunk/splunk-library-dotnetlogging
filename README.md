@@ -110,6 +110,18 @@ The Splunk Logging Library for .NET includes full unit tests which run using [xu
 
 ### Adding logging to Splunk via a TraceListener
 
+```csharp
+
+using Splunk.Logging;
+
+var traceSource = new TraceSource("TestLogger");
+traceSource.Listeners.Remove("Default");
+traceSource.Switch.Level = SourceLevels.All;
+traceSource.Listeners.Add(new UdpTraceListener(host, port));
+TraceSource traceSource = ConfigureLogging(IPAddress.Loopback, 10000);
+traceSource.TraceEvent(TraceEventType.Information, 1, "Logging started.");
+```
+
 ### Adding logging to Splunk via a SLAB event sink
 
 ### Changelog
