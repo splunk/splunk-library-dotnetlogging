@@ -111,7 +111,6 @@ The Splunk Logging Library for .NET includes full unit tests which run using [xu
 ### Adding logging to Splunk via a TraceListener
 Below is a snippet showing creating a `TraceSource` and then attaching a UpdTraceListener configured to talk to localhost on port 10000. Next an event is generated which is sent to Splunk.
 ```csharp
-
 //setup
 var traceSource = new TraceSource("TestLogger");
 traceSource.Listeners.Remove("Default");
@@ -127,12 +126,14 @@ traceSource.TraceEvent(TraceEventType.Information, 1, "Test event");
 Below is a snippet showing creating an `ObservableEventListener` and then subscribing to events with a UdpEventSink configured to talk to localhost on port 1000. Next a SimpleEventSource is instantiated and a test event is generated.
 
 ```csharp
+//setup
 var listener = new ObservableEventListener();
 listener.Subscribe(new UdpEventSink(IPAddress.Loopback, 10000));
 
 var eventSource = new SimpleEventSource();
 listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);
 
+//log an event
 eventSource.Message("Test event");
 
 [EventSource(Name = "TestEventSource")]
