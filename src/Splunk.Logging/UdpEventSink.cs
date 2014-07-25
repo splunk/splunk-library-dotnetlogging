@@ -1,6 +1,8 @@
 ﻿using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
+using Microsoft.Practices.EnterpriseLibrary.SemanticLogging.Formatters;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -9,44 +11,37 @@ using System.Threading.Tasks;
 
 namespace Splunk.Logging
 {
-    public interface EventEntryFormatter
+    public class SimpleEventTextFormatter : IEventTextFormatter
     {
-        string Format(EventEntry entry);
-    }
 
-    public class SimpleEventEntryFormatter : EventEntryFormatter
-    {
-        public string Format(EventEntry entry)
+        void IEventTextFormatter.WriteEvent(EventEntry eventEntry, TextWriter writer)
         {
-            var buffer = new StringBuilder();
-
-
-            buffer.Append(entry.GetFormattedTimestamp("o") + " ");
-            buffer.Append("EventId=" + entry.EventId + " ");
-            buffer.Append("EventName=" + entry.Schema.EventName + " ");
-            buffer.Append("Level=" + entry.Schema.Level + " ");
-            buffer.Append("\"FormattedMessage=" + entry.FormattedMessage + "\" ");
-            for (int i = 0; i < entry.Payload.Count; i++)
+            writer.Write(eventEntry.GetFormattedTimestamp("o") + " ");
+            writer.Write("EventId=" + eventEntry.EventId + " ");
+            writer.Write("EventName=" + eventEntry.Schema.EventName + " ");
+            writer.Write("Level=" + eventEntry.Schema.Level + " ");
+            writer.Write("\"FormattedMessage=" + eventEntry.FormattedMessage + "\" ");
+            for (int i = 0; i < eventEntry.Payload.Count; i++)
             {
                 try
                 {
-                    buffer.AppendFormat("\"{0}={1}\" ", entry.Schema.Payload[i], entry.Payload[i]);
+                    writer.Write("\"{0}={1}\" ", eventEntry.Schema.Payload[i], eventEntry.Payload[i]);
                 }
                 catch (Exception e) { }
             }
-
-            return buffer.ToString();
+            writer.WriteLine();
         }
     }
 
     public class UdpEventSink : IObserver<EventEntry>
     {
         private Socket socket;
-        private EventEntryFormatter formatter;
+        private IEventTextFormatter formatter;
         
-        public UdpEventSink(IPAddress host, int port, EventEntryFormatter formatter = null)
+        public UdpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null)
         {
-            this.formatter = formatter != null ? formatter : new SimpleEventEntryFormatter();
+
+            this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
             socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
             socket.Connect(host, port);
         }
@@ -65,8 +60,9 @@ namespace Splunk.Logging
 
         public void OnNext(EventEntry value)
         {
-            var eventText = formatter.Format(value);
-            socket.Send(Encoding.UTF8.GetBytes(eventText));
+            var sw = new StringWriter();
+            formatter.WriteEvent(value, sw);
+            socket.Send(Encoding.UTF8.GetBytes(sw.ToString()));
         }
     }
 }
