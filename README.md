@@ -2,26 +2,43 @@
 
 #### Version 0.8 (beta)
 
-The Splunk Library for .NET Logging contains library code to enable developers
+The Splunk Library for .NET Logging enables developers
 to easily log to Splunk via TraceListeners or the Semantic Logging Application
 Block from Microsoft.
 
-Splunk is a search engine and analytic environment that uses a distributed
-map-reduce architecture to efficiently index, search and process large 
-time-varying data sets.
+In particular, it provides:
 
-The Splunk product is popular with system administrators for aggregation and
-monitoring of IT machine data, security, compliance and a wide variety of 
-other scenarios that share a requirement to efficiently index, search, analyze
-and generate real-time notifications from large volumes of time series data.
-
-The Splunk developer platform enables developers to take advantage of the 
-same technology used by the Splunk product to build exciting new applications
-that are enabled by Splunk's unique capabilities.
+* A `UdpTraceListener` which is a [.NET Trace Listener] (http://msdn.microsoft.com/en-us/library/4y5y10s7(v=vs.110).aspx) that logs events to Splunk over UDP. Popular logging frameworks support appending to the Trace Infrastructure including [Log4Net](http://logging.apache.org/log4net/release/sdk/log4net.Appender.TraceAppender.html), NLog (http://nlog-project.org/documentation/v2.0.1/html/T_NLog_Targets_TraceTarget.htm)  and [Enterprise Library] (http://msdn.microsoft.com/en-us/library/dn440731(v=pandp.60).aspx). 
+* A `UdpEventSink` which is a Semantic Logging Application Block [Sink] (http://msdn.microsoft.com/en-us/library/dn440729(v=pandp.60).aspx#sec29) that logs ETW events to Splunk over UDP.
 
 ## Supported platforms
 
 .NET 4.5 / Windows 8.1
+
+## Advice
+
+### Splunk Universal Forwarder vs Splunk UDP Inputs
+
+If you can, it is better to log to files and monitor them with a Splunk 
+Universal Forwarder. This provides you with the features of the Universal 
+Forwarder, and added robustness from having persistent files. However, there 
+are situations where using a Universal Forwarder is not a possibility. In 
+these cases, writing directly to a UDP input is a reasonable approach.
+
+### Data Cloning
+
+You can use [data cloning](http://docs.splunk.com/Splexicon:Datacloning) by 
+providing multiple instances of your UDP handler in your logging 
+configuration, each instance pointing to different indexers.
+
+### Load Balancing
+
+Rather than trying to reinvent 
+[load balancing](http://docs.splunk.com/Splexicon:Loadbalancing) across your 
+indexers in your log configuration, set up a Splunk Universal Forwarder with a 
+UDP input. Have all your logging sources write to that UDP input, and use the 
+Universal Forwarder's load balancing features to distribute the data from 
+there to a set of indexers.
 
 ## Getting started with the Splunk Library for .NET Logging
 
@@ -92,8 +109,46 @@ Visual Studio project `Splunk.Logging`. `test` contains a single project,
 The Splunk Logging Library for .NET includes full unit tests which run using [xunit](https://github.com/xunit/xunit) as well as several examples.
 
 ### Adding logging to Splunk via a TraceListener
+Below is a snippet showing creating a `TraceSource` and then attaching a UpdTraceListener configured to talk to localhost on port 10000. Next an event is generated which is sent to Splunk.
+```csharp
+//setup
+var traceSource = new TraceSource("TestLogger");
+traceSource.Listeners.Remove("Default");
+traceSource.Switch.Level = SourceLevels.All;
+traceSource.Listeners.Add(new UdpTraceListener(IPAddress.Loopback, 10000));
+
+//log an event
+traceSource.TraceEvent(TraceEventType.Information, 1, "Test event");
+
+```
 
 ### Adding logging to Splunk via a SLAB event sink
+Below is a snippet showing creating an `ObservableEventListener` and then subscribing to events with a UdpEventSink configured to talk to localhost on port 1000. Next a SimpleEventSource is instantiated and a test event is generated.
+
+```csharp
+//setup
+var listener = new ObservableEventListener();
+listener.Subscribe(new UdpEventSink(IPAddress.Loopback, 10000));
+
+var eventSource = new SimpleEventSource();
+listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);
+
+//log an event
+eventSource.Message("Test event");
+
+[EventSource(Name = "TestEventSource")]
+public class SimpleEventSource : EventSource
+{
+    public class Keywords { }
+    public class Tasks { }
+
+    [Event(1, Message = "{0}", Level = EventLevel.Error)]
+    internal void Message(string message)
+    {
+        this.WriteEvent(1, message);
+    }
+}
+```
 
 ### Changelog
 
