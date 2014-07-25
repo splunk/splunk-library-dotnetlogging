@@ -1,5 +1,5 @@
 # Splunk Library for .NET Logging Changelog
 
-## Version 1.0.0
+## Version 0.8 (beta)
 
 * Initial release.
