@@ -1,0 +1,7 @@
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\src\Splunk.Logging\bin\Debug\Splunk.Logging.dll
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\src\Splunk.Logging\bin\Debug\Splunk.Logging.pdb
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\src\Splunk.Logging\bin\Debug\Microsoft.Practices.EnterpriseLibrary.SemanticLogging.dll
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\src\Splunk.Logging\bin\Debug\Microsoft.Practices.EnterpriseLibrary.SemanticLogging.xml
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\src\Splunk.Logging\obj\Debug\Splunk.Logging.csprojResolveAssemblyReference.cache
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\src\Splunk.Logging\obj\Debug\Splunk.Logging.dll
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\src\Splunk.Logging\obj\Debug\Splunk.Logging.pdb

@@ -1,0 +1,11 @@
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\bin\Debug\unit-tests.dll
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\bin\Debug\unit-tests.pdb
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\bin\Debug\Microsoft.Practices.EnterpriseLibrary.SemanticLogging.dll
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\bin\Debug\Splunk.Logging.dll
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\bin\Debug\xunit.dll
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\bin\Debug\Splunk.Logging.pdb
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\bin\Debug\Microsoft.Practices.EnterpriseLibrary.SemanticLogging.xml
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\bin\Debug\xunit.xml
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\obj\Debug\unit-tests.csprojResolveAssemblyReference.cache
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\obj\Debug\unit-tests.dll
+C:\Users\Fred Ross\Documents\splunk-library-dotnetlogging\test\unit-tests\obj\Debug\unit-tests.pdb
