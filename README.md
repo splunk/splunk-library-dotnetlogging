@@ -1,6 +1,5 @@
 # The Splunk Library for .NET Logging
-
-#### Version 1.0 beta
+## Version 1.0 beta
 
 The Splunk Library for .NET Logging enables developers
 to easily log to Splunk via TraceListeners or the Semantic Logging Application
