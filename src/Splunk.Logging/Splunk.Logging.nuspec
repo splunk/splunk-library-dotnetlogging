@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>Splunk.Logging</id>
+        <version>$version$</version>
+        <title>Splunk Logging for .NET</title>
+        <authors>Splunk, Inc.</authors>
+        <owners>Splunk, Inc.</owners>
+        <iconUrl>http://docs.splunk.com/skins/splunk/images/icon-default.png</iconUrl>
+        <licenseUrl>https://github.com/splunk/splunk-library-dotnetlogging/blob/master/LICENSE</licenseUrl>
+        <projectUrl>https://github.com/splunk/splunk-library-dotnetlogging</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>This package contains a library for logging events to Splunk.</description>
+        <copyright>2014 Splunk</copyright>
+        <tags>Splunk</tags>
+        <language>en-US</language>
+        <dependencies>
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="bin\Release\Splunk.Logging.dll" target="lib\net45" />
+    </files>
+</package>

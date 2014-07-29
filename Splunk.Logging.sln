@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30501.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5142E63D-CF4A-48EA-8527-F6B2DB4718C0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{2F34BC99-9753-46CC-A386-33B543EFF916}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unit-tests", "test\unit-tests\unit-tests.csproj", "{2218CC33-B1C9-4D4F-A0DA-AE6CEA0CA617}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Splunk.Logging", "src\Splunk.Logging\Splunk.Logging.csproj", "{A30EE424-1437-4F5A-9FCA-2B90A7A5DB11}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D6E75991-4735-43C5-8271-80F4D50BFA3C}"
+	ProjectSection(SolutionItems) = preProject
+		CHANGELOG.md = CHANGELOG.md
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2218CC33-B1C9-4D4F-A0DA-AE6CEA0CA617}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2218CC33-B1C9-4D4F-A0DA-AE6CEA0CA617}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2218CC33-B1C9-4D4F-A0DA-AE6CEA0CA617}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2218CC33-B1C9-4D4F-A0DA-AE6CEA0CA617}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A30EE424-1437-4F5A-9FCA-2B90A7A5DB11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A30EE424-1437-4F5A-9FCA-2B90A7A5DB11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A30EE424-1437-4F5A-9FCA-2B90A7A5DB11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A30EE424-1437-4F5A-9FCA-2B90A7A5DB11}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2218CC33-B1C9-4D4F-A0DA-AE6CEA0CA617} = {2F34BC99-9753-46CC-A386-33B543EFF916}
+		{A30EE424-1437-4F5A-9FCA-2B90A7A5DB11} = {5142E63D-CF4A-48EA-8527-F6B2DB4718C0}
+	EndGlobalSection
+EndGlobal
