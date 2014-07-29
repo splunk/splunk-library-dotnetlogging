@@ -76,7 +76,7 @@ To run the unit tests you will need to install an [xUnit](https://github.com/xun
 
 #### MyGet feed
 
-Before the intial release, you can download the Splunk SDK C# NuGet packages from [MyGet](http://www.myget.org). Add the following feed to your package sources in Visual Studio: https://www.myget.org/F/splunk-library-dotnetlogging. The feed contains the Splunk.Logging package.
+Before the intial release, you can download the Splunk SDK C# NuGet packages from [MyGet](http://www.myget.org). Add the following feed to your package sources in Visual Studio: https://splunk.myget.org/F/splunk-library-dotnetlogging. The feed contains the Splunk.Logging package.
 
 *Note*: This will be published to NuGet when the SDK releases.
 
