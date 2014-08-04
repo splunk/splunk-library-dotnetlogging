@@ -32,6 +32,7 @@ namespace Splunk.Logging
                 traceSource.Switch.Level = SourceLevels.All;
                 traceSource.Listeners.Add(new UdpTraceListener(IPAddress.Loopback, port));
                 traceSource.TraceEvent(TraceEventType.Information, 100, "Boris");
+                traceSource.Close();
             });
             sender.Start();
 
@@ -39,8 +40,11 @@ namespace Splunk.Logging
             sender.Join();
 
             var received = sb.ToString();
-            
-            Assert.True(sb.ToString().EndsWith("UnitTestLogger Information: 100 : Boris\r\n"));
+
+            var expected = "UnitTestLogger Information: 100 : Boris\r\n";
+            var found = sb.ToString();
+            var foundTail = found.Substring(found.Length-expected.Length, expected.Length);
+            Assert.Equal(expected, foundTail);
         }
     }
 }

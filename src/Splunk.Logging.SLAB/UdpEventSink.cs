@@ -13,7 +13,6 @@ namespace Splunk.Logging
 {
     public class SimpleEventTextFormatter : IEventTextFormatter
     {
-
         void IEventTextFormatter.WriteEvent(EventEntry eventEntry, TextWriter writer)
         {
             writer.Write(eventEntry.GetFormattedTimestamp("o") + " ");
@@ -35,16 +34,18 @@ namespace Splunk.Logging
 
     public class UdpEventSink : IObserver<EventEntry>
     {
-        private Socket socket;
-        private IEventTextFormatter formatter;
+        protected Socket socket = null;
+        protected IEventTextFormatter formatter;
         
         public UdpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null)
         {
-
             this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
-            socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            this.socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
             socket.Connect(host, port);
         }
+
+        public UdpEventSink(string host, int port, IEventTextFormatter formatter = null) :
+            this(Dns.GetHostEntry(host).AddressList[0], port, formatter) { }
 
         public void OnCompleted()
         {

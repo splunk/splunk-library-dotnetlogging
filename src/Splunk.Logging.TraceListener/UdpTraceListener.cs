@@ -8,17 +8,18 @@ namespace Splunk.Logging
 {
     public class UdpTraceListener : TraceListener
     {
-        public Socket UdpSocket { get; set; }
+        private Socket socket;
         private StringBuilder buffer = new StringBuilder();
 
         public UdpTraceListener(IPAddress host, int port)
+            : base()
         {
-            UdpSocket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            UdpSocket.Connect(host, port);
+            socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            socket.Connect(host, port);
         }
 
-        public UdpTraceListener(string host, int port) : 
-            this(Dns.GetHostEntry(host).AddressList[0], port) {}
+        public UdpTraceListener(string host, int port) :
+            this(Dns.GetHostEntry(host).AddressList[0], port) { }
 
         public override void Write(string message)
         {
@@ -37,15 +38,15 @@ namespace Splunk.Logging
             buffer.Append(message);
             buffer.Append(Environment.NewLine);
 
-            UdpSocket.Send(Encoding.UTF8.GetBytes(buffer.ToString()));
+            socket.Send(Encoding.UTF8.GetBytes(buffer.ToString()));
             buffer.Clear();
         }
 
         public override void Close()
         {
+            socket.Close();
+            socket.Dispose();
             base.Close();
-            UdpSocket.Close();
-            UdpSocket.Dispose();
         }
     }
 }

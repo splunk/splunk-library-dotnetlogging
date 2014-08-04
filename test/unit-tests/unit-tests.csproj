@@ -46,8 +46,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestTcpTraceListener.cs" />
     <Compile Include="TestUdpEventSink.cs" />
     <Compile Include="TestUdpTraceListener.cs" />
+    <Compile Include="Util.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -56,6 +58,10 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Splunk.Logging.Common\Splunk.Logging.Common.csproj">
+      <Project>{b776a5c5-a301-472e-9d21-a62306358b2c}</Project>
+      <Name>Splunk.Logging.Common</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\src\Splunk.Logging.SLAB\Splunk.Logging.SLAB.csproj">
       <Project>{74d8f7a7-8125-400d-b744-c30562f23be0}</Project>
       <Name>Splunk.Logging.SLAB</Name>
