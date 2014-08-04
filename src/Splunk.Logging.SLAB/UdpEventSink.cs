@@ -11,31 +11,10 @@ using System.Threading.Tasks;
 
 namespace Splunk.Logging
 {
-    public class SimpleEventTextFormatter : IEventTextFormatter
-    {
-        void IEventTextFormatter.WriteEvent(EventEntry eventEntry, TextWriter writer)
-        {
-            writer.Write(eventEntry.GetFormattedTimestamp("o") + " ");
-            writer.Write("EventId=" + eventEntry.EventId + " ");
-            writer.Write("EventName=" + eventEntry.Schema.EventName + " ");
-            writer.Write("Level=" + eventEntry.Schema.Level + " ");
-            writer.Write("\"FormattedMessage=" + eventEntry.FormattedMessage + "\" ");
-            for (int i = 0; i < eventEntry.Payload.Count; i++)
-            {
-                try
-                {
-                    writer.Write("\"{0}={1}\" ", eventEntry.Schema.Payload[i], eventEntry.Payload[i]);
-                }
-                catch (Exception e) { }
-            }
-            writer.WriteLine();
-        }
-    }
-
     public class UdpEventSink : IObserver<EventEntry>
     {
-        protected Socket socket = null;
-        protected IEventTextFormatter formatter;
+        private Socket socket = null;
+        private IEventTextFormatter formatter;
         
         public UdpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null)
         {

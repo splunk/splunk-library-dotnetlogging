@@ -37,6 +37,7 @@ namespace Splunk.Logging
                 traceSource.Switch.Level = SourceLevels.All;
                 var progress = new AwaitableProgress<EventWrittenProgressReport>();
                 traceSource.Listeners.Add(new TcpTraceListener(IPAddress.Loopback, port, progress: progress));
+                
                 traceSource.TraceEvent(TraceEventType.Information, 100, "Boris");
                 progress.AwaitProgressAsync().Wait();
                 traceSource.Close();

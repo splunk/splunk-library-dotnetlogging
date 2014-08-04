@@ -54,7 +54,7 @@ namespace Splunk.Logging
         /// <param name="port"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Socket Reconnect(IPAddress host, int port, CancellationToken cancellationToken);
+        Socket Reconnect(Func<Socket> connect, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ namespace Splunk.Logging
     {
         private int ceiling = 10 * 60; // 10 minutes in seconds
 
-        public Socket Reconnect(IPAddress host, int port, CancellationToken cancellationToken)
+        public Socket Reconnect(Func<Socket> connect, CancellationToken cancellationToken)
         {
             int delay = 0; // in seconds
             while (!cancellationToken.IsCancellationRequested)
@@ -72,9 +72,7 @@ namespace Splunk.Logging
                 Task.Delay(delay * 1000, cancellationToken).Wait();
 
                 try {
-                    var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-                    socket.Connect(host, port);
-                    return socket;
+                    return connect();
                 }
                 catch (SocketException e) {}
 
@@ -89,7 +87,7 @@ namespace Splunk.Logging
     /// </summary>
     public class FailTcpConnectionPolicy : TcpConnectionPolicy
     {
-        public Socket Reconnect(IPAddress host, int port, CancellationToken token)
+        public Socket Reconnect(Func<Socket> connect, CancellationToken token)
         {
             throw new TcpReconnectFailure("Could not reconnect TCP port for logging. All " + 
                 "subsequent log message to this listener will be dropped.");
@@ -121,9 +119,18 @@ namespace Splunk.Logging
             this.connectionPolicy = policy;
             this.eventQueue = new FixedSizeQueue<string>(maxQueueSize);
             this.tokenSource = new CancellationTokenSource();
+
+            var connect = new Func<Socket>(() =>
+            {
+                var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                socket.Connect(host, port);
+                return socket;
+            });
+
             queueListener = new Thread(() =>
             {
-                this.socket = this.connectionPolicy.Reconnect(host, port, tokenSource.Token);
+                connect();
+
                 while (!tokenSource.Token.IsCancellationRequested)
                 {
                     try
@@ -140,7 +147,7 @@ namespace Splunk.Logging
                     }
                     catch (SocketException)
                     {
-                        this.socket = this.connectionPolicy.Reconnect(host, port, tokenSource.Token);
+                        this.socket = this.connectionPolicy.Reconnect(connect, tokenSource.Token);
                     }
                 }
             });
