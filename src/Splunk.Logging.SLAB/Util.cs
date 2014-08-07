@@ -5,6 +5,10 @@ using System.IO;
 
 namespace Splunk.Logging
 {
+    /// <summary>
+    /// An IEventTextFormatter for SLAB that writes in the form
+    /// <code>{timestamp} EventId={...} EventName={...} Level={...} "FormattedMessage={...}"</code>
+    /// </summary>
     public class SimpleEventTextFormatter : IEventTextFormatter
     {
         void IEventTextFormatter.WriteEvent(EventEntry eventEntry, TextWriter writer)

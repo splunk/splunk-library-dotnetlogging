@@ -11,11 +11,21 @@ using System.Threading.Tasks;
 
 namespace Splunk.Logging
 {
+    /// <summary>
+    /// SLAB event to write to a UDP socket.
+    /// </summary>
     public class UdpEventSink : IObserver<EventEntry>
     {
         private Socket socket = null;
         private IEventTextFormatter formatter;
         
+        /// <summary>
+        /// Set up a sink.
+        /// </summary>
+        /// <param name="host">IP address to write to.</param>
+        /// <param name="port">UDP port on the target machine.</param>
+        /// <param name="formatter">An object controlling the formatting
+        /// of the event (defaults to <code>{timestamp} EventId={...} EventName={...} Level={...} "FormattedMessage={...}"</code>).</param>
         public UdpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null)
         {
             this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
@@ -23,6 +33,13 @@ namespace Splunk.Logging
             socket.Connect(host, port);
         }
 
+        /// <summary>
+        /// Set up a sink.
+        /// </summary>
+        /// <param name="host">Hostname to write to.</param>
+        /// <param name="port">UDP port on the target machine.</param>
+        /// <param name="formatter">An object controlling the formatting
+        /// of the event (defaults to <code>{timestamp} EventId={...} EventName={...} Level={...} "FormattedMessage={...}"</code>).</param>
         public UdpEventSink(string host, int port, IEventTextFormatter formatter = null) :
             this(Dns.GetHostEntry(host).AddressList[0], port, formatter) { }
 

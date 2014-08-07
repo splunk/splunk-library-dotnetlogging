@@ -6,11 +6,19 @@ using System.Text;
 
 namespace Splunk.Logging
 {
+    /// <summary>
+    /// Write event traces to a UDP port.
+    /// </summary>
     public class UdpTraceListener : TraceListener
     {
         private Socket socket;
         private StringBuilder buffer = new StringBuilder();
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="host">IP address to write to.</param>
+        /// <param name="port">UDP port to log to on the remote host.</param>
         public UdpTraceListener(IPAddress host, int port)
             : base()
         {
@@ -18,6 +26,11 @@ namespace Splunk.Logging
             socket.Connect(host, port);
         }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="host">Hostname to write to.</param>
+        /// <param name="port">UDP port to log to on the remote host.</param>
         public UdpTraceListener(string host, int port) :
             this(Dns.GetHostEntry(host).AddressList[0], port) { }
 
