@@ -14,8 +14,8 @@ namespace Splunk.Logging
         public void TraceToOpenUdpSocketWorks()
         {
             var sb = new StringBuilder();
-            var receivingUdpClient = new UdpClient(0);
-            int port = ((IPEndPoint)receivingUdpClient.Client.LocalEndPoint).Port;
+            int port = 11003;
+            var receivingUdpClient = new UdpClient(port);
 
             var receiver = new Thread((object r) =>
             {

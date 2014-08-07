@@ -131,11 +131,11 @@ namespace Splunk.Logging
             {
                 this.socket = connect();
 
+                string entry = null;
                 while (!tokenSource.Token.IsCancellationRequested)
                 {
                     try
                     {
-                        string entry;
                         while (eventQueue.TryDequeue(out entry))
                         {
                             this.socket.Send(Encoding.UTF8.GetBytes(entry));
@@ -148,6 +148,12 @@ namespace Splunk.Logging
                     catch (SocketException)
                     {
                         this.socket = this.connectionPolicy.Reconnect(connect, tokenSource.Token);
+                        this.socket.Send(Encoding.UTF8.GetBytes(entry));
+                        progress.Report(new EventWrittenProgressReport
+                        {
+                            Timestamp = DateTime.Now,
+                            EventText = entry
+                        });
                     }
                 }
             });

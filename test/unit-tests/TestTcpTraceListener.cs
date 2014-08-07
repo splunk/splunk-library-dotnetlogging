@@ -16,8 +16,8 @@ namespace Splunk.Logging
         public void TraceToOpenTcpSocketWorks()
         {
             string result = "";
-            int port = 10000;
-            var tcpListener = new TcpListener(IPAddress.Loopback, port);
+            int port = 11001;
+            var tcpListener = new TcpListener(IPAddress.Loopback, port);            
 
             var receiver = new Thread(() => 
             {

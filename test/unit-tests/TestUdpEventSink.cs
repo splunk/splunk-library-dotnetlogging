@@ -15,30 +15,12 @@ namespace Splunk.Logging
 {
     public class TestUdpEventSink
     {
-        [EventSource(Name="TestEventSource")]
-        public class TestEventSource : EventSource
-        {
-            public class Keywords
-            {
-            }
-
-            public class Tasks
-            {
-            }
-
-            [Event(1, Message = "{1} - {0}", Level = EventLevel.Error)]
-            internal void Message(string message, string caller)
-            {
-                this.WriteEvent(1, message, caller);
-            }
-        }
-
         [Fact]
         public void TestUdpEventSinkWrites()
         {
             var sb = new StringBuilder();
-            var receivingUdpClient = new UdpClient(0);
-            int port = ((IPEndPoint)receivingUdpClient.Client.LocalEndPoint).Port;
+            int port = 11002;
+            var receivingUdpClient = new UdpClient(port);
 
             var receiver = new Thread((object r) =>
             {
@@ -52,10 +34,10 @@ namespace Splunk.Logging
             {
                 var listener = new ObservableEventListener();
                 listener.Subscribe(new UdpEventSink(IPAddress.Loopback, port));
-                var source = new TestEventSource();
+                var source = TestEventSource.GetInstance();
                 listener.EnableEvents(source, EventLevel.LogAlways, Keywords.All);
                 source.Message("Boris", "Meep");
-
+                listener.Dispose();
             };
             var sender = new Thread(f);
             sender.Start();
