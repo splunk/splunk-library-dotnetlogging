@@ -20,7 +20,7 @@ namespace Splunk.Logging
                 {
                     writer.Write("\"{0}={1}\" ", eventEntry.Schema.Payload[i], eventEntry.Payload[i]);
                 }
-                catch (Exception e) { }
+                catch (Exception) { }
             }
             writer.WriteLine();
         }

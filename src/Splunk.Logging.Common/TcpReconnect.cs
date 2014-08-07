@@ -129,7 +129,7 @@ namespace Splunk.Logging
 
             queueListener = new Thread(() =>
             {
-                connect();
+                this.socket = connect();
 
                 while (!tokenSource.Token.IsCancellationRequested)
                 {
