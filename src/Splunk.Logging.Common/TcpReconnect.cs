@@ -38,6 +38,31 @@ namespace Splunk.Logging
         }
     }
 
+    public interface ISocket : IDisposable
+    {
+        void Send(string data);
+        void Close();
+    }
+
+    public class TcpSocket : ISocket
+    {
+        private Socket socket;
+
+        public TcpSocket(IPAddress host, int port)
+        {
+            this.socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            this.socket.Connect(host, port);
+        }
+
+        public void Send(string data)
+        {
+            this.socket.Send(Encoding.UTF8.GetBytes(data));
+        }
+
+        public void Close() { this.socket.Close(); }
+        public void Dispose() { this.socket.Dispose(); }
+    }
+
     /// <summary>
     /// TcpConnectionPolicy encapsulates a policy for what logging via TCP should
     /// do when there is a socket error.
@@ -78,7 +103,7 @@ namespace Splunk.Logging
         /// <param name="cancellationToken">A token used to cancel the reconnect
         /// attempt when the invoking logger is disposed.</param>
         /// <returns>A connected TCP socket.</returns>
-        Socket Reconnect(Func<Socket> connect, CancellationToken cancellationToken);
+        ISocket Connect(Func<IPAddress, int, ISocket> connect, IPAddress host, int port, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -94,15 +119,15 @@ namespace Splunk.Logging
     {
         private int ceiling = 10 * 60; // 10 minutes in seconds
 
-        public Socket Reconnect(Func<Socket> connect, CancellationToken cancellationToken)
+        public ISocket Connect(Func<IPAddress, int, ISocket> connect, IPAddress host, int port, CancellationToken cancellationToken)
         {
             int delay = 1; // in seconds
             while (!cancellationToken.IsCancellationRequested)
             {
                 try {
-                    return connect();
+                    return connect(host, port);
                 }
-                catch (SocketException e) {}
+                catch (SocketException) {}
 
                 // If this is cancelled via the cancellationToken instead of
                 // completing its delay, the next while-loop test will fail,
@@ -140,10 +165,14 @@ namespace Splunk.Logging
     public class TcpSocketWriter : IDisposable
     {
         private FixedSizeQueue<string> eventQueue;
-        private Socket socket;
+        private ISocket socket;
         private Thread queueListener;
         private TcpConnectionPolicy connectionPolicy;
         private CancellationTokenSource tokenSource;
+        private Func<IPAddress, int, ISocket> tryOpenSocket;
+
+        private event Action DisposedHandler = () => { };
+
 
         /// <summary>
         /// 
@@ -154,50 +183,36 @@ namespace Splunk.Logging
         /// <param name="maxQueueSize">The maximum number of log entries to queue before starting to drop entries.</param>
         /// <param name="progress">An IProgress object that reports when entries are 
         /// pulled off the queue and written to the TCP socket.</param>
-        public TcpSocketWriter(IPAddress host, int port, TcpConnectionPolicy policy, 
-            int maxQueueSize, IProgress<EventWrittenProgressReport> progress)
+        public TcpSocketWriter(IPAddress host, int port, TcpConnectionPolicy policy, int maxQueueSize, Func<IPAddress, int, ISocket> connect = null)
         {
             this.connectionPolicy = policy;
             this.eventQueue = new FixedSizeQueue<string>(maxQueueSize);
             this.tokenSource = new CancellationTokenSource();
+            this.tryOpenSocket = connect == null ? (h, p) => { return new TcpSocket(h, p); } : connect;
 
-            // Function encapsulating connecting to a TCP socket.
-            var connect = new Func<Socket>(() =>
-            {
-                var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-                socket.Connect(host, port);
-                return socket;
-            });
+            this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
 
             queueListener = new Thread(() =>
             {
-                this.socket = connect();
-
                 string entry = null;
-                while (!tokenSource.Token.IsCancellationRequested)
+                while (!tokenSource.Token.IsCancellationRequested || !eventQueue.IsEmpty)
                 {
-                    try
+                    while (eventQueue.TryDequeue(out entry))
                     {
-                        while (eventQueue.TryDequeue(out entry))
+                        try
                         {
-                            this.socket.Send(Encoding.UTF8.GetBytes(entry));
-                            progress.Report(new EventWrittenProgressReport {
-                                Timestamp = DateTime.Now,
-                                EventText = entry
-                            });
+                            this.socket.Send(entry);
+                        }
+                        catch (SocketException)
+                        {
+                            this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+                            this.socket.Send(entry);
                         }
                     }
-                    catch (SocketException)
-                    {
-                        this.socket = this.connectionPolicy.Reconnect(connect, tokenSource.Token);
-                        this.socket.Send(Encoding.UTF8.GetBytes(entry));
-                        progress.Report(new EventWrittenProgressReport
-                        {
-                            Timestamp = DateTime.Now,
-                            EventText = entry
-                        });
-                    }
                 }
+                socket.Close();
+                socket.Dispose();
+                DisposedHandler();
             });
             queueListener.Start();
         }
@@ -205,8 +220,15 @@ namespace Splunk.Logging
         public void Dispose()
         {
             this.tokenSource.Cancel();
-            this.socket.Close();
-            this.socket.Dispose();
+            var source = new TaskCompletionSource<bool>();
+            Action onReport = null;
+            onReport = () =>
+            {
+                DisposedHandler -= onReport;
+                source.SetResult(true);
+            };
+            DisposedHandler += onReport;
+            source.Task.Wait();
         }
 
         /// <summary>
@@ -217,14 +239,5 @@ namespace Splunk.Logging
         {
             this.eventQueue.Enqueue(entry);
         }
-    }
-
-    /// <summary>
-    /// Class used for reporting progress by TcpSocketWriter.
-    /// </summary>
-    public class EventWrittenProgressReport
-    {
-        public DateTime Timestamp { get; set; }
-        public string EventText { get; set; }
     }
 }

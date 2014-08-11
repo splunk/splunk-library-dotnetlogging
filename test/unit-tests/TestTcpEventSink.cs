@@ -23,19 +23,8 @@ namespace Splunk.Logging
             int port = 11000;
             var tcpListener = new TcpListener(IPAddress.Loopback, port);
 
-            var receiver = new Thread(() =>
-            {
-                tcpListener.Start();
-                var client = tcpListener.AcceptTcpClient();
-                var stream = client.GetStream();
-                var reader = new StreamReader(stream);
-                result = reader.ReadLine();
-                client.Close();
-            });
-            receiver.Start();
-
-            var sender = new Thread(() =>
-            {
+     
+            /*
                 var listener = new ObservableEventListener();
                 var progress = new AwaitableProgress<EventWrittenProgressReport>();
                 listener.Subscribe(new TcpEventSink(IPAddress.Loopback, port, progress: progress));
@@ -44,12 +33,7 @@ namespace Splunk.Logging
                 source.Message("Boris", "Meep");
                 progress.AwaitProgressAsync().Wait();
                 listener.Dispose();
-            });
-            sender.Start();
-            
-            receiver.Join();
-            sender.Join();
-
+             * */
             var expected = "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=Meep - Boris\" \"message=Boris\" \"caller=Meep\"";
             var found = result.Substring(result.Length - 1 - expected.Length, expected.Length);
             Assert.Equal(expected, found);

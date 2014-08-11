@@ -15,12 +15,6 @@ namespace Splunk.Logging
         private StringBuilder buffer = new StringBuilder();
 
         /// <summary>
-        /// An IProgress instance that triggers when an event is pulled from the queue
-        /// and written to a TCP port.
-        /// </summary>
-        public IProgress<EventWrittenProgressReport> Progress { get; private set; }
-
-        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="host">IP address to log to.</param>
@@ -35,14 +29,16 @@ namespace Splunk.Logging
         /// Progress object accessible via the Progress property).</param>
         public TcpTraceListener(IPAddress host, int port, 
             TcpConnectionPolicy policy = null, 
-            int maxQueueSize = 10000,
-            IProgress<EventWrittenProgressReport> progress = null) : base()
+            int maxQueueSize = 10000) : base()
         {
-            this.Progress = progress == null ? new Progress<EventWrittenProgressReport>() : progress;
             this.writer = new TcpSocketWriter(host, port,
                 policy == null ? new ExponentialBackoffTcpConnectionPolicy() : policy,
-                maxQueueSize,
-                Progress);
+                maxQueueSize);
+        }
+
+        public TcpTraceListener(TcpSocketWriter writer)
+        {
+            this.writer = writer;
         }
 
         /// <summary>

@@ -20,12 +20,6 @@ namespace Splunk.Logging
         private IEventTextFormatter formatter;
 
         /// <summary>
-        /// Get an IProgress instance that triggers when an event is pulled from
-        /// the queue and written to the TCP socket.
-        /// </summary>
-        public IProgress<EventWrittenProgressReport> Progress { get; private set; }
-        
-        /// <summary>
         /// Set up a sink.
         /// </summary>
         /// <param name="host">IP address of the host to write to.</param>
@@ -40,15 +34,12 @@ namespace Splunk.Logging
         /// the queue to the TCP port (defaults to a new Progress object). It is reachable
         /// via the Progress property.</param>
         public TcpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null,
-            TcpConnectionPolicy policy = null, int maxQueueSize = 10000,
-            IProgress<EventWrittenProgressReport> progress = null)
+            TcpConnectionPolicy policy = null, int maxQueueSize = 10000)
         {
             this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
-            this.Progress = progress == null ? new Progress<EventWrittenProgressReport>() : progress);
-            this.writer = new TcpSocketWriter(host, port, 
+            this.writer = new TcpSocketWriter(host, port,  
                 policy == null ? new ExponentialBackoffTcpConnectionPolicy() : policy,
-                maxQueueSize,
-                this.Progress);
+                maxQueueSize);
         }
 
         /// <summary>
@@ -66,10 +57,9 @@ namespace Splunk.Logging
         /// the queue to the TCP port (defaults to a new Progress object). It is reachable
         /// via the Progress property.</param>
         public TcpEventSink(string host, int port, IEventTextFormatter formatter = null,
-            TcpConnectionPolicy policy = null, int maxQueueSize = 10000,
-            IProgress<EventWrittenProgressReport> progress = null) :
+            TcpConnectionPolicy policy = null, int maxQueueSize = 10000) :
             this(Dns.GetHostEntry(host).AddressList[0], port,
-                formatter, policy, maxQueueSize, progress) { }
+                formatter, policy, maxQueueSize) { }
 
         public void OnCompleted()
         {

@@ -15,41 +15,29 @@ namespace Splunk.Logging
         [Fact]
         public void TraceToOpenTcpSocketWorks()
         {
-            string result = "";
-            int port = 11001;
-            var tcpListener = new TcpListener(IPAddress.Loopback, port);            
+            var mock = new MockSocketFactory();
+            mock.AcceptingConnections = true;
 
-            var receiver = new Thread(() => 
-            {
-                tcpListener.Start();   
-                var client = tcpListener.AcceptTcpClient();
-                var stream = client.GetStream();
-                var reader = new StreamReader(stream);
-                result = reader.ReadLine();
-                client.Close();
-            });
-            receiver.Start();
+            var writer = new TcpSocketWriter(
+                IPAddress.Loopback,
+                0,
+                new ExponentialBackoffTcpConnectionPolicy(),
+                10000,
+                mock.TryOpenSocket);            
 
-            var sender = new Thread(new ThreadStart(() =>
-            {
-                var traceSource = new TraceSource("UnitTestLogger");
-                traceSource.Listeners.Remove("Default");
-                traceSource.Switch.Level = SourceLevels.All;
-                var progress = new AwaitableProgress<EventWrittenProgressReport>();
-                traceSource.Listeners.Add(new TcpTraceListener(IPAddress.Loopback, port, progress: progress));
-                
-                traceSource.TraceEvent(TraceEventType.Information, 100, "Boris");
-                progress.AwaitProgressAsync().Wait();
-                traceSource.Close();
-            }));
-            sender.Start();
+            var traceSource = new TraceSource("UnitTestLogger");
+            traceSource.Listeners.Remove("Default");
+            traceSource.Switch.Level = SourceLevels.All;
+            traceSource.Listeners.Add(new TcpTraceListener(writer));   
+            traceSource.TraceEvent(TraceEventType.Information, 100, "Boris");
+            traceSource.Close();
 
-            receiver.Join();
-            sender.Join();
+            var result = mock.socket.GetReceivedText();
+            var firstSpace = result.IndexOf(" ");
 
-            var expected = "UnitTestLogger Information: 100 : Boris";
-            var found = result.Substring(result.Length - expected.Length, expected.Length);
-            Assert.Equal(expected, found);
+            var expected = result.Substring(0, firstSpace+1) + "UnitTestLogger Information: 100 : Boris\r\n";
+
+            Assert.Equal(expected, result);
         }
     }
 }
