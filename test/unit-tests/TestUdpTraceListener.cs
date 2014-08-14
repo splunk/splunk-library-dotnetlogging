@@ -8,43 +8,33 @@ using Xunit;
 
 namespace Splunk.Logging
 {
+    public class UdpTestTraceListener : UdpTraceListener
+    {
+        public UdpTestTraceListener(ISocket socket) : base(socket) { }
+
+        protected override string GetTimestamp()
+        {
+            return "[timestamp]";
+        }
+    }
+
     public class TestUdpTraceListener
     {
         [Fact]
         public void TraceToOpenUdpSocketWorks()
         {
-            var sb = new StringBuilder();
-            int port = 11003;
-            var receivingUdpClient = new UdpClient(port);
+            var socket = new MockSocket() { SocketFailed = false };
 
-            var receiver = new Thread((object r) =>
-            {
-                var endpoint = new IPEndPoint(IPAddress.Loopback, port);
-                var receivedBytes = receivingUdpClient.Receive(ref endpoint);
-                ((StringBuilder)r).Append(Encoding.UTF8.GetString(receivedBytes));
-            });
-            receiver.Start(sb);
+            var traceSource = new TraceSource("UnitTestLogger");
+            traceSource.Listeners.Remove("Default");
+            traceSource.Switch.Level = SourceLevels.All;
+            traceSource.Listeners.Add(new UdpTestTraceListener(socket));
 
-            var sender = new Thread(() =>
-            {
-                var traceSource = new TraceSource("UnitTestLogger");
-                traceSource.Listeners.Remove("Default");
-                traceSource.Switch.Level = SourceLevels.All;
-                traceSource.Listeners.Add(new UdpTraceListener(IPAddress.Loopback, port));
-                traceSource.TraceEvent(TraceEventType.Information, 100, "Boris");
-                traceSource.Close();
-            });
-            sender.Start();
+            traceSource.TraceEvent(TraceEventType.Information, 100, "Boris");
+            var result = socket.GetReceivedText();
+            traceSource.Close();
 
-            receiver.Join();
-            sender.Join();
-
-            var received = sb.ToString();
-
-            var expected = "UnitTestLogger Information: 100 : Boris\r\n";
-            var found = sb.ToString();
-            var foundTail = found.Substring(found.Length-expected.Length, expected.Length);
-            Assert.Equal(expected, foundTail);
+            Assert.Equal("[timestamp] UnitTestLogger Information: 100 : Boris\r\n", result);
         }
     }
 }

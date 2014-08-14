@@ -19,11 +19,12 @@ namespace Splunk.Logging
         [Fact]
         public void TestTcpEventSinkWrites()
         {
+            throw new NotImplementedException();
             string result = "";
             int port = 11000;
             var tcpListener = new TcpListener(IPAddress.Loopback, port);
 
-     
+            
             /*
                 var listener = new ObservableEventListener();
                 var progress = new AwaitableProgress<EventWrittenProgressReport>();

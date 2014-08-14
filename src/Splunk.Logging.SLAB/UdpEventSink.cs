@@ -16,9 +16,15 @@ namespace Splunk.Logging
     /// </summary>
     public class UdpEventSink : IObserver<EventEntry>
     {
-        private Socket socket = null;
+        private ISocket socket = null;
         private IEventTextFormatter formatter;
         
+        public UdpEventSink(ISocket socket, IEventTextFormatter formatter = null)
+        {
+            this.socket = socket;
+            this.formatter = this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
+        }
+
         /// <summary>
         /// Set up a sink.
         /// </summary>
@@ -26,13 +32,9 @@ namespace Splunk.Logging
         /// <param name="port">UDP port on the target machine.</param>
         /// <param name="formatter">An object controlling the formatting
         /// of the event (defaults to <code>{timestamp} EventId={...} EventName={...} Level={...} "FormattedMessage={...}"</code>).</param>
-        public UdpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null)
-        {
-            this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
-            this.socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.Connect(host, port);
-        }
-
+        public UdpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null) :
+            this(new UdpSocket(host, port), formatter) {}
+        
         /// <summary>
         /// Set up a sink.
         /// </summary>
@@ -59,7 +61,7 @@ namespace Splunk.Logging
         {
             var sw = new StringWriter();
             formatter.WriteEvent(value, sw);
-            socket.Send(Encoding.UTF8.GetBytes(sw.ToString()));
+            socket.Send(sw.ToString());
         }
     }
 }

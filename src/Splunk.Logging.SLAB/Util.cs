@@ -22,7 +22,8 @@ namespace Splunk.Logging
             {
                 try
                 {
-                    writer.Write("\"{0}={1}\" ", eventEntry.Schema.Payload[i], eventEntry.Payload[i]);
+                    if (i != 0) writer.Write(" ");
+                    writer.Write("\"{0}={1}\"", eventEntry.Schema.Payload[i], eventEntry.Payload[i]);
                 }
                 catch (Exception) { }
             }

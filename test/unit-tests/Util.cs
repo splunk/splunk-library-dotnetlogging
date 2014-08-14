@@ -29,6 +29,13 @@ namespace Splunk.Logging
             Handler += onReport;
             return await source.Task;
         }
+
+        public T AwaitValue()
+        {
+            var task = this.AwaitProgressAsync();
+            task.Wait();
+            return task.Result;
+        }
     }
 
     public class MockSocket : ISocket

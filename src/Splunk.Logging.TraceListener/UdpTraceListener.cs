@@ -11,21 +11,22 @@ namespace Splunk.Logging
     /// </summary>
     public class UdpTraceListener : TraceListener
     {
-        private Socket socket;
+        private ISocket socket;
         private StringBuilder buffer = new StringBuilder();
+
+        public UdpTraceListener(ISocket socket) : base()
+        {
+            this.socket = socket;
+        }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="host">IP address to write to.</param>
         /// <param name="port">UDP port to log to on the remote host.</param>
-        public UdpTraceListener(IPAddress host, int port)
-            : base()
-        {
-            socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.Connect(host, port);
-        }
-
+        public UdpTraceListener(IPAddress host, int port) : 
+            this(new UdpSocket(host, port)) { }
+            
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -42,16 +43,22 @@ namespace Splunk.Logging
             buffer.Append(message);
         }
 
+        // This is factored out so it can be overridden in the test suite.
+        protected virtual string GetTimestamp()
+        {
+            return DateTime.UtcNow.ToLocalTime().ToString("o");
+        }
+
         public override void WriteLine(string message)
         {
             if (NeedIndent)
                 WriteIndent();
 
-            buffer.Insert(0, DateTime.UtcNow.ToLocalTime().ToString("o") + " ");
+            buffer.Insert(0, GetTimestamp() + " ");
             buffer.Append(message);
             buffer.Append(Environment.NewLine);
 
-            socket.Send(Encoding.UTF8.GetBytes(buffer.ToString()));
+            socket.Send(buffer.ToString());
             buffer.Clear();
         }
 

@@ -38,31 +38,6 @@ namespace Splunk.Logging
         }
     }
 
-    public interface ISocket : IDisposable
-    {
-        void Send(string data);
-        void Close();
-    }
-
-    public class TcpSocket : ISocket
-    {
-        private Socket socket;
-
-        public TcpSocket(IPAddress host, int port)
-        {
-            this.socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            this.socket.Connect(host, port);
-        }
-
-        public void Send(string data)
-        {
-            this.socket.Send(Encoding.UTF8.GetBytes(data));
-        }
-
-        public void Close() { this.socket.Close(); }
-        public void Dispose() { this.socket.Dispose(); }
-    }
-
     /// <summary>
     /// TcpConnectionPolicy encapsulates a policy for what logging via TCP should
     /// do when there is a socket error.
@@ -160,7 +135,10 @@ namespace Splunk.Logging
     /// the TCP port and, while the socket is open, sends them as quickly as possible.
     /// 
     /// If the TCP session drops, TcpSocketWriter will stop pulling strings off the
-    /// queue until it can reestablish a connection.
+    /// queue until it can reestablish a connection. If the TcpConnectionPolicy.Connect
+    /// method throws an exception (in particular, TcpReconnectFailure to indicate that the
+    /// policy has reached a point where it will no longer try to establish a connection)
+    /// then the LoggingFailureHandler event is invoked.
     /// </remarks>
     public class TcpSocketWriter : IDisposable
     {
@@ -170,9 +148,13 @@ namespace Splunk.Logging
         private TcpConnectionPolicy connectionPolicy;
         private CancellationTokenSource tokenSource;
         private Func<IPAddress, int, ISocket> tryOpenSocket;
+        private bool disposed = false;
+
+        public enum ProgressReport { QueueEmpty, TryingReconnect };
+        public IProgress<ProgressReport> Progress { get; set; }
 
         private event Action DisposedHandler = () => { };
-
+        public event Action<Exception> LoggingFailureHandler = (ex) => { };
 
         /// <summary>
         /// 
@@ -189,36 +171,52 @@ namespace Splunk.Logging
             this.eventQueue = new FixedSizeQueue<string>(maxQueueSize);
             this.tokenSource = new CancellationTokenSource();
             this.tryOpenSocket = connect == null ? (h, p) => { return new TcpSocket(h, p); } : connect;
-
-            this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+            this.Progress = new Progress<ProgressReport>();
 
             queueListener = new Thread(() =>
             {
-                string entry = null;
-                while (!tokenSource.Token.IsCancellationRequested || !eventQueue.IsEmpty)
+                try
                 {
-                    while (eventQueue.TryDequeue(out entry))
+                    this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+
+                    string entry = null;
+                    while (!tokenSource.Token.IsCancellationRequested || !eventQueue.IsEmpty)
                     {
-                        try
+                        while (eventQueue.TryDequeue(out entry))
                         {
-                            this.socket.Send(entry);
+                            try
+                            {
+                                this.socket.Send(entry);
+                            }
+                            catch (SocketException)
+                            {
+                                this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+                                this.socket.Send(entry);
+                            }
+                            if (eventQueue.IsEmpty)
+                                this.Progress.Report(ProgressReport.QueueEmpty);
                         }
-                        catch (SocketException)
-                        {
-                            this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
-                            this.socket.Send(entry);
-                        }
+                        
                     }
                 }
-                socket.Close();
-                socket.Dispose();
-                DisposedHandler();
+                catch (Exception e)
+                {
+                    LoggingFailureHandler(e);
+                }
+                finally 
+                {
+                    socket.Close();
+                    socket.Dispose();
+                    DisposedHandler();
+                    disposed = true;
+                }
             });
             queueListener.Start();
         }
 
         public void Dispose()
         {
+            if (disposed) return;
             this.tokenSource.Cancel();
             var source = new TaskCompletionSource<bool>();
             Action onReport = null;

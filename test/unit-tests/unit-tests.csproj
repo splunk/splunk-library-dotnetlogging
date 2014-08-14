@@ -48,6 +48,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestEventSource.cs" />
     <Compile Include="TestTcpEventSink.cs" />
+    <Compile Include="TestTcpSocketWriter.cs" />
     <Compile Include="TestTcpTraceListener.cs" />
     <Compile Include="TestUdpEventSink.cs" />
     <Compile Include="TestUdpTraceListener.cs" />
