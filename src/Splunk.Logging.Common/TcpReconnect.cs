@@ -144,7 +144,6 @@ namespace Splunk.Logging
     public class TcpSocketWriter : IDisposable
     {
         private FixedSizeQueue<string> eventQueue;
-        private ISocket socket;
         private Thread queueListener;
         private TcpConnectionPolicy connectionPolicy;
         private CancellationTokenSource tokenSource;

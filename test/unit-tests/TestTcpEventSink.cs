@@ -21,7 +21,11 @@ namespace Splunk.Logging
         {
             var socketFactory = new MockSocketFactory();
             socketFactory.AcceptingConnections = true;
-            var writer = new TcpSocketWriter(null, -1, new ExponentialBackoffTcpConnectionPolicy(), 3, socketFactory.TryOpenSocket);
+            var progress = new AwaitableProgress<TcpSocketWriter.ProgressReport>();
+            var writer = new TcpSocketWriter(null, -1, new ExponentialBackoffTcpConnectionPolicy(), 3, socketFactory.TryOpenSocket)
+            {
+                Progress = progress
+            };
             var listener = new ObservableEventListener();
 
             listener.Subscribe(new TcpEventSink(writer, new TestEventFormatter()));
@@ -30,7 +34,7 @@ namespace Splunk.Logging
             listener.EnableEvents(source, EventLevel.LogAlways, Keywords.All);
 
             source.Message("Boris", "Meep");
-            socketFactory.socket.WaitForNEvents(1, 100);
+            progress.AwaitProgressAsync().Wait();
 
             var result = socketFactory.socket.GetReceivedText();
             listener.Dispose();
