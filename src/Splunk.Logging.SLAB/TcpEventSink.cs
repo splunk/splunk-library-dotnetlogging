@@ -19,6 +19,12 @@ namespace Splunk.Logging
         private TcpSocketWriter writer;
         private IEventTextFormatter formatter;
 
+        public TcpEventSink(TcpSocketWriter writer, IEventTextFormatter formatter = null)
+        {
+            this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
+            this.writer = writer;
+        }
+
         /// <summary>
         /// Set up a sink.
         /// </summary>
@@ -34,14 +40,9 @@ namespace Splunk.Logging
         /// the queue to the TCP port (defaults to a new Progress object). It is reachable
         /// via the Progress property.</param>
         public TcpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null,
-            TcpConnectionPolicy policy = null, int maxQueueSize = 10000)
-        {
-            this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
-            this.writer = new TcpSocketWriter(host, port,  
-                policy == null ? new ExponentialBackoffTcpConnectionPolicy() : policy,
-                maxQueueSize);
-        }
-
+            TcpConnectionPolicy policy = null, int maxQueueSize = 10000) :
+            this(new TcpSocketWriter(host, port, policy == null ? new ExponentialBackoffTcpConnectionPolicy() : policy, maxQueueSize)) {}
+ 
         /// <summary>
         /// Set up a sink.
         /// </summary>

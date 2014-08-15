@@ -138,7 +138,8 @@ namespace Splunk.Logging
     /// queue until it can reestablish a connection. If the TcpConnectionPolicy.Connect
     /// method throws an exception (in particular, TcpReconnectFailure to indicate that the
     /// policy has reached a point where it will no longer try to establish a connection)
-    /// then the LoggingFailureHandler event is invoked.
+    /// then the LoggingFailureHandler event is invoked, and no further attempt to log
+    /// anything will be made.
     /// </remarks>
     public class TcpSocketWriter : IDisposable
     {
@@ -154,10 +155,14 @@ namespace Splunk.Logging
         public IProgress<ProgressReport> Progress { get; set; }
 
         private event Action DisposedHandler = () => { };
+
+        /// <summary>
+        /// Event that is invoked when reconnecting after a TCP session is dropped fails.
+        /// </summary>
         public event Action<Exception> LoggingFailureHandler = (ex) => { };
 
         /// <summary>
-        /// 
+        /// Construct a TCP socket writer that writes to the given host and port.
         /// </summary>
         /// <param name="host">IPAddress of the host to open a TCP socket to.</param>
         /// <param name="port">TCP port to use on the target host.</param>
@@ -177,6 +182,8 @@ namespace Splunk.Logging
             {
                 try
                 {
+                    // The socket is owned and managed *only* by this thread. This hygiene prevents all kinds
+                    // of weird race conditions.
                     this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
 
                     string entry = null;

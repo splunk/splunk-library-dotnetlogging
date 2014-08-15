@@ -19,25 +19,24 @@ namespace Splunk.Logging
         [Fact]
         public void TestTcpEventSinkWrites()
         {
-            throw new NotImplementedException();
-            string result = "";
-            int port = 11000;
-            var tcpListener = new TcpListener(IPAddress.Loopback, port);
+            var socketFactory = new MockSocketFactory();
+            socketFactory.AcceptingConnections = true;
+            var writer = new TcpSocketWriter(null, -1, new ExponentialBackoffTcpConnectionPolicy(), 3, socketFactory.TryOpenSocket);
+            var listener = new ObservableEventListener();
 
-            
-            /*
-                var listener = new ObservableEventListener();
-                var progress = new AwaitableProgress<EventWrittenProgressReport>();
-                listener.Subscribe(new TcpEventSink(IPAddress.Loopback, port, progress: progress));
-                var source = TestEventSource.GetInstance();
-                listener.EnableEvents(source, EventLevel.LogAlways, Keywords.All);
-                source.Message("Boris", "Meep");
-                progress.AwaitProgressAsync().Wait();
-                listener.Dispose();
-             * */
-            var expected = "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=Meep - Boris\" \"message=Boris\" \"caller=Meep\"";
-            var found = result.Substring(result.Length - 1 - expected.Length, expected.Length);
-            Assert.Equal(expected, found);
+            listener.Subscribe(new TcpEventSink(writer, new TestEventFormatter()));
+
+            var source = TestEventSource.GetInstance();
+            listener.EnableEvents(source, EventLevel.LogAlways, Keywords.All);
+
+            source.Message("Boris", "Meep");
+            socketFactory.socket.WaitForNEvents(1, 100);
+
+            var result = socketFactory.socket.GetReceivedText();
+            listener.Dispose();
+
+            var expected = "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=Meep - Boris\" \"message=Boris\" \"caller=Meep\"\r\n";
+            Assert.Equal(expected, result);
         }
     }
 }
