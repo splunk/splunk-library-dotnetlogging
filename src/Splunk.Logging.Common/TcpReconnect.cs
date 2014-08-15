@@ -180,11 +180,12 @@ namespace Splunk.Logging
 
             queueListener = new Thread(() =>
             {
+                // The socket is owned and managed *only* by this thread. This hygiene prevents all kinds
+                // of weird race conditions.
+                ISocket socket = null;
                 try
                 {
-                    // The socket is owned and managed *only* by this thread. This hygiene prevents all kinds
-                    // of weird race conditions.
-                    this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+                    socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
 
                     string entry = null;
                     while (!tokenSource.Token.IsCancellationRequested || !eventQueue.IsEmpty)
@@ -193,12 +194,12 @@ namespace Splunk.Logging
                         {
                             try
                             {
-                                this.socket.Send(entry);
+                                socket.Send(entry);
                             }
                             catch (SocketException)
                             {
-                                this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
-                                this.socket.Send(entry);
+                                socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+                                socket.Send(entry);
                             }
                             if (eventQueue.IsEmpty)
                                 this.Progress.Report(ProgressReport.QueueEmpty);
@@ -212,8 +213,11 @@ namespace Splunk.Logging
                 }
                 finally 
                 {
-                    socket.Close();
-                    socket.Dispose();
+                    if (socket != null)
+                    {
+                        socket.Close();
+                        socket.Dispose();
+                    }
                     DisposedHandler();
                     disposed = true;
                 }
