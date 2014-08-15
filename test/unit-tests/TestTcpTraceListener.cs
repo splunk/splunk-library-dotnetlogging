@@ -14,7 +14,9 @@
  * under the License.
  */
 using Splunk.Logging;
+using System;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -23,33 +25,34 @@ using Xunit;
 
 namespace Splunk.Logging
 {
-    public class UdpTestTraceListener : UdpTraceListener
-    {
-        public UdpTestTraceListener(ISocket socket) : base(socket) { }
-
-        protected override string GetTimestamp()
-        {
-            return "[timestamp]";
-        }
-    }
-
-    public class TestUdpTraceListener
+    public class TestTcpTraceListener
     {
         [Fact]
-        public void TraceToOpenUdpSocketWorks()
+        public void TraceToOpenTcpSocketWorks()
         {
-            var socket = new MockSocket() { SocketFailed = false };
+            var mock = new MockSocketFactory();
+            mock.AcceptingConnections = true;
+
+            var writer = new TcpSocketWriter(
+                IPAddress.Loopback,
+                0,
+                new ExponentialBackoffTcpConnectionPolicy(),
+                10000,
+                mock.TryOpenSocket);            
 
             var traceSource = new TraceSource("UnitTestLogger");
             traceSource.Listeners.Remove("Default");
             traceSource.Switch.Level = SourceLevels.All;
-            traceSource.Listeners.Add(new UdpTestTraceListener(socket));
-
+            traceSource.Listeners.Add(new TcpTraceListener(writer));   
             traceSource.TraceEvent(TraceEventType.Information, 100, "Boris");
-            var result = socket.GetReceivedText();
             traceSource.Close();
 
-            Assert.Equal("[timestamp] UnitTestLogger Information: 100 : Boris\r\n", result);
+            var result = mock.socket.GetReceivedText();
+            var firstSpace = result.IndexOf(" ");
+
+            var expected = result.Substring(0, firstSpace+1) + "UnitTestLogger Information: 100 : Boris\r\n";
+
+            Assert.Equal(expected, result);
         }
     }
 }

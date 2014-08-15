@@ -1,4 +1,19 @@
-﻿using System;
+﻿/*
+ * Copyright 2014 Splunk, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"): you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+using System;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -6,19 +21,34 @@ using System.Text;
 
 namespace Splunk.Logging
 {
+    /// <summary>
+    /// Write event traces to a UDP port.
+    /// </summary>
     public class UdpTraceListener : TraceListener
     {
-        public Socket UdpSocket { get; set; }
+        private ISocket socket;
         private StringBuilder buffer = new StringBuilder();
 
-        public UdpTraceListener(IPAddress host, int port)
+        public UdpTraceListener(ISocket socket) : base()
         {
-            UdpSocket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            UdpSocket.Connect(host, port);
+            this.socket = socket;
         }
 
-        public UdpTraceListener(string host, int port) : 
-            this(Dns.GetHostEntry(host).AddressList[0], port) {}
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="host">IP address to write to.</param>
+        /// <param name="port">UDP port to log to on the remote host.</param>
+        public UdpTraceListener(IPAddress host, int port) : 
+            this(new UdpSocket(host, port)) { }
+            
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="host">Hostname to write to.</param>
+        /// <param name="port">UDP port to log to on the remote host.</param>
+        public UdpTraceListener(string host, int port) :
+            this(Dns.GetHostEntry(host).AddressList[0], port) { }
 
         public override void Write(string message)
         {
@@ -28,24 +58,30 @@ namespace Splunk.Logging
             buffer.Append(message);
         }
 
+        // This is factored out so it can be overridden in the test suite.
+        protected virtual string GetTimestamp()
+        {
+            return DateTime.UtcNow.ToLocalTime().ToString("o");
+        }
+
         public override void WriteLine(string message)
         {
             if (NeedIndent)
                 WriteIndent();
 
-            buffer.Insert(0, DateTime.UtcNow.ToLocalTime().ToString("o") + " ");
+            buffer.Insert(0, GetTimestamp() + " ");
             buffer.Append(message);
             buffer.Append(Environment.NewLine);
 
-            UdpSocket.Send(Encoding.UTF8.GetBytes(buffer.ToString()));
+            socket.Send(buffer.ToString());
             buffer.Clear();
         }
 
         public override void Close()
         {
+            socket.Close();
+            socket.Dispose();
             base.Close();
-            UdpSocket.Close();
-            UdpSocket.Dispose();
         }
     }
 }

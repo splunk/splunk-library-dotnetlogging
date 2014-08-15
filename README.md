@@ -115,11 +115,14 @@ var traceSource = new TraceSource("TestLogger");
 traceSource.Listeners.Remove("Default");
 traceSource.Switch.Level = SourceLevels.All;
 traceSource.Listeners.Add(new UdpTraceListener(IPAddress.Loopback, 10000));
+// or, for TCP:
+// traceSource.Listeners.Add(new TcpTraceListener(IPAddress.Loopback, 10000));
 
 //log an event
 traceSource.TraceEvent(TraceEventType.Information, 1, "Test event");
 
 ```
+
 
 ### Adding logging to Splunk via a SLAB event sink
 Below is a snippet showing creating an `ObservableEventListener` and then subscribing to events with a UdpEventSink configured to talk to localhost on port 1000. Next a SimpleEventSource is instantiated and a test event is generated.
@@ -128,6 +131,8 @@ Below is a snippet showing creating an `ObservableEventListener` and then subscr
 //setup
 var listener = new ObservableEventListener();
 listener.Subscribe(new UdpEventSink(IPAddress.Loopback, 10000));
+// or, for TCP:
+// listener.Subscribe(new TcpEventSink(IPAddress.Loopback, 10000));
 
 var eventSource = new SimpleEventSource();
 listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);
@@ -147,6 +152,69 @@ public class SimpleEventSource : EventSource
         this.WriteEvent(1, message);
     }
 }
+```
+
+### Customizing TCP session handling
+
+By default, the TCP listeners handle dropped TCP sessions by trying to reconnect
+after increasingly long intervals. You can specify a custom reconnection policy
+by defining an instance of Splunk.Logging.TcpConnectionPolicy, and passing it to
+the constructors of the TcpTraceListener and TcpEventSink classes.
+
+TcpConnectionPolicy has a single method, Reconnect, which tries to establish a
+connection or throws a TcpReconnectFailure if it cannot do so acceptably. Here is
+annotated source code of the default, exponential backoff policy:
+
+```
+public class ExponentialBackoffTcpConnectionPolicy : TcpConnectionPolicy
+    {
+        private int ceiling = 10 * 60; // 10 minutes in seconds
+
+		// The two arguments are:
+		//
+		//     connect - a function that attempts a TCP connection.
+		//     cancellationToken - used by TcpTraceListener and TcpEventSink
+		//         to cancel this method when they are disposed.
+        public Socket Reconnect(Func<Socket> connect, CancellationToken cancellationToken)
+        {
+            int delay = 1; // in seconds
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try {
+                    return connect();
+                }
+                catch (SocketException e) {}
+
+                // If this is cancelled via the cancellationToken instead of
+                // completing its delay, the next while-loop test will fail,
+                // the loop will terminate, and the method will return null
+                // with no additional connection attempts.
+                Task.Delay(delay * 1000, cancellationToken).Wait();
+                // The nth delay is min(10 minutes, 2^n - 1 seconds).
+                delay = Math.Min((delay + 1) * 2 - 1, ceiling);
+            }
+            return null;
+        }
+    }
+```
+
+Another, simpler policy, would be trying to reconnect once, and then failing:
+
+```
+public class SingleRetryTcpConnectionPolicy
+    {
+        public Socket Reconnect(Func<Socket> connect, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return connect();
+            }
+            catch (SocketException e)
+            {
+                throw new TcpReconnectFailure("Failed to reconnect: " + e.Message);
+            }
+        }
+    }
 ```
 
 ### Changelog
