@@ -150,6 +150,7 @@ namespace Splunk.Logging
         private Func<IPAddress, int, ISocket> tryOpenSocket;
         private bool disposed = false;
 
+        // This is used only for testing.
         public enum ProgressReport { QueueEmpty, TryingReconnect };
         public IProgress<ProgressReport> Progress { get; set; }
 

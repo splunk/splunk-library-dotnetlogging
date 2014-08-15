@@ -19,6 +19,7 @@ namespace Splunk.Logging
         private TcpSocketWriter writer;
         private IEventTextFormatter formatter;
 
+        // This constructor is used only for testing.
         public TcpEventSink(TcpSocketWriter writer, IEventTextFormatter formatter = null)
         {
             this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
