@@ -36,7 +36,7 @@ namespace Splunk.Logging
             var writer = new TcpSocketWriter(
                 IPAddress.Loopback,
                 0,
-                new ExponentialBackoffTcpConnectionPolicy(),
+                new ExponentialBackoffTcpReconnectionPolicy(),
                 10000,
                 mock.TryOpenSocket);            
 

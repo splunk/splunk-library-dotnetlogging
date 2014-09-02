@@ -43,11 +43,11 @@ namespace Splunk.Logging
         /// an event is pulled from the queue and written to the TCP port (defaults to a new
         /// Progress object accessible via the Progress property).</param>
         public TcpTraceListener(IPAddress host, int port, 
-            TcpConnectionPolicy policy = null, 
+            TcpReconnectionPolicy policy = null, 
             int maxQueueSize = 10000) : base()
         {
             this.writer = new TcpSocketWriter(host, port,
-                policy == null ? new ExponentialBackoffTcpConnectionPolicy() : policy,
+                policy == null ? new ExponentialBackoffTcpReconnectionPolicy() : policy,
                 maxQueueSize);
         }
 
@@ -70,18 +70,22 @@ namespace Splunk.Logging
         /// an event is pulled from the queue and written to the TCP port (defaults to a new
         /// Progress object accessible via the Progress property).</param>
         public TcpTraceListener(string host, int port,
-            TcpConnectionPolicy policy = null,
+            TcpReconnectionPolicy policy = null,
             int maxQueueSize = 10000) :
-            this(Dns.GetHostEntry(host).AddressList[0], port, policy, maxQueueSize) { }
+            this(host.HostnameToIPAddress(), port, policy, maxQueueSize) { }
 
         public override void Write(string message)
         {
+            // Note: not thread-safe, since the threading is handled by the TraceListener machinery that
+            // invokes this method.
             if (NeedIndent) WriteIndent();
             buffer.Append(message);
         }
 
         public override void WriteLine(string message)
         {
+            // Note: not thread-safe, since the threading is handled by the TraceListener machinery that
+            // invokes this method.
             if (NeedIndent) WriteIndent();
 
             buffer.Insert(0, DateTime.UtcNow.ToLocalTime().ToString("o") + " ");

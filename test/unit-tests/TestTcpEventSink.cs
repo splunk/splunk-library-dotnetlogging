@@ -37,7 +37,7 @@ namespace Splunk.Logging
             var socketFactory = new MockSocketFactory();
             socketFactory.AcceptingConnections = true;
             var progress = new AwaitableProgress<TcpSocketWriter.ProgressReport>();
-            var writer = new TcpSocketWriter(null, -1, new ExponentialBackoffTcpConnectionPolicy(), 3, socketFactory.TryOpenSocket)
+            var writer = new TcpSocketWriter(null, -1, new ExponentialBackoffTcpReconnectionPolicy(), 3, socketFactory.TryOpenSocket)
             {
                 Progress = progress
             };

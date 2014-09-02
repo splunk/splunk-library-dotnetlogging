@@ -1,0 +1,165 @@
+﻿/*
+ * Copyright 2014 Splunk, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"): you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Splunk.Logging
+{
+    /// <summary>
+    /// TcpSocketWriter encapsulates queueing strings to be written to a TCP socket
+    /// and handling reconnections (according to a TcpConnectionPolicy object passed
+    /// to it) when a TCP session drops.
+    /// </summary>
+    /// <remarks>
+    /// TcpSocketWriter maintains a fixed sized queue of strings to be sent via
+    /// the TCP port and, while the socket is open, sends them as quickly as possible.
+    /// 
+    /// If the TCP session drops, TcpSocketWriter will stop pulling strings off the
+    /// queue until it can reestablish a connection. If the TcpConnectionPolicy.Connect
+    /// method throws an exception (in particular, TcpReconnectFailure to indicate that the
+    /// policy has reached a point where it will no longer try to establish a connection)
+    /// then the LoggingFailureHandler event is invoked, and no further attempt to log
+    /// anything will be made.
+    /// </remarks>
+    public class TcpSocketWriter : IDisposable
+    {
+        private FixedSizeQueue<string> eventQueue;
+        private Thread queueListener;
+        private TcpReconnectionPolicy connectionPolicy;
+        private CancellationTokenSource tokenSource; // Must be private or Dispose will not function properly.
+        private Func<IPAddress, int, ISocket> tryOpenSocket;
+        private TaskCompletionSource<bool> disposed = new TaskCompletionSource<bool>();
+
+        private ISocket socket;
+        private IPAddress host;
+        private int port;
+
+        // This is used only for testing.
+        public enum ProgressReport { QueueEmpty, TryingReconnect };
+        public IProgress<ProgressReport> Progress { get; set; }
+
+        /// <summary>
+        /// Event that is invoked when reconnecting after a TCP session is dropped fails.
+        /// </summary>
+        public event Action<Exception> LoggingFailureHandler = (ex) => { };
+
+        /// <summary>
+        /// Construct a TCP socket writer that writes to the given host and port.
+        /// </summary>
+        /// <param name="host">IPAddress of the host to open a TCP socket to.</param>
+        /// <param name="port">TCP port to use on the target host.</param>
+        /// <param name="policy">A TcpConnectionPolicy object defining reconnect behavior.</param>
+        /// <param name="maxQueueSize">The maximum number of log entries to queue before starting to drop entries.</param>
+        /// <param name="progress">An IProgress object that reports when the queue of entries to be written reaches empty or there is
+        /// a reconnection failure. This is used for testing purposes only.</param>
+        public TcpSocketWriter(IPAddress host, int port, TcpReconnectionPolicy policy, 
+            int maxQueueSize, Func<IPAddress, int, ISocket> connect = null)
+        {
+            this.host = host;
+            this.port = port;
+            this.connectionPolicy = policy;
+            this.eventQueue = new FixedSizeQueue<string>(maxQueueSize);
+            this.tokenSource = new CancellationTokenSource();
+            this.tryOpenSocket = (connect == null) ? (h, p) => { return new TcpSocket(h, p); } : connect;
+            this.Progress = new Progress<ProgressReport>();
+
+            queueListener = new Thread(() =>
+            {
+                try
+                {
+                    this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+
+                    string entry = null;
+                    while (true)
+                    {
+                        if (tokenSource.Token.IsCancellationRequested)
+                        {
+                            eventQueue.CompleteAdding();
+                            // Post-condition: no further items will be added to the queue, so there will be a finite number of items to handle.
+                            while (eventQueue.TryDequeue(out entry))
+                                this.WriteEvent(entry);
+                             if (eventQueue.IsEmpty) // This should always be true
+                                this.Progress.Report(ProgressReport.QueueEmpty);
+                            break;
+                        }
+                        if (eventQueue.TryDequeue(out entry))
+                        {
+                            this.WriteEvent(entry);
+                            if (eventQueue.IsEmpty)
+                                this.Progress.Report(ProgressReport.QueueEmpty);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    LoggingFailureHandler(e);
+                }
+                finally
+                {
+                    if (socket != null)
+                    {
+                        socket.Close();
+                        socket.Dispose();
+                    }
+
+                    disposed.SetResult(true);
+                }
+            });
+            queueListener.Start();
+        }
+
+        /// <summary>
+        /// Write an event onto the socket.
+        /// </summary>
+        /// <param name="entry"></param>
+        private void WriteEvent(string entry)
+        {
+            lock (this.socket)
+            {
+                try
+                {
+                    this.socket.Send(entry);
+                }
+                catch (SocketException)
+                {
+                    this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+                    WriteEvent(entry); // Recurse instead of calling Send directly so that we still have error handling on the next try.
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            // The following operations are idempotent. Issue a cancellation to tell the
+            // writer thread to stop the queue from accepting entries and write what it has
+            // before cleaning up, then wait until that cleanup is finished.
+            this.tokenSource.Cancel();
+            Task.Run(async () => await disposed.Task).Wait();                
+        }
+
+        /// <summary>
+        /// Push a string onto the queue to be written.
+        /// </summary>
+        /// <param name="entry">The string to be written to the TCP socket.</param>
+        public void Enqueue(string entry)
+        {
+            this.eventQueue.Enqueue(entry);
+        }
+    }
+}

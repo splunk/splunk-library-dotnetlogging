@@ -156,7 +156,7 @@ public class SimpleEventSource : EventSource
 
 ### Customizing TCP session handling
 
-By default, the TCP listeners handle dropped TCP sessions by trying to reconnect
+By default, TCP listeners handle dropped TCP sessions by trying to reconnect
 after increasingly long intervals. You can specify a custom reconnection policy
 by defining an instance of Splunk.Logging.TcpConnectionPolicy, and passing it to
 the constructors of the TcpTraceListener and TcpEventSink classes.
@@ -166,36 +166,41 @@ connection or throws a TcpReconnectFailure if it cannot do so acceptably. Here i
 annotated source code of the default, exponential backoff policy:
 
 ```
-public class ExponentialBackoffTcpConnectionPolicy : TcpConnectionPolicy
+public class ExponentialBackoffTcpReconnectionPolicy : TcpReconnectionPolicy
+{
+    private int ceiling = 10 * 60; // 10 minutes in seconds
+
+	// The arguments are:
+	//
+	//     connect - a function that attempts a TCP connection given a host, port number.
+	//     host - the host to connect to
+	//     port - the port to connect on
+	//     cancellationToken - used by TcpTraceListener and TcpEventSink to cancel this method
+	//         when they are disposed.
+    public ISocket Connect(Func<IPAddress, int, ISocket> connect, IPAddress host, int port, CancellationToken cancellationToken)
     {
-        private int ceiling = 10 * 60; // 10 minutes in seconds
-
-		// The two arguments are:
-		//
-		//     connect - a function that attempts a TCP connection.
-		//     cancellationToken - used by TcpTraceListener and TcpEventSink
-		//         to cancel this method when they are disposed.
-        public Socket Reconnect(Func<Socket> connect, CancellationToken cancellationToken)
+        int delay = 1; // in seconds
+        while (!cancellationToken.IsCancellationRequested)
         {
-            int delay = 1; // in seconds
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                try {
-                    return connect();
-                }
-                catch (SocketException e) {}
-
-                // If this is cancelled via the cancellationToken instead of
-                // completing its delay, the next while-loop test will fail,
-                // the loop will terminate, and the method will return null
-                // with no additional connection attempts.
-                Task.Delay(delay * 1000, cancellationToken).Wait();
-                // The nth delay is min(10 minutes, 2^n - 1 seconds).
-                delay = Math.Min((delay + 1) * 2 - 1, ceiling);
+                return connect(host, port);
             }
-            return null;
+            catch (SocketException) { }
+
+            // If this is cancelled via the cancellationToken instead of
+            // completing its delay, the next while-loop test will fail,
+            // the loop will terminate, and the method will return null
+            // with no additional connection attempts.
+            Task.Delay(delay * 1000, cancellationToken).Wait();
+            // The nth delay is min(10 minutes, 2^n - 1 seconds).
+            delay = Math.Min((delay + 1) * 2 - 1, ceiling);
         }
+
+        // cancellationToken has been cancelled.
+        return null;
     }
+}
 ```
 
 Another, simpler policy, would be trying to reconnect once, and then failing:

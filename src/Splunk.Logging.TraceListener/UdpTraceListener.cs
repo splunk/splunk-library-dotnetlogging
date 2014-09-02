@@ -48,10 +48,12 @@ namespace Splunk.Logging
         /// <param name="host">Hostname to write to.</param>
         /// <param name="port">UDP port to log to on the remote host.</param>
         public UdpTraceListener(string host, int port) :
-            this(Dns.GetHostEntry(host).AddressList[0], port) { }
+            this(host.HostnameToIPAddress(), port) { }
 
         public override void Write(string message)
         {
+            // Note: not thread-safe, since the threading is handled by the TraceListener machinery that
+            // invokes this method.
             if (NeedIndent)
                 WriteIndent();
 
@@ -66,6 +68,8 @@ namespace Splunk.Logging
 
         public override void WriteLine(string message)
         {
+            // Note: not thread-safe, since the threading is handled by the TraceListener machinery that
+            // invokes this method.
             if (NeedIndent)
                 WriteIndent();
 

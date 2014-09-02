@@ -35,12 +35,8 @@ namespace Splunk.Logging
             writer.Write("\"FormattedMessage=" + eventEntry.FormattedMessage + "\" ");
             for (int i = 0; i < eventEntry.Payload.Count; i++)
             {
-                try
-                {
                     if (i != 0) writer.Write(" ");
                     writer.Write("\"{0}={1}\"", eventEntry.Schema.Payload[i], eventEntry.Payload[i]);
-                }
-                catch (Exception) { }
             }
             writer.WriteLine();
         }

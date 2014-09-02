@@ -26,7 +26,7 @@ namespace Splunk.Logging
 {
     public class TestTcpSocketWriter
     {
-        class TryOnceTcpConnectionPolicy : TcpConnectionPolicy
+        class TryOnceTcpConnectionPolicy : TcpReconnectionPolicy
         {
             public ISocket Connect(Func<System.Net.IPAddress, int, ISocket> connect, System.Net.IPAddress host, int port, System.Threading.CancellationToken cancellationToken)
             {
@@ -36,7 +36,7 @@ namespace Splunk.Logging
                 }
                 catch (SocketException e)
                 {
-                    throw new TcpReconnectFailure("Reconnect failed: " + e.Message);
+                    throw new TcpReconnectFailureException("Reconnect failed: " + e.Message);
                 }
             }
         }
@@ -45,12 +45,12 @@ namespace Splunk.Logging
         public void TestReconnectFailure()
         {
             var socketFactory = new MockSocketFactory();
-            string failedMessage = null;
 
             socketFactory.AcceptingConnections = true;
             var writer = new TcpSocketWriter(null, -1, new TryOnceTcpConnectionPolicy(),
                 2, socketFactory.TryOpenSocket);
 
+            string failedMessage = null;
             writer.LoggingFailureHandler += (ex) => { failedMessage = ex.Message; };
             socketFactory.AcceptingConnections = false;
             socketFactory.socket.SocketFailed = true;
@@ -62,7 +62,7 @@ namespace Splunk.Logging
                 failedMessage);
         }
 
-        class TriggerableTcpConnectionPolicy : TcpConnectionPolicy
+        class TriggerableTcpConnectionPolicy : TcpReconnectionPolicy
         {
             private AutoResetEvent trigger = new AutoResetEvent(false);
 

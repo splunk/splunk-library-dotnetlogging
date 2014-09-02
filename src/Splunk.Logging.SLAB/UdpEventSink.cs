@@ -58,7 +58,7 @@ namespace Splunk.Logging
         /// <param name="formatter">An object controlling the formatting
         /// of the event (defaults to <code>{timestamp} EventId={...} EventName={...} Level={...} "FormattedMessage={...}"</code>).</param>
         public UdpEventSink(string host, int port, IEventTextFormatter formatter = null) :
-            this(Dns.GetHostEntry(host).AddressList[0], port, formatter) { }
+            this(host.HostnameToIPAddress(), port, formatter) { }
 
         public void OnCompleted()
         {

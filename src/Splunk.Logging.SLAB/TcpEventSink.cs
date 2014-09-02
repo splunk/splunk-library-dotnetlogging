@@ -37,8 +37,8 @@ namespace Splunk.Logging
         // This constructor is used only for testing.
         public TcpEventSink(TcpSocketWriter writer, IEventTextFormatter formatter = null)
         {
-            this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
             this.writer = writer;
+            this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
         }
 
         /// <summary>
@@ -56,8 +56,8 @@ namespace Splunk.Logging
         /// the queue to the TCP port (defaults to a new Progress object). It is reachable
         /// via the Progress property.</param>
         public TcpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null,
-            TcpConnectionPolicy policy = null, int maxQueueSize = 10000) :
-            this(new TcpSocketWriter(host, port, policy == null ? new ExponentialBackoffTcpConnectionPolicy() : policy, maxQueueSize)) {}
+                TcpReconnectionPolicy policy = null, int maxQueueSize = 10000) :
+                this(new TcpSocketWriter(host, port, policy == null ? new ExponentialBackoffTcpReconnectionPolicy() : policy, maxQueueSize)) {}
  
         /// <summary>
         /// Set up a sink.
@@ -74,9 +74,8 @@ namespace Splunk.Logging
         /// the queue to the TCP port (defaults to a new Progress object). It is reachable
         /// via the Progress property.</param>
         public TcpEventSink(string host, int port, IEventTextFormatter formatter = null,
-            TcpConnectionPolicy policy = null, int maxQueueSize = 10000) :
-            this(Dns.GetHostEntry(host).AddressList[0], port,
-                formatter, policy, maxQueueSize) { }
+                TcpReconnectionPolicy policy = null, int maxQueueSize = 10000) :
+            this(host.HostnameToIPAddress(), port, formatter, policy, maxQueueSize) { }
 
         public void OnCompleted()
         {
