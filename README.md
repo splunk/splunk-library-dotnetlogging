@@ -53,7 +53,7 @@ Here's what you need to get going with the Splunk logging libraries for .NET:
 * **xUnit runner**: If you use ReSharper, install its [xUnit.net Test Support](https://resharper-plugins.jetbrains.com/packages/xunitcontrib/). Otherwise, install the [xUnit.net runner for Visual Studio 2012 and 2013](http://visualstudiogallery.msdn.microsoft.com/463c5987-f82b-46c8-a97e-b1cde42b9099).
 * **Splunk Enterprise**: If you haven't already installed Splunk Enterprise, download it at [http://www.splunk.com/download](http://www.splunk.com/download). For more information about installing and running  Splunk Enterprise and system requirements, see the [Splunk Installation Manual](http://docs.splunk.com/Documentation/Splunk/latest/Installation).
 * **Visual Studio (optional)**: The Splunk logging libraries for .NET supports development in [Microsoft Visual Studio 2012 or later](http://www.microsoft.com/visualstudio/downloads).
-* **Code Contracts for .NET** (optional): If you are using Visual Studio, install [Code Contracts for .NET](http://visualstudiogallery.msdn.microsoft.com/1ec7db13-3363-46c9-851f-1ce455f66970). Be sure to close Visual Studio before installing the package.
+* **Code Contracts for .NET (optional)**: If you are using Visual Studio, install [Code Contracts for .NET](http://visualstudiogallery.msdn.microsoft.com/1ec7db13-3363-46c9-851f-1ce455f66970). Be sure to close Visual Studio before installing the package.
 
 ### Install
 
