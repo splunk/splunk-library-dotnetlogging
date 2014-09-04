@@ -5,16 +5,9 @@ The Splunk logging libraries for .NET enable you to configure UDP or TCP logging
 
 Each library consists of several extensions for existing .NET logging frameworks. Specifically, there are two libraries available, along with a third common library that is required by both main libraries:
 
-* **Splunk.Logging.TraceListener** contains [.NET trace listeners](http://msdn.microsoft.com/library/4y5y10s7.aspx) that log events to Splunk Enterprise over UDP or TCP. Popular logging frameworks support appending to the trace infrastructure, including [Log4Net](http://logging.apache.org/log4net/release/sdk/log4net.Appender.TraceAppender.html), [NLog](http://nlog-project.org/documentation/v2.0.1/html/T_NLog_Targets_TraceTarget.htm), and [Enterprise Library](http://msdn.microsoft.com/library/dn440731.aspx). .NET trace listeners are cross-platform. The library defines the following trace listeners:
-    * **UdpTraceListener**
-    * **TcpTraceListener**
-* **Splunk.Logging.SLAB** contains event sinks, which are [Semantic Logging Application Block (SLAB) sinks](http://msdn.microsoft.com/library/dn440729.aspx#sec29) that log Event Tracing for Windows (ETW) events to Splunk Enterprise over UDP or TCP. SLAB sinks are for Windows only. The library defines the following sinks:
-    * **UdpEventSink**
-    * **TcpEventSink**
-* **Splunk.Logging.Common** is a common library that contains resources required by both logging libraries. You must include the **Splunk.Logging.Common** library when you're using either of the other two libraries. The common library defines:
-    * Wrappers around a .NET [**Socket**](http://msdn.microsoft.com/en-us/library/system.net.sockets.socket.aspx) object (for UDP and TCP).
-    * Policy for how TCP logging should behave (reconnect intervals, when to throw an exception) when there is a socket error.
-    * A TCP socket writer that maintains a queue of strings to be sent.
+* **Splunk.Logging.TraceListener** 
+* **Splunk.Logging.SLAB** 
+* **Splunk.Logging.Common**
 
 ## Advice
 
@@ -26,13 +19,13 @@ Forwarder, and added robustness from having persistent files. However, there
 are situations where using a Universal Forwarder is not a possibility. In 
 these cases, writing directly to a UDP input is a reasonable approach.
 
-### Data Cloning
+### Data cloning
 
 You can use [data cloning](http://docs.splunk.com/Splexicon:Datacloning) by 
 providing multiple instances of your UDP handler in your logging 
 configuration, each instance pointing to different indexers.
 
-### Load Balancing
+### Load balancing
 
 Rather than trying to reinvent 
 [load balancing](http://docs.splunk.com/Splexicon:Loadbalancing) across your 
@@ -57,24 +50,74 @@ Here's what you need to get going with the Splunk logging libraries for .NET:
 
 ### Install
 
-You have several options for installing the Splunk logging libraries for .NET. For more information, see [Install the Splunk logging libraries for .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEYC)
+You have several options for installing the Splunk logging libraries for .NET. The most common method is through NuGet. Add the package you want after searching for "splunk" in the Manage NuGet Packages window in Visual Studio.
+
+For more information, and for information about other ways to install the Splunk logging libraries for .NET, see [Install the Splunk logging libraries for .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEYC)
 
 
-#### Solution Layout
+#### Solution layout
 
-The solution is organized into `src` and `test` folders. `src` contains a single
-Visual Studio project `Splunk.Logging`. `test` contains a single project, 
-`unit-tests`.
+The solution is organized into **src** and **test** directories. The **src** directory contains three libraries: **Splunk.Logging.TraceListener** (which contains [.NET trace listeners](http://msdn.microsoft.com/library/4y5y10s7.aspx) that log events to Splunk Enterprise over UDP or TCP), **Splunk.Logging.SLAB** (which contains [Semantic Logging Application Block (SLAB) event sinks](http://msdn.microsoft.com/library/dn440729.aspx#sec29) that log ETW events to Splunk Enterprise over UDP or TCP), and **Splunk.Logging.Common** (a common library that contains resources required by both logging libraries). The **test** directory contains a single project, **unit-tests**.
 
 #### Examples and unit tests
 
 The Splunk logging libraries for .NET include full unit tests which run using [xunit](https://github.com/xunit/xunit) as well as several examples.
 
-### How to use the Splunk logging libraries for .NET
-This topic includes examples of how to use both the .NET trace listener and SLAB sink libraries.
-* [Add logging using a .NET trace listener](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEX9)
-* [Add logging using a SLAB sink](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEYA)
-* [Customize TCP session handling](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEY9)
+### Example code
+
+#### Add logging to Splunk via a TraceListener
+Below is a snippet showing creating a **TraceSource** and then attaching a **UdpTraceListener** (or **TcpTraceListener**) configured to talk to localhost on port 10000. Next an event is generated which is sent to Splunk.
+
+```csharp
+//setup
+var traceSource = new TraceSource("TestLogger");
+traceSource.Listeners.Remove("Default");
+traceSource.Switch.Level = SourceLevels.All;
+traceSource.Listeners.Add(new UdpTraceListener(IPAddress.Loopback, 10000));
+// or, for TCP:
+// traceSource.Listeners.Add(new TcpTraceListener(IPAddress.Loopback, 10000));
+
+//log an event
+traceSource.TraceEvent(TraceEventType.Information, 1, "Test event");
+
+```
+
+#### Add logging to Splunk via a SLAB event sink
+Below is a snippet showing how to create an **ObservableEventListener** and then subscribe to events with a **UdpEventSink** (or **TcpEventSink**) configured to talk to localhost on port 10000. Next a **SimpleEventSource** is instantiated and a test event is generated.
+
+```csharp
+//setup
+var listener = new ObservableEventListener();
+listener.Subscribe(new UdpEventSink(IPAddress.Loopback, 10000));
+// or, for TCP:
+// listener.Subscribe(new TcpEventSink(IPAddress.Loopback, 10000));
+
+var eventSource = new SimpleEventSource();
+listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);
+
+//log an event
+eventSource.Message("Test event");
+
+[EventSource(Name = "TestEventSource")]
+public class SimpleEventSource : EventSource
+{
+    public class Keywords { }
+    public class Tasks { }
+
+    [Event(1, Message = "{0}", Level = EventLevel.Error)]
+    internal void Message(string message)
+    {
+        this.WriteEvent(1, message);
+    }
+}
+```
+
+#### Customize TCP session handling
+By default, the TCP listeners handle dropped TCP sessions by trying to reconnect after increasingly long intervals. You can specify a custom reconnection policy by defining an instance of **Splunk.Logging.TcpConnectionPolicy** and passing it to the constructors of the **TcpTraceListener** or **TcpEventSink** classes.
+
+**TcpConnectionPolicy** has a single method, **Reconnect**, which tries to establish a connection or throws a **TcpReconnectFailure** if it cannot do so within a reasonable amount of time. 
+
+For a code example, see [Customize TCP session handling](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEY9).
 
 ### Changelog
 
@@ -88,10 +131,8 @@ find it online at
 
 If you need to know more:
 
-* For all things developer with Splunk, your main resource is the [Splunk
-  Developer Portal](http://dev.splunk.com).
-* For more about the Splunk REST API, see the [REST API 
-  Reference](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI).
+* For all things developer with Splunk, your main resource is the [Splunk Developer Portal](http://dev.splunk.com).
+* For more about the Splunk REST API, see the [REST API Reference](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI).
 * For more about about Splunk in general, see [Splunk>Docs](http://docs.splunk.com/Documentation/Splunk).
 
 ## Community
@@ -140,7 +181,7 @@ page for more information.
 
 This product is currently in development and officially unsupported. We will be triaging any issues filed by the community however and addressing them as appropriate. Please [file](https://github.com/splunk/splunk-sdk-csharp-pcl) issues for any problems that you encounter.
 
-### Contact Us
+### Contact us
 
 You can reach the Dev Platform team at devinfo@splunk.com.
 
