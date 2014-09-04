@@ -90,10 +90,8 @@ If you need to know more:
 
 * For all things developer with Splunk, your main resource is the [Splunk
   Developer Portal](http://dev.splunk.com).
-
 * For more about the Splunk REST API, see the [REST API 
   Reference](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI).
-
 * For more about about Splunk in general, see [Splunk>Docs](http://docs.splunk.com/Documentation/Splunk).
 
 ## Community
