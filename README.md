@@ -1,4 +1,4 @@
-# The Splunk Logging Libraries for .NET 
+# Splunk Logging Libraries for .NET 
 #### Version 1.0
 
 The Splunk logging libraries for .NET enable you to configure UDP or TCP logging of events to a Splunk Enterprise instance from within your .NET applications, via a .NET TraceListener or a Semantic Logging Application Block (SLAB) event sink.
@@ -192,17 +192,16 @@ class TryOnceTcpConnectionPolicy : TcpReconnectionPolicy
 It can be difficult to diagnose connection problems in TCP logging without seeing
 the exceptions that are actually thrown. The exceptions thrown during connection
 attempts and by the reconnection policy are available by adding a handler to
-TcpEventSink or TcpTraceListener.
+**TcpEventSink** or **TcpTraceListener**.
 
-Both TcpEventSink and TcpTraceListener have a method
+Both **TcpEventSink** and **TcpTraceListener** have a method that takes an action
+to be executed on each exception thrown in the logging system:
 
 ```
 public void AddLoggingFailureHandler(Action<Exception> handler)
 ```
 
-which takes an action to be executed on each exception thrown in the logging system.
-
-For example, to write them to a local console, you would write
+For example, to write them to a local console, you would write:
 
 ```
 TcpTraceListener listener = ...;
