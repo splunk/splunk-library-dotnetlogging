@@ -1,25 +1,27 @@
-# The Splunk Library for .NET Logging
-## Version 1.0 beta
+# The Splunk Logging Libraries for .NET 
+#### Version 1.0
 
-The Splunk Library for .NET Logging enables developers
-to easily log to Splunk via TraceListeners or the Semantic Logging Application
-Block from Microsoft.
+The Splunk logging libraries for .NET enable you to configure UDP or TCP logging of events to a Splunk Enterprise instance from within your .NET applications, via a .NET TraceListener or a Semantic Logging Application Block (SLAB) event sink.
 
-In particular, it provides:
+Each library consists of several extensions for existing .NET logging frameworks. Specifically, there are two libraries available, along with a third common library that is required by both main libraries:
 
-* A `UdpTraceListener` which is a [.NET Trace Listener] (http://msdn.microsoft.com/en-us/library/4y5y10s7(v=vs.110).aspx) that logs events to Splunk over UDP. Popular logging frameworks support appending to the Trace Infrastructure including [Log4Net](http://logging.apache.org/log4net/release/sdk/log4net.Appender.TraceAppender.html), NLog (http://nlog-project.org/documentation/v2.0.1/html/T_NLog_Targets_TraceTarget.htm)  and [Enterprise Library] (http://msdn.microsoft.com/en-us/library/dn440731(v=pandp.60).aspx). 
-* A `UdpEventSink` which is a Semantic Logging Application Block [Sink] (http://msdn.microsoft.com/en-us/library/dn440729(v=pandp.60).aspx#sec29) that logs ETW events to Splunk over UDP.
-
-## Supported platforms
-
-.NET 4.5 / Windows 8.1
+* **Splunk.Logging.TraceListener** contains [.NET trace listeners](http://msdn.microsoft.com/library/4y5y10s7.aspx) that log events to Splunk Enterprise over UDP or TCP. Popular logging frameworks support appending to the trace infrastructure, including [Log4Net](http://logging.apache.org/log4net/release/sdk/log4net.Appender.TraceAppender.html), [NLog](http://nlog-project.org/documentation/v2.0.1/html/T_NLog_Targets_TraceTarget.htm), and [Enterprise Library](http://msdn.microsoft.com/library/dn440731.aspx). .NET trace listeners are cross-platform. The library defines the following trace listeners:
+    * **UdpTraceListener**
+    * **TcpTraceListener**
+* **Splunk.Logging.SLAB** contains event sinks, which are [Semantic Logging Application Block (SLAB) sinks](http://msdn.microsoft.com/library/dn440729.aspx#sec29) that log Event Tracing for Windows (ETW) events to Splunk Enterprise over UDP or TCP. SLAB sinks are for Windows only. The library defines the following sinks:
+    * **UdpEventSink**
+    * **TcpEventSink**
+* **Splunk.Logging.Common** is a common library that contains resources required by both logging libraries. You must include the **Splunk.Logging.Common** library when you're using either of the other two libraries. The common library defines:
+    * Wrappers around a .NET [**Socket**](http://msdn.microsoft.com/en-us/library/system.net.sockets.socket.aspx) object (for UDP and TCP).
+    * Policy for how TCP logging should behave (reconnect intervals, when to throw an exception) when there is a socket error.
+    * A TCP socket writer that maintains a queue of strings to be sent.
 
 ## Advice
 
-### Splunk Universal Forwarder vs Splunk UDP Inputs
+### Splunk Universal Forwarder vs. Splunk UDP Inputs
 
-If you can, it is better to log to files and monitor them with a Splunk 
-Universal Forwarder. This provides you with the features of the Universal 
+If you can, it is better to log to files and monitor them with a [Splunk 
+Universal Forwarder](http://www.splunk.com/download/universalforwarder). This provides you with the features of the Universal 
 Forwarder, and added robustness from having persistent files. However, there 
 are situations where using a Universal Forwarder is not a possibility. In 
 these cases, writing directly to a UDP input is a reasonable approach.
@@ -39,63 +41,24 @@ UDP input. Have all your logging sources write to that UDP input, and use the
 Universal Forwarder's load balancing features to distribute the data from 
 there to a set of indexers.
 
-## Getting started with the Splunk Library for .NET Logging
+## Get started 
 
-The Splunk SDK for C# contains a library for logging events to a Splunk Enterprise instance from within your .NET applications.  
-
-The information in this Readme provides steps to get going quickly. In the 
-future we plan to roll out more in-depth documentation.
+The information in this Readme provides steps to get going quickly, but for more in-depth information be sure to visit the [Splunk logging libraries for .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEX4) page on [Splunk Developer Portal](http://dev.splunk.com).
 
 ### Requirements
 
-Here's what you need to get going with the Splunk Library for .NET Logging.
+Here's what you need to get going with the Splunk logging libraries for .NET:
 
-#### Splunk Enterprise
+* **.NET Framework 4.0 or later**: The Splunk logging libraries for .NET require at least .NET 4.0.
+* **xUnit runner**: If you use ReSharper, install its [xUnit.net Test Support](https://resharper-plugins.jetbrains.com/packages/xunitcontrib/). Otherwise, install the [xUnit.net runner for Visual Studio 2012 and 2013](http://visualstudiogallery.msdn.microsoft.com/463c5987-f82b-46c8-a97e-b1cde42b9099).
+* **Splunk Enterprise**: If you haven't already installed Splunk Enterprise, download it at [http://www.splunk.com/download](http://www.splunk.com/download). For more information about installing and running  Splunk Enterprise and system requirements, see the [Splunk Installation Manual](http://docs.splunk.com/Documentation/Splunk/latest/Installation).
+* **Visual Studio (optional)**: The Splunk logging libraries for .NET supports development in [Microsoft Visual Studio 2012 or later](http://www.microsoft.com/visualstudio/downloads).
+* **Code Contracts for .NET** (optional): If you are using Visual Studio, install [Code Contracts for .NET](http://visualstudiogallery.msdn.microsoft.com/1ec7db13-3363-46c9-851f-1ce455f66970). Be sure to close Visual Studio before installing the package.
 
-If you haven't already installed Splunk Enterprise, download it at 
-<http://www.splunk.com/download>. For more information about installing and 
-running Splunk Enterprise and system requirements, see the
-[Splunk Installation Manual](http://docs.splunk.com/Documentation/Splunk/latest/Installation). 
+### Install
 
-#### Developer environments
+You have several options for installing the Splunk logging libraries for .NET. For more information, see [Install the Splunk logging libraries for .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEYC)
 
-The Splunk SDK for C# supports development in the following environments:
-
-##### Visual Studio
-The Splunk SDK for C# supports development in [Microsoft Visual Studio](http://www.microsoft.com/visualstudio/downloads) 2012 and later
-
-You will need to install [Code Contracts for .NET](http://visualstudiogallery.msdn.microsoft.com/1ec7db13-3363-46c9-851f-1ce455f66970)
-(be sure to close Visual Studio before you install it or the install will not work, despite appearing to) 
-
-To run the unit tests you will need to install an [xUnit](https://github.com/xunit/xunit) runner:
-* If you use resharper, install its [xUnit.net Test Support](https://resharper-plugins.jetbrains.com/packages/xunitcontrib/1.6.2).
-* Otherwise, install the [xUnit.net runner for Visual Studio 2012 and 2013](http://visualstudiogallery.msdn.microsoft.com/463c5987-f82b-46c8-a97e-b1cde42b9099).
-
-### Splunk Library for .NET Logging
-
-#### MyGet feed
-
-Before the intial release, you can download the Splunk SDK C# NuGet packages from [MyGet](http://www.myget.org). Add the following feed to your package sources in Visual Studio: https://splunk.myget.org/F/splunk-library-dotnetlogging. The feed contains the Splunk.Logging package.
-
-*Note*: This will be published to NuGet when the SDK releases.
-
-#### Getting the source
-
-[Get the Splunk Logging library for .NET](https://github.com/splunk/splunk-library-dotnetlogging). Download the ZIP file and extract its contents.
-
-If you are interested in contributing to the Splunk Logging Library for .NET, you can 
-[get it from GitHub](https://github.com/splunk/splunk-library-dotnetlogging) and clone the 
-resources to your computer.
-
-#### Building the SDK
-
-To build from source after extracting or cloning the SDK, do the following"
-
-1. At the root level of the **splunk-library-dotnetlogging** directory, open the 
-**splunk-library-dotnetlogging.sln** file in Visual Studio.
-2. On the **BUILD** menu, click **Build Solution**.
-
-This will build the SDK, the examples, and the unit tests.
 
 #### Solution Layout
 
@@ -105,133 +68,21 @@ Visual Studio project `Splunk.Logging`. `test` contains a single project,
 
 #### Examples and unit tests
 
-The Splunk Logging Library for .NET includes full unit tests which run using [xunit](https://github.com/xunit/xunit) as well as several examples.
+The Splunk logging libraries for .NET include full unit tests which run using [xunit](https://github.com/xunit/xunit) as well as several examples.
 
-### Adding logging to Splunk via a TraceListener
-Below is a snippet showing creating a `TraceSource` and then attaching a UpdTraceListener configured to talk to localhost on port 10000. Next an event is generated which is sent to Splunk.
-```csharp
-//setup
-var traceSource = new TraceSource("TestLogger");
-traceSource.Listeners.Remove("Default");
-traceSource.Switch.Level = SourceLevels.All;
-traceSource.Listeners.Add(new UdpTraceListener(IPAddress.Loopback, 10000));
-// or, for TCP:
-// traceSource.Listeners.Add(new TcpTraceListener(IPAddress.Loopback, 10000));
-
-//log an event
-traceSource.TraceEvent(TraceEventType.Information, 1, "Test event");
-
-```
-
-
-### Adding logging to Splunk via a SLAB event sink
-Below is a snippet showing creating an `ObservableEventListener` and then subscribing to events with a UdpEventSink configured to talk to localhost on port 1000. Next a SimpleEventSource is instantiated and a test event is generated.
-
-```csharp
-//setup
-var listener = new ObservableEventListener();
-listener.Subscribe(new UdpEventSink(IPAddress.Loopback, 10000));
-// or, for TCP:
-// listener.Subscribe(new TcpEventSink(IPAddress.Loopback, 10000));
-
-var eventSource = new SimpleEventSource();
-listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);
-
-//log an event
-eventSource.Message("Test event");
-
-[EventSource(Name = "TestEventSource")]
-public class SimpleEventSource : EventSource
-{
-    public class Keywords { }
-    public class Tasks { }
-
-    [Event(1, Message = "{0}", Level = EventLevel.Error)]
-    internal void Message(string message)
-    {
-        this.WriteEvent(1, message);
-    }
-}
-```
-
-### Customizing TCP session handling
-
-By default, the TCP listeners handle dropped TCP sessions by trying to reconnect
-after increasingly long intervals. You can specify a custom reconnection policy
-by defining an instance of Splunk.Logging.TcpConnectionPolicy, and passing it to
-the constructors of the TcpTraceListener and TcpEventSink classes.
-
-TcpConnectionPolicy has a single method, Reconnect, which tries to establish a
-connection or throws a TcpReconnectFailure if it cannot do so acceptably. Here is
-annotated source code of the default, exponential backoff policy:
-
-```
-public class ExponentialBackoffTcpConnectionPolicy : TcpConnectionPolicy
-    {
-        private int ceiling = 10 * 60; // 10 minutes in seconds
-
-		// The two arguments are:
-		//
-		//     connect - a function that attempts a TCP connection.
-		//     cancellationToken - used by TcpTraceListener and TcpEventSink
-		//         to cancel this method when they are disposed.
-        public Socket Reconnect(Func<Socket> connect, CancellationToken cancellationToken)
-        {
-            int delay = 1; // in seconds
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try {
-                    return connect();
-                }
-                catch (SocketException e) {}
-
-                // If this is cancelled via the cancellationToken instead of
-                // completing its delay, the next while-loop test will fail,
-                // the loop will terminate, and the method will return null
-                // with no additional connection attempts.
-                Task.Delay(delay * 1000, cancellationToken).Wait();
-                // The nth delay is min(10 minutes, 2^n - 1 seconds).
-                delay = Math.Min((delay + 1) * 2 - 1, ceiling);
-            }
-            return null;
-        }
-    }
-```
-
-Another, simpler policy, would be trying to reconnect once, and then failing:
-
-```
-public class SingleRetryTcpConnectionPolicy
-    {
-        public Socket Reconnect(Func<Socket> connect, CancellationToken cancellationToken)
-        {
-            try
-            {
-                return connect();
-            }
-            catch (SocketException e)
-            {
-                throw new TcpReconnectFailure("Failed to reconnect: " + e.Message);
-            }
-        }
-    }
-```
+### How to use the Splunk logging libraries for .NET
+This topic includes examples of how to use both the .NET trace listener and SLAB sink libraries.
+* [Add logging using a .NET trace listener](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEX9)
+* [Add logging using a SLAB sink](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEYA)
+* [Customize TCP session handling](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEY9)
 
 ### Changelog
 
 The **CHANGELOG.md** file in the root of the repository contains a description
-of changes for each version of the Splunk Library for .NET Logging. You can also
+of changes for each version of the Splunk logging libraries for .NET. You can also
 find it online at 
 
-    (TODO: Link to github)
-
-### Branches
-
-The **master** branch always represents a stable and released version of the
-Splunk Library for .NET Logging. You can read more about our branching model
-on our Wiki at 
-
-    https://github.com/splunk/splunk-sdk-python/wiki/Branching-Model
+    https://github.com/splunk/splunk-library-dotnetlogging/blob/master/CHANGELOG.md
 
 ## Documentation and resources
 
@@ -297,5 +148,4 @@ You can reach the Dev Platform team at devinfo@splunk.com.
 
 ## License
 
-The Splunk Logging Library for .NET is licensed under the Apache License 2.0. Details can be 
-found in the LICENSE file.
+The Splunk Logging Libraries for .NET are licensed under the Apache License 2.0. Details can be found in the LICENSE file.
