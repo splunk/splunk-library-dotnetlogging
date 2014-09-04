@@ -126,7 +126,7 @@ the constructors of the TcpTraceListener and TcpEventSink classes.
 TcpConnectionPolicy has a single method, Reconnect, which tries to establish a
 connection or throws a TcpReconnectFailure if it cannot do so acceptably. Here is
 annotated source code of the default, exponential backoff policy:
-```
+```csharp
 public class ExponentialBackoffTcpReconnectionPolicy : TcpReconnectionPolicy
 {
     private int ceiling = 10 * 60; // 10 minutes in seconds
@@ -166,7 +166,7 @@ public class ExponentialBackoffTcpReconnectionPolicy : TcpReconnectionPolicy
 
 Another, simpler policy, would be trying to reconnect once, and then failing:
 
-```
+```csharp
 class TryOnceTcpConnectionPolicy : TcpReconnectionPolicy
 {
     public Socket Connect(Func<System.Net.IPAddress, int, Socket> connect, 
@@ -197,13 +197,13 @@ attempts and by the reconnection policy are available by adding a handler to
 Both **TcpEventSink** and **TcpTraceListener** have a method that takes an action
 to be executed on each exception thrown in the logging system:
 
-```
+```csharp
 public void AddLoggingFailureHandler(Action<Exception> handler)
 ```
 
 For example, to write them to a local console, you would write:
 
-```
+```csharp
 TcpTraceListener listener = ...;
 listener.AddLoggingFailureHandler((ex) => {
     Console.WriteLine("{0}", ex);
