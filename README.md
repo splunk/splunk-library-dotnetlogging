@@ -1,9 +1,14 @@
 # Splunk Logging Libraries for .NET 
 #### Version 1.0
 
-The Splunk logging libraries for .NET enable you to configure UDP or TCP logging of events to a Splunk Enterprise instance from within your .NET applications, via a .NET TraceListener or a Semantic Logging Application Block (SLAB) event sink.
+The Splunk logging libraries for .NET enable you to configure UDP or TCP 
+logging of events to a Splunk Enterprise instance from within your .NET 
+applications, via a .NET TraceListener or a Semantic Logging Application Block
+(SLAB) event sink.
 
-Each library consists of several extensions for existing .NET logging frameworks. Specifically, there are two libraries available, along with a third common library that is required by both main libraries:
+Each library consists of several extensions for existing .NET logging 
+frameworks. Specifically, there are two libraries available, along with a third
+common library that is required by both main libraries:
 
 * **Splunk.Logging.TraceListener** 
 * **Splunk.Logging.SLAB** 
@@ -37,37 +42,67 @@ there to a set of indexers.
 
 ## Get started 
 
-The information in this Readme provides steps to get going quickly, but for more in-depth information be sure to visit the [Splunk logging libraries for .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEX4) page on [Splunk Developer Portal](http://dev.splunk.com).
+The information in this Readme provides steps to get going quickly, but for
+more in-depth information be sure to visit the [Splunk logging libraries for
+.NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEX4) page on 
+[Splunk Developer Portal](http://dev.splunk.com).
 
 ### Requirements
 
-Here's what you need to get going with the Splunk logging libraries for .NET:
+Here's what you need to use the Splunk logging libraries for .NET:
 
-* **.NET Framework 4.0 or later**: The Splunk logging libraries for .NET require at least .NET 4.0.
-* **xUnit runner**: If you use ReSharper, install its [xUnit.net Test Support](https://resharper-plugins.jetbrains.com/packages/xunitcontrib/). Otherwise, install the [xUnit.net runner for Visual Studio 2012 and 2013](http://visualstudiogallery.msdn.microsoft.com/463c5987-f82b-46c8-a97e-b1cde42b9099).
-* **Splunk Enterprise**: If you haven't already installed Splunk Enterprise, download it at [http://www.splunk.com/download](http://www.splunk.com/download). For more information about installing and running  Splunk Enterprise and system requirements, see the [Splunk Installation Manual](http://docs.splunk.com/Documentation/Splunk/latest/Installation).
-* **Visual Studio (optional)**: The Splunk logging libraries for .NET supports development in [Microsoft Visual Studio 2012 or later](http://www.microsoft.com/visualstudio/downloads).
-* **Code Contracts for .NET (optional)**: If you are using Visual Studio, install [Code Contracts for .NET](http://visualstudiogallery.msdn.microsoft.com/1ec7db13-3363-46c9-851f-1ce455f66970). Be sure to close Visual Studio before installing the package.
+* **.NET Framework 4.0 or later**: The Splunk logging libraries for .NET 
+  require at least .NET 4.0.
+* **Splunk Enterprise**: If you haven't already installed Splunk Enterprise,
+  download it at [http://www.splunk.com/download](http://www.splunk.com/download).
+  For more information about installing and running  Splunk Enterprise and 
+  system requirements, see the 
+  [Splunk Installation Manual](http://docs.splunk.com/Documentation/Splunk/latest/Installation).
+
+If you want to build the libraries and run the test suite, you will also
+need:
+
+* **xUnit runner**: If you use ReSharper, install its 
+  [xUnit.net Test Support](https://resharper-plugins.jetbrains.com/packages/xunitcontrib/). 
+  Otherwise, install the [xUnit.net runner for Visual Studio 2012 and 2013](http://visualstudiogallery.msdn.microsoft.com/463c5987-f82b-46c8-a97e-b1cde42b9099).
+* **Visual Studio**: The Splunk logging libraries for .NET supports 
+  development in [Microsoft Visual Studio 2012 or later](http://www.microsoft.com/visualstudio/downloads).
 
 ### Install
 
-You have several options for installing the Splunk logging libraries for .NET. The most common method is through NuGet. Add the package you want after searching for "splunk" in the Manage NuGet Packages window in Visual Studio.
+You have several options for installing the Splunk logging libraries for .NET.
+The most common method is through NuGet. Add the package you want after 
+searching for "splunk" in the Manage NuGet Packages window in Visual Studio.
 
-For more information, and for information about other ways to install the Splunk logging libraries for .NET, see [Install the Splunk logging libraries for .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEYC)
+For more information, and for information about other ways to install the 
+Splunk logging libraries for .NET, see [Install the Splunk logging libraries
+for .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEYC)
 
 
 #### Solution layout
 
-The solution is organized into **src** and **test** directories. The **src** directory contains three libraries: **Splunk.Logging.TraceListener** (which contains [.NET trace listeners](http://msdn.microsoft.com/library/4y5y10s7.aspx) that log events to Splunk Enterprise over UDP or TCP), **Splunk.Logging.SLAB** (which contains [Semantic Logging Application Block (SLAB) event sinks](http://msdn.microsoft.com/library/dn440729.aspx#sec29) that log ETW events to Splunk Enterprise over UDP or TCP), and **Splunk.Logging.Common** (a common library that contains resources required by both logging libraries). The **test** directory contains a single project, **unit-tests**.
+The solution is organized into **src** and **test** directories. The **src**
+directory contains three libraries: **Splunk.Logging.TraceListener** (which 
+contains [.NET trace listeners](http://msdn.microsoft.com/library/4y5y10s7.aspx)
+that log events to Splunk Enterprise over UDP or TCP), **Splunk.Logging.SLAB**
+(which contains [Semantic Logging Application Block (SLAB) event sinks](http://msdn.microsoft.com/library/dn440729.aspx#sec29)
+that log ETW events to Splunk Enterprise over UDP or TCP), and 
+**Splunk.Logging.Common** (a common library that contains resources required by
+both logging libraries). The **test** directory contains a single project,
+**unit-tests**.
 
 #### Examples and unit tests
 
-The Splunk logging libraries for .NET include full unit tests which run using [xunit](https://github.com/xunit/xunit) as well as several examples.
+The Splunk logging libraries for .NET include full unit tests which run 
+using [xunit](https://github.com/xunit/xunit).
 
 ### Example code
 
 #### Add logging to Splunk via a TraceListener
-Below is a snippet showing creating a **TraceSource** and then attaching a **UdpTraceListener** (or **TcpTraceListener**) configured to talk to localhost on port 10000. Next an event is generated which is sent to Splunk.
+
+Below is a snippet showing creating a **TraceSource** and then attaching a
+**UdpTraceListener** (or **TcpTraceListener**) configured to talk to localhost
+on port 10000. Next an event is generated which is sent to Splunk.
 
 ```csharp
 //setup
@@ -76,7 +111,7 @@ traceSource.Listeners.Remove("Default");
 traceSource.Switch.Level = SourceLevels.All;
 traceSource.Listeners.Add(new UdpTraceListener(IPAddress.Loopback, 10000));
 // or, for TCP:
-// traceSource.Listeners.Add(new TcpTraceListener(IPAddress.Loopback, 10000));
+// traceSource.Listeners.Add(new TcpTraceListener(IPAddress.Loopback, 10000, new ExponentialBackoffTcpReconnectionPolicy()));
 
 //log an event
 traceSource.TraceEvent(TraceEventType.Information, 1, "Test event");
@@ -85,14 +120,17 @@ traceSource.TraceEvent(TraceEventType.Information, 1, "Test event");
 
 
 #### Add logging to Splunk via a SLAB event sink
-Below is a snippet showing how to create an **ObservableEventListener** and then subscribe to events with a **UdpEventSink** (or **TcpEventSink**) configured to talk to localhost on port 10000. Next a **SimpleEventSource** is instantiated and a test event is generated.
+Below is a snippet showing how to create an **ObservableEventListener** and then
+subscribe to events with a **UdpEventSink** (or **TcpEventSink**) configured 
+to talk to localhost on port 10000. Next a **SimpleEventSource** is 
+instantiated and a test event is generated.
 
 ```csharp
 //setup
 var listener = new ObservableEventListener();
 listener.Subscribe(new UdpEventSink(IPAddress.Loopback, 10000));
 // or, for TCP:
-// listener.Subscribe(new TcpEventSink(IPAddress.Loopback, 10000));
+// listener.Subscribe(new TcpEventSink(IPAddress.Loopback, 10000, new ExponentialBackoffReconnectionPolicy()));
 
 var eventSource = new SimpleEventSource();
 listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);
@@ -114,20 +152,20 @@ public class SimpleEventSource : EventSource
 }
 ```
 
-By default, the TCP listeners handle dropped TCP sessions by trying to reconnect 
-after increasingly long intervals. You can specify a custom reconnection policy 
-by defining an instance of **Splunk.Logging.TcpConnectionPolicy** and passing it 
-to the constructors of the **TcpTraceListener** or **TcpEventSink** classes.
-By default, TCP listeners handle dropped TCP sessions by trying to reconnect
-after increasingly long intervals. You can specify a custom reconnection policy
-by defining an instance of Splunk.Logging.TcpConnectionPolicy, and passing it to
-the constructors of the TcpTraceListener and TcpEventSink classes.
+In both the example above, the TCP listeners took an extra argument, which specifies
+how they should handle dropped TCP sessions. You can specify a custom reconnection
+policy by defining an implementation of **Splunk.Logging.ITcpReconnectionPolicy** and passing it 
+to the constructors of the **TcpTraceListener** or **TcpEventSink** classes. If you have
+no particular policy in mind, use the ExponentialBackoffReconnectionPolicy provided by
+the library, which retries after increasingly long intervals, starting from a delay of 
+one second and going to a plateau of ten minutes.
 
-TcpConnectionPolicy has a single method, Reconnect, which tries to establish a
+TcpConnectionPolicy has a single method, Connect, which tries to establish a
 connection or throws a TcpReconnectFailure if it cannot do so acceptably. Here is
 annotated source code of the default, exponential backoff policy:
+
 ```csharp
-public class ExponentialBackoffTcpReconnectionPolicy : TcpReconnectionPolicy
+public class ExponentialBackoffTcpReconnectionPolicy : ITcpReconnectionPolicy
 {
     private int ceiling = 10 * 60; // 10 minutes in seconds
 
@@ -167,7 +205,7 @@ public class ExponentialBackoffTcpReconnectionPolicy : TcpReconnectionPolicy
 Another, simpler policy, would be trying to reconnect once, and then failing:
 
 ```csharp
-class TryOnceTcpConnectionPolicy : TcpReconnectionPolicy
+class TryOnceTcpConnectionPolicy : ITcpReconnectionPolicy
 {
     public Socket Connect(Func<System.Net.IPAddress, int, Socket> connect, 
             System.Net.IPAddress host, int port, 
