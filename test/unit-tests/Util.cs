@@ -1,4 +1,6 @@
-﻿/*
+﻿using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
+using Microsoft.Practices.EnterpriseLibrary.SemanticLogging.Formatters;
+/*
  * Copyright 2014 Splunk, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -15,14 +17,46 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Splunk.Logging
 {
+    [EventSource(Name = "TestEventSource")]
+    public class TestEventSource : EventSource
+    {
+        private static TestEventSource instance = null;
+
+        public class Keywords
+        {
+        }
+
+        public class Tasks
+        {
+        }
+
+        [Event(1, Message = "{1} - {0}", Level = EventLevel.Error)]
+        public void Message(string message, string caller)
+        {
+            this.WriteEvent(1, message, caller);
+        }
+
+        public static TestEventSource GetInstance()
+        {
+            if (instance == null)
+            {
+                instance = new TestEventSource();
+            }
+            return instance;
+        }
+    }
+
     public class AwaitableProgress<T> : IProgress<T>
     {
         private event Action<T> Handler = (T x) => { };
@@ -53,48 +87,46 @@ namespace Splunk.Logging
         }
     }
 
-    public class MockSocket : ISocket
+    public static class ExtensionMethods
     {
-        private StringBuilder buffer = new StringBuilder();
-        public bool SocketFailed { get; set; }
-
-        public MockSocket() { }
-
-        public string GetReceivedText() { return buffer.ToString(); }
-        public void ClearReceiverBuffer() { buffer.Clear(); }
-
-        public void Send(string data)
+        public static async Task AwaitValue(this AwaitableProgress<int> progress, int value)
         {
-            if (SocketFailed)
+            int reached;
+            do
             {
-                throw new SocketException((Int32)SocketError.ConnectionReset);
-            }
-            else
-            {
-                buffer.Append(data);
-            }
+                reached = await progress.AwaitProgressAsync();
+            } while (reached < value);
         }
-
-        public void Close() { }
-        public void Dispose() { }
     }
 
-    public class MockSocketFactory
+    public class TestEventFormatter : IEventTextFormatter
     {
-        public bool AcceptingConnections { get; set; }
-        public MockSocket socket;
-
-        public MockSocket TryOpenSocket(IPAddress host, int port)
+        public void WriteEvent(EventEntry eventEntry, System.IO.TextWriter writer)
         {
-            if (AcceptingConnections)
+            writer.Write("EventId=" + eventEntry.EventId + " ");
+            writer.Write("EventName=" + eventEntry.Schema.EventName + " ");
+            writer.Write("Level=" + eventEntry.Schema.Level + " ");
+            writer.Write("\"FormattedMessage=" + eventEntry.FormattedMessage + "\" ");
+            for (int i = 0; i < eventEntry.Payload.Count; i++)
             {
-                socket = new MockSocket();
-                return socket;
+                try
+                {
+                    if (i != 0) writer.Write(" ");
+                    writer.Write("\"{0}={1}\"", eventEntry.Schema.Payload[i], eventEntry.Payload[i]);
+                }
+                catch (Exception) { }
             }
-            else
-            {
-                throw new SocketException((Int32)SocketError.ConnectionRefused);
-            }
+            writer.WriteLine();
+        }
+    }
+
+    public class UdpTestTraceListener : UdpTraceListener
+    {
+        public UdpTestTraceListener(IPAddress host, int port) : base(host, port) {}
+
+        protected override string GetTimestamp()
+        {
+            return "[timestamp]";
         }
     }
 }

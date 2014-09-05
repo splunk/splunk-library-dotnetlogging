@@ -26,10 +26,10 @@ namespace Splunk.Logging
     /// </summary>
     public class UdpTraceListener : TraceListener
     {
-        private ISocket socket;
+        private Socket socket;
         private StringBuilder buffer = new StringBuilder();
 
-        public UdpTraceListener(ISocket socket) : base()
+        public UdpTraceListener(Socket socket) : base()
         {
             this.socket = socket;
         }
@@ -40,7 +40,7 @@ namespace Splunk.Logging
         /// <param name="host">IP address to write to.</param>
         /// <param name="port">UDP port to log to on the remote host.</param>
         public UdpTraceListener(IPAddress host, int port) : 
-            this(new UdpSocket(host, port)) { }
+            this(Util.OpenUdpSocket(host, port)) { }
             
         /// <summary>
         /// Constructor.
@@ -77,7 +77,7 @@ namespace Splunk.Logging
             buffer.Append(message);
             buffer.Append(Environment.NewLine);
 
-            socket.Send(buffer.ToString());
+            socket.Send(Encoding.UTF8.GetBytes(buffer.ToString()));
             buffer.Clear();
         }
 

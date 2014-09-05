@@ -177,7 +177,7 @@ public class ExponentialBackoffTcpReconnectionPolicy : TcpReconnectionPolicy
 	//     port - the port to connect on
 	//     cancellationToken - used by TcpTraceListener and TcpEventSink to cancel this method
 	//         when they are disposed.
-    public ISocket Connect(Func<IPAddress, int, ISocket> connect, IPAddress host, int port, CancellationToken cancellationToken)
+    public Socket Connect(Func<IPAddress, int, Socket> connect, IPAddress host, int port, CancellationToken cancellationToken)
     {
         int delay = 1; // in seconds
         while (!cancellationToken.IsCancellationRequested)

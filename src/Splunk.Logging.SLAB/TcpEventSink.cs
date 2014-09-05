@@ -57,7 +57,7 @@ namespace Splunk.Logging
         /// via the Progress property.</param>
         public TcpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null,
                 TcpReconnectionPolicy policy = null, int maxQueueSize = 10000) :
-                this(new TcpSocketWriter(host, port, policy == null ? new ExponentialBackoffTcpReconnectionPolicy() : policy, maxQueueSize)) {}
+                this(new TcpSocketWriter(host, port, policy == null ? new ExponentialBackoffTcpReconnectionPolicy() : policy, maxQueueSize), formatter: formatter) {}
  
         /// <summary>
         /// Set up a sink.

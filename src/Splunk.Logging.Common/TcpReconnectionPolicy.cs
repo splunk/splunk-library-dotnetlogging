@@ -15,6 +15,7 @@
  */
 using System;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace Splunk.Logging
@@ -60,6 +61,6 @@ namespace Splunk.Logging
         /// <param name="cancellationToken">A token used to cancel the reconnect
         /// attempt when the invoking logger is disposed.</param>
         /// <returns>A connected TCP socket.</returns>
-        ISocket Connect(Func<IPAddress, int, ISocket> connect, IPAddress host, int port, CancellationToken cancellationToken);
+        Socket Connect(Func<IPAddress, int, Socket> connect, IPAddress host, int port, CancellationToken cancellationToken);
     }
 }

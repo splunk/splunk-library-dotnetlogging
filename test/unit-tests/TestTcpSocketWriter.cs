@@ -15,7 +15,9 @@
  */
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -28,7 +30,9 @@ namespace Splunk.Logging
     {
         class TryOnceTcpConnectionPolicy : TcpReconnectionPolicy
         {
-            public ISocket Connect(Func<System.Net.IPAddress, int, ISocket> connect, System.Net.IPAddress host, int port, System.Threading.CancellationToken cancellationToken)
+            public Socket Connect(Func<System.Net.IPAddress, int, Socket> connect, 
+                    System.Net.IPAddress host, int port, 
+                    System.Threading.CancellationToken cancellationToken)
             {
                 try
                 {
@@ -42,128 +46,83 @@ namespace Splunk.Logging
         }
 
         [Fact]
-        public void TestReconnectFailure()
+        public async Task TestReconnectFailure()
         {
-            var socketFactory = new MockSocketFactory();
-
-            socketFactory.AcceptingConnections = true;
-            var writer = new TcpSocketWriter(null, -1, new TryOnceTcpConnectionPolicy(),
-                2, socketFactory.TryOpenSocket);
-
-            string failedMessage = null;
-            writer.LoggingFailureHandler += (ex) => { failedMessage = ex.Message; };
-            socketFactory.AcceptingConnections = false;
-            socketFactory.socket.SocketFailed = true;
-            writer.Enqueue("test");
-
-            writer.Dispose();
-            Assert.Equal(
-                "Reconnect failed: No connection could be made because the target machine actively refused it",
-                failedMessage);
-        }
-
-        class TriggerableTcpConnectionPolicy : TcpReconnectionPolicy
-        {
-            private AutoResetEvent trigger = new AutoResetEvent(false);
-
-            public ISocket Connect(Func<System.Net.IPAddress, int, ISocket> connect, System.Net.IPAddress host, int port, System.Threading.CancellationToken cancellationToken)
-            {
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    trigger.WaitOne();
-                    return connect(host, port);
-                }
-                return null;
-            }
-
-            public void TriggerConnect()
-            {
-                trigger.Set();
-            }
-        }
-
-        [Fact]
-        public void TestEventsQueuedWhileWaitingForInitialConnection()
-        {
-            var socketFactory = new MockSocketFactory();
-            socketFactory.AcceptingConnections = true;
-
-            var policy = new TriggerableTcpConnectionPolicy();
-            var writer = new TcpSocketWriter(null, -1, policy,
-                2, socketFactory.TryOpenSocket);
-
-            writer.Enqueue("Event 1\r\n");
-            writer.Enqueue("Event 2\r\n");
-
-            Assert.Equal(null, socketFactory.socket);
-
-            policy.TriggerConnect();
-            Assert.Equal("Event 1\r\nEvent 2\r\n", socketFactory.socket.GetReceivedText());
-        }
-
-        [Fact]
-        public void TestEventsQueuedDuringDisconnectAreSentLater()
-        {
-            var socketFactory = new MockSocketFactory();
-            socketFactory.AcceptingConnections = true;
-
-            var policy = new TriggerableTcpConnectionPolicy();
-            var progress = new AwaitableProgress<TcpSocketWriter.ProgressReport>();
-            var writer = new TcpSocketWriter(null, -1, policy,
-                5, socketFactory.TryOpenSocket)
-                {
-                    Progress = progress
-                };
-
-            var p = progress.AwaitProgressAsync();
-            policy.TriggerConnect();
-
-            // Make sure we are connected
-            writer.Enqueue("Event 0\r\n");
-            progress.AwaitProgressAsync().Wait();
-            Assert.Equal("Event 0\r\n", socketFactory.socket.GetReceivedText());
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.Server.LocalEndPoint).Port;
             
-            socketFactory.socket.SocketFailed = true;
-            writer.Enqueue("Event 1\r\n");
-            writer.Enqueue("Event 2\r\n");
-            Assert.Equal("Event 0\r\n", socketFactory.socket.GetReceivedText());
+            var writer = new TcpSocketWriter(IPAddress.Loopback, port, new TryOnceTcpConnectionPolicy(), 2);
 
-            policy.TriggerConnect();
-            progress.AwaitProgressAsync().Wait();
-            Assert.Equal("Event 1\r\nEvent 2\r\n", socketFactory.socket.GetReceivedText());
+            var errors = new List<Exception>();
+            writer.LoggingFailureHandler += (ex) => { 
+                errors.Add(ex); 
+            };
+            listener.Stop();
+
+            writer.Enqueue("test");
+            writer.Dispose(); // Blocks until everything is cleaned up.
+
+            Assert.Equal(3, errors.Count());
+            Assert.True(errors[0] is SocketException);
+            Assert.True(errors[1] is SocketException);
+            Assert.True(errors[2] is TcpReconnectFailureException);
         }
 
         [Fact]
-        public void TestEventsQueuedCanBeDropped()
+        public async Task TestEventsQueuedWhileWaitingForInitialConnection()
         {
-            var socketFactory = new MockSocketFactory();
-            socketFactory.AcceptingConnections = true;
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.Server.LocalEndPoint).Port;
 
-            var policy = new TriggerableTcpConnectionPolicy();
-            var progress = new AwaitableProgress<TcpSocketWriter.ProgressReport>();
-            var writer = new TcpSocketWriter(null, -1, policy,
-                2, socketFactory.TryOpenSocket)
-            {
-                Progress = progress
-            };
+            var writer = new TcpSocketWriter(IPAddress.Loopback, port, new ExponentialBackoffTcpReconnectionPolicy(), 100);
 
-            var p = progress.AwaitProgressAsync();
-            policy.TriggerConnect();
+            writer.Enqueue("Event 1\r\n");
+            writer.Enqueue("Event 2\r\n");
 
-            // Make sure we are connected
+            listener.Start();
+            var listenerClient = listener.AcceptTcpClient();
+            var receiverReader = new StreamReader(listenerClient.GetStream());
+
+            Assert.Equal("Event 1", await receiverReader.ReadLineAsync());
+            Assert.Equal("Event 2", await receiverReader.ReadLineAsync());
+
+            listener.Stop();
+            listenerClient.Close();
+            writer.Dispose();
+        }
+
+        [Fact]
+        public async Task TestEventsQueuedCanBeDropped()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.Server.LocalEndPoint).Port;
+
+            var writer = new TcpSocketWriter(IPAddress.Loopback, port, new ExponentialBackoffTcpReconnectionPolicy(), 2);
+
+            var listenerClient = await listener.AcceptTcpClientAsync();
+
             writer.Enqueue("Event 0\r\n");
-            progress.AwaitProgressAsync().Wait();
-            Assert.Equal("Event 0\r\n", socketFactory.socket.GetReceivedText());
 
-            socketFactory.socket.SocketFailed = true;
+            var receiverReader = new StreamReader(listenerClient.GetStream());
+
+            Assert.Equal("Event 0", await receiverReader.ReadLineAsync());
+
+            listenerClient.Close();
+            
+            writer.Enqueue("Event 0\r\n");
             writer.Enqueue("Event 1\r\n");
             writer.Enqueue("Event 2\r\n");
             writer.Enqueue("Event 3\r\n");
-            Assert.Equal("Event 0\r\n", socketFactory.socket.GetReceivedText());
 
-            policy.TriggerConnect();
-            progress.AwaitProgressAsync().Wait();
-            Assert.Equal("Event 2\r\nEvent 3\r\n", socketFactory.socket.GetReceivedText());
+            listenerClient = await listener.AcceptTcpClientAsync();
+            receiverReader = new StreamReader(listenerClient.GetStream());
+            Assert.Equal("Event 2", await receiverReader.ReadLineAsync());
+            Assert.Equal("Event 3", await receiverReader.ReadLineAsync());
+
+            writer.Dispose();
         }
     }
 }

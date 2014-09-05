@@ -16,6 +16,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,18 +42,14 @@ namespace Splunk.Logging
     {
         private FixedSizeQueue<string> eventQueue;
         private Thread queueListener;
-        private TcpReconnectionPolicy connectionPolicy;
+        private TcpReconnectionPolicy reconnectPolicy;
         private CancellationTokenSource tokenSource; // Must be private or Dispose will not function properly.
-        private Func<IPAddress, int, ISocket> tryOpenSocket;
+        private Func<IPAddress, int, Socket> tryOpenSocket;
         private TaskCompletionSource<bool> disposed = new TaskCompletionSource<bool>();
 
-        private ISocket socket;
+        private Socket socket;
         private IPAddress host;
         private int port;
-
-        // This is used only for testing.
-        public enum ProgressReport { QueueEmpty, TryingReconnect };
-        public IProgress<ProgressReport> Progress { get; set; }
 
         /// <summary>
         /// Event that is invoked when reconnecting after a TCP session is dropped fails.
@@ -69,21 +66,55 @@ namespace Splunk.Logging
         /// <param name="progress">An IProgress object that reports when the queue of entries to be written reaches empty or there is
         /// a reconnection failure. This is used for testing purposes only.</param>
         public TcpSocketWriter(IPAddress host, int port, TcpReconnectionPolicy policy, 
-            int maxQueueSize, Func<IPAddress, int, ISocket> connect = null)
+            int maxQueueSize, Func<IPAddress, int, Socket> connect = null)
         {
             this.host = host;
             this.port = port;
-            this.connectionPolicy = policy;
+            this.reconnectPolicy = policy;
             this.eventQueue = new FixedSizeQueue<string>(maxQueueSize);
             this.tokenSource = new CancellationTokenSource();
-            this.tryOpenSocket = (connect == null) ? (h, p) => { return new TcpSocket(h, p); } : connect;
-            this.Progress = new Progress<ProgressReport>();
+            
+            if (connect == null)
+            {
+                this.tryOpenSocket = (h, p) =>
+                {
+                    try
+                    {
+                        var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                        socket.Connect(host, port);
+                        return socket;
+                    }
+                    catch (SocketException e)
+                    {
+                        LoggingFailureHandler(e);
+                        throw;
+                    }
+                };
+            }
+            else
+            {
+                this.tryOpenSocket = (h, p) =>
+                    {
+                        try
+                        {
+                            return connect(h, p);
+                        }
+                        catch (SocketException e)
+                        {
+                            LoggingFailureHandler(e);
+                            throw;
+                        }
+                    };
+            }
+
+            var threadReady = new TaskCompletionSource<bool>();
 
             queueListener = new Thread(() =>
             {
                 try
                 {
-                    this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+                    this.socket = this.reconnectPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+                    threadReady.SetResult(true); // Signal the calling thread that we are ready.
 
                     string entry = null;
                     while (true)
@@ -93,16 +124,33 @@ namespace Splunk.Logging
                             eventQueue.CompleteAdding();
                             // Post-condition: no further items will be added to the queue, so there will be a finite number of items to handle.
                             while (eventQueue.TryDequeue(out entry))
-                                this.WriteEvent(entry);
-                             if (eventQueue.IsEmpty) // This should always be true
-                                this.Progress.Report(ProgressReport.QueueEmpty);
+                            {
+                                try
+                                {
+                                    this.socket.Send(Encoding.UTF8.GetBytes(entry));
+                                }
+                                catch (SocketException ex)
+                                {
+                                    LoggingFailureHandler(ex);
+                                }
+                            }
                             break;
                         }
                         if (eventQueue.TryDequeue(out entry))
                         {
-                            this.WriteEvent(entry);
-                            if (eventQueue.IsEmpty)
-                                this.Progress.Report(ProgressReport.QueueEmpty);
+                            while (true)
+                            {
+                                try
+                                {
+                                    if (this.socket.Send(Encoding.UTF8.GetBytes(entry)) != -1)
+                                        break;
+                                }
+                                catch (SocketException ex)
+                                {
+                                    LoggingFailureHandler(ex);
+                                    this.socket = this.reconnectPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
+                                }
+                            }
                         }
                     }
                 }
@@ -121,27 +169,9 @@ namespace Splunk.Logging
                     disposed.SetResult(true);
                 }
             });
+            queueListener.IsBackground = true; // Prevent the thread from blocking the process from exiting.
             queueListener.Start();
-        }
-
-        /// <summary>
-        /// Write an event onto the socket.
-        /// </summary>
-        /// <param name="entry"></param>
-        private void WriteEvent(string entry)
-        {
-            lock (this.socket)
-            {
-                try
-                {
-                    this.socket.Send(entry);
-                }
-                catch (SocketException)
-                {
-                    this.socket = this.connectionPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
-                    WriteEvent(entry); // Recurse instead of calling Send directly so that we still have error handling on the next try.
-                }
-            }
+            threadReady.Task.Wait();
         }
 
         public void Dispose()
@@ -159,6 +189,7 @@ namespace Splunk.Logging
         /// <param name="entry">The string to be written to the TCP socket.</param>
         public void Enqueue(string entry)
         {
+            Console.WriteLine("Enqueued {0}", entry.Trim());
             this.eventQueue.Enqueue(entry);
         }
     }
