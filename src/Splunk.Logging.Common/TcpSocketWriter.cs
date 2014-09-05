@@ -190,7 +190,6 @@ namespace Splunk.Logging
         /// <param name="entry">The string to be written to the TCP socket.</param>
         public void Enqueue(string entry)
         {
-            Console.WriteLine("Enqueued {0}", entry.Trim());
             this.eventQueue.Enqueue(entry);
         }
     }

@@ -50,7 +50,6 @@ namespace Splunk.Logging
                 while (base.Count > Size)
                 {
                     base.TryDequeue(out tmp);
-                    Console.WriteLine("Dropping {0} from queue", tmp);
                 }
                 Progress.Report(true);
             }
