@@ -7,8 +7,8 @@
     <authors>Splunk, Inc.</authors>
     <owners>Splunk, Inc.</owners>
     <iconUrl>http://docs.splunk.com/skins/splunk/images/icon-default.png</iconUrl>
-    <licenseUrl>https://github.com/splunk/splunk-sdk-csharp-pcl/blob/master/LICENSE</licenseUrl>
-    <projectUrl>https://github.com/splunk/splunk-sdk-csharp-pcl</projectUrl>
+    <licenseUrl>https://github.com/splunk/splunk-library-dotnetlogging/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/splunk/splunk-library-dotnetlogging</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>    
     <description>This package contains EventSinks to log to Splunk from SLAB.</description>
     <copyright>Copyright 2014</copyright>
