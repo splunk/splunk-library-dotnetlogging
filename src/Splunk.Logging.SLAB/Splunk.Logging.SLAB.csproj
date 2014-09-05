@@ -52,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Splunk.Logging.SLAB.nuspec" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Splunk.Logging.Common\Splunk.Logging.Common.csproj">
