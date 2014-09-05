@@ -74,6 +74,17 @@ namespace Splunk.Logging
             int maxQueueSize = 10000) :
             this(host.HostnameToIPAddress(), port, policy, maxQueueSize) { }
 
+        /// <summary>
+        /// Add a handler to be invoked when exceptions are thrown during the operation of
+        /// TCP logging, in particular when SocketErrors cause reconnect attempts or when
+        /// the reconnect policy gives up entirely.
+        /// </summary>
+        /// <param name="handler">A function to handle the exception.</param>
+        public void AddLoggingFailureHandler(Action<Exception> handler)
+        {
+            this.writer.LoggingFailureHandler += handler;
+        }
+
         public override void Write(string message)
         {
             // Note: not thread-safe, since the threading is handled by the TraceListener machinery that

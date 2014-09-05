@@ -32,11 +32,12 @@ namespace Splunk.Logging
     /// the TCP port and, while the socket is open, sends them as quickly as possible.
     /// 
     /// If the TCP session drops, TcpSocketWriter will stop pulling strings off the
-    /// queue until it can reestablish a connection. If the TcpConnectionPolicy.Connect
-    /// method throws an exception (in particular, TcpReconnectFailure to indicate that the
-    /// policy has reached a point where it will no longer try to establish a connection)
-    /// then the LoggingFailureHandler event is invoked, and no further attempt to log
-    /// anything will be made.
+    /// queue until it can reestablish a connection. Any SocketErrors emitted during this
+    /// process will be passed as arguments to invocations of LoggingFailureHandler.
+    /// If the TcpConnectionPolicy.Connect method throws an exception (in particular,
+    /// TcpReconnectFailure to indicate that the policy has reached a point where it 
+    /// will no longer try to establish a connection) then the LoggingFailureHandler 
+    /// event is invoked, and no further attempt to log anything will be made.
     /// </remarks>
     public class TcpSocketWriter : IDisposable
     {

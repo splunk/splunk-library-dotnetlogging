@@ -57,7 +57,20 @@ namespace Splunk.Logging
         /// via the Progress property.</param>
         public TcpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null,
                 TcpReconnectionPolicy policy = null, int maxQueueSize = 10000) :
-                this(new TcpSocketWriter(host, port, policy == null ? new ExponentialBackoffTcpReconnectionPolicy() : policy, maxQueueSize), formatter: formatter) {}
+                this(new TcpSocketWriter(host, port, 
+                        (policy == null) ? new ExponentialBackoffTcpReconnectionPolicy() : policy, maxQueueSize),
+                     formatter: formatter) {}
+
+        /// <summary>
+        /// Add a handler to be invoked when exceptions are thrown during the operation of
+        /// TCP logging, in particular when SocketErrors cause reconnect attempts or when
+        /// the reconnect policy gives up entirely.
+        /// </summary>
+        /// <param name="handler">A function to handle the exception.</param>
+        public void AddLoggingFailureHandler(Action<Exception> handler)
+        {
+            this.writer.LoggingFailureHandler += handler;
+        }
  
         /// <summary>
         /// Set up a sink.
