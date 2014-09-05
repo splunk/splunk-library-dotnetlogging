@@ -119,14 +119,4 @@ namespace Splunk.Logging
             writer.WriteLine();
         }
     }
-
-    public class UdpTestTraceListener : UdpTraceListener
-    {
-        public UdpTestTraceListener(IPAddress host, int port) : base(host, port) {}
-
-        protected override string GetTimestamp()
-        {
-            return "[timestamp]";
-        }
-    }
 }

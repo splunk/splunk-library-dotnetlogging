@@ -37,7 +37,7 @@ namespace Splunk.Logging
 
         [Trait("integration-tests", "Splunk.Logging.TcpTraceListener")]
         [Fact]
-        public async Task TestTraceSource()
+        public async Task TestTcpTraceListener()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
             listener.Start();

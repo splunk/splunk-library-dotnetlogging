@@ -56,8 +56,7 @@ namespace Splunk.Logging
             // invokes this method.
             if (NeedIndent)
                 WriteIndent();
-
-            buffer.Append(message);
+            socket.Send(Encoding.UTF8.GetBytes(message));
         }
 
         // This is factored out so it can be overridden in the test suite.
@@ -70,15 +69,8 @@ namespace Splunk.Logging
         {
             // Note: not thread-safe, since the threading is handled by the TraceListener machinery that
             // invokes this method.
-            if (NeedIndent)
-                WriteIndent();
-
-            buffer.Insert(0, GetTimestamp() + " ");
-            buffer.Append(message);
-            buffer.Append(Environment.NewLine);
-
-            socket.Send(Encoding.UTF8.GetBytes(buffer.ToString()));
-            buffer.Clear();
+            if (NeedIndent) WriteIndent();
+            socket.Send(Encoding.UTF8.GetBytes(message + Environment.NewLine));
         }
 
         public override void Close()

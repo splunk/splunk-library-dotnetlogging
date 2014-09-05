@@ -25,16 +25,17 @@ namespace integration_tests
             var traceSource = new TraceSource("UnitTestLogger");
             traceSource.Listeners.Remove("Default");
             traceSource.Switch.Level = SourceLevels.All;
-            traceSource.Listeners.Add(new UdpTestTraceListener(IPAddress.Loopback, port));
-
-            var t = udpclient.ReceiveAsync();
+            traceSource.Listeners.Add(new UdpTraceListener(IPAddress.Loopback, port));
             
             traceSource.TraceEvent(TraceEventType.Information, 100, "Boris");
 
-            var result = await t;
-            var receivedText = Encoding.UTF8.GetString(result.Buffer);
+            var dgram = await udpclient.ReceiveAsync();
+            var receivedText = Encoding.UTF8.GetString(dgram.Buffer);
+            Assert.Equal("UnitTestLogger Information: 100 : ", receivedText);
 
-            Assert.Equal("[timestamp] UnitTestLogger Information: 100 : Boris\r\n", receivedText);
+            dgram = await udpclient.ReceiveAsync();
+            receivedText = Encoding.UTF8.GetString(dgram.Buffer);
+            Assert.Equal("Boris\r\n", receivedText);
 
             udpclient.Close();
             traceSource.Close();

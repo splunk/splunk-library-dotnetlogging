@@ -27,7 +27,6 @@ namespace Splunk.Logging
     public class TcpTraceListener : TraceListener
     {
         private TcpSocketWriter writer;
-        private StringBuilder buffer = new StringBuilder();
 
         /// <summary>
         /// Constructor.
@@ -81,7 +80,7 @@ namespace Splunk.Logging
             // Note: not thread-safe, since the threading is handled by the TraceListener machinery that
             // invokes this method.
             if (NeedIndent) WriteIndent();
-            buffer.Append(message);
+            writer.Enqueue(message);
         }
 
         public override void WriteLine(string message)
@@ -89,13 +88,7 @@ namespace Splunk.Logging
             // Note: not thread-safe, since the threading is handled by the TraceListener machinery that
             // invokes this method.
             if (NeedIndent) WriteIndent();
-
-            buffer.Insert(0, DateTime.UtcNow.ToLocalTime().ToString("o") + " ");
-            buffer.Append(message);
-            buffer.Append(Environment.NewLine);
-
-            writer.Enqueue(buffer.ToString());
-            buffer.Clear();
+            writer.Enqueue(message + Environment.NewLine);
         }
 
         public override void Close()
