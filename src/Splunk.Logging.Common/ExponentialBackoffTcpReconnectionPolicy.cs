@@ -30,7 +30,7 @@ namespace Splunk.Logging
     /// until 10 minutes between connections, when it plateaus and does
     /// not increase the interval length any further.
     /// </remarks>
-    public class ExponentialBackoffTcpReconnectionPolicy : TcpReconnectionPolicy
+    public class ExponentialBackoffTcpReconnectionPolicy : ITcpReconnectionPolicy
     {
         private int ceiling = 10 * 60; // 10 minutes in seconds
 

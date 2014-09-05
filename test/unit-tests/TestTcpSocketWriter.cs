@@ -28,7 +28,7 @@ namespace Splunk.Logging
 {
     public class TestTcpSocketWriter
     {
-        class TryOnceTcpConnectionPolicy : TcpReconnectionPolicy
+        class TryOnceTcpConnectionPolicy : ITcpReconnectionPolicy
         {
             public Socket Connect(Func<System.Net.IPAddress, int, Socket> connect, 
                     System.Net.IPAddress host, int port, 
@@ -50,7 +50,7 @@ namespace Splunk.Logging
         }
 
         [Fact]
-        public async Task TestReconnectFailure()
+        public void TestReconnectFailure()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
             listener.Start();
@@ -104,7 +104,7 @@ namespace Splunk.Logging
             writer.Dispose();
         }
 
-        public class TriggeredTcpReconnectionPolicy : TcpReconnectionPolicy
+        public class TriggeredTcpReconnectionPolicy : ITcpReconnectionPolicy
         {
             private AutoResetEvent trigger = new AutoResetEvent(false);
             public Socket Connect(Func<IPAddress,int,Socket> connect, IPAddress host, int port, CancellationToken cancellationToken)

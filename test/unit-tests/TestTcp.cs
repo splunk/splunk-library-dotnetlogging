@@ -47,7 +47,9 @@ namespace Splunk.Logging
             var traceSource = new TraceSource("UnitTestLogger");
             traceSource.Listeners.Remove("Default");
             traceSource.Switch.Level = SourceLevels.All;
-            traceSource.Listeners.Add(new TcpTraceListener(IPAddress.Loopback, port));
+            traceSource.Listeners.Add(new TcpTraceListener(
+                                            IPAddress.Loopback, port, 
+                                            new ExponentialBackoffTcpReconnectionPolicy()));
 
             var listenerClient = await listener.AcceptTcpClientAsync();
 
@@ -72,7 +74,9 @@ namespace Splunk.Logging
             int port = ((IPEndPoint)listener.Server.LocalEndPoint).Port;
 
             var slabListener = new ObservableEventListener();
-            slabListener.Subscribe(new TcpEventSink(IPAddress.Loopback, port, new TestEventFormatter()));
+            slabListener.Subscribe(new TcpEventSink(IPAddress.Loopback, port, 
+                new ExponentialBackoffTcpReconnectionPolicy(),
+                new TestEventFormatter()));
             var source = TestEventSource.GetInstance();
             slabListener.EnableEvents(source, EventLevel.LogAlways, Keywords.All);
 

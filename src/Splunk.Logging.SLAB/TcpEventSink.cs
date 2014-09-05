@@ -34,13 +34,6 @@ namespace Splunk.Logging
         private TcpSocketWriter writer;
         private IEventTextFormatter formatter;
 
-        // This constructor is used only for testing.
-        public TcpEventSink(TcpSocketWriter writer, IEventTextFormatter formatter = null)
-        {
-            this.writer = writer;
-            this.formatter = formatter != null ? formatter : new SimpleEventTextFormatter();
-        }
-
         /// <summary>
         /// Set up a sink.
         /// </summary>
@@ -55,12 +48,13 @@ namespace Splunk.Logging
         /// <param name="progress">A progress reporter that triggers when events are written from
         /// the queue to the TCP port (defaults to a new Progress object). It is reachable
         /// via the Progress property.</param>
-        public TcpEventSink(IPAddress host, int port, IEventTextFormatter formatter = null,
-                TcpReconnectionPolicy policy = null, int maxQueueSize = 10000) :
-                this(new TcpSocketWriter(host, port, 
-                        (policy == null) ? new ExponentialBackoffTcpReconnectionPolicy() : policy, maxQueueSize),
-                     formatter: formatter) {}
-
+        public TcpEventSink(IPAddress host, int port, ITcpReconnectionPolicy policy, 
+                            IEventTextFormatter formatter = null, int maxQueueSize = 10000)
+        {
+            this.writer = new TcpSocketWriter(host, port, policy, maxQueueSize);
+            this.formatter = formatter;
+        }
+        
         /// <summary>
         /// Add a handler to be invoked when exceptions are thrown during the operation of
         /// TCP logging, in particular when SocketErrors cause reconnect attempts or when
@@ -86,9 +80,9 @@ namespace Splunk.Logging
         /// <param name="progress">A progress reporter that triggers when events are written from
         /// the queue to the TCP port (defaults to a new Progress object). It is reachable
         /// via the Progress property.</param>
-        public TcpEventSink(string host, int port, IEventTextFormatter formatter = null,
-                TcpReconnectionPolicy policy = null, int maxQueueSize = 10000) :
-            this(host.HostnameToIPAddress(), port, formatter, policy, maxQueueSize) { }
+        public TcpEventSink(string host, int port, ITcpReconnectionPolicy policy, 
+                            IEventTextFormatter formatter = null, int maxQueueSize = 10000) :
+            this(host.HostnameToIPAddress(), port, policy, formatter, maxQueueSize) { }
 
         public void OnCompleted()
         {

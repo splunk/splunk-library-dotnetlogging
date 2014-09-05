@@ -17,7 +17,9 @@ namespace standalone_test
             var traceSource = new TraceSource("UnitTestLogger");
             traceSource.Listeners.Remove("Default");
             traceSource.Switch.Level = SourceLevels.All;
-            traceSource.Listeners.Add(new TcpTraceListener(IPAddress.Loopback, 10000));
+            traceSource.Listeners.Add(
+                new TcpTraceListener(IPAddress.Loopback, 10000, 
+                                     new ExponentialBackoffTcpReconnectionPolicy()));
 
             for (int i = 0; i < 10; i++)
                 traceSource.TraceEvent(TraceEventType.Information, 100, string.Format("Boris {0}", i));

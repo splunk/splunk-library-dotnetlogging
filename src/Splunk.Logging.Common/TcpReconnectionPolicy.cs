@@ -31,7 +31,7 @@ namespace Splunk.Logging
     /// the Reconnect method of an implementation of TcpConnectionPolicy to get a
     /// new socket.
     /// </remarks>
-    public interface TcpReconnectionPolicy
+    public interface ITcpReconnectionPolicy
     {
         // A blocking method that should eventually return a Socket when it finally
         // manages to get a connection, or throw a TcpReconnectFailure if the policy

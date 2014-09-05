@@ -43,7 +43,7 @@ namespace Splunk.Logging
     {
         private FixedSizeQueue<string> eventQueue;
         private Thread queueListener;
-        private TcpReconnectionPolicy reconnectPolicy;
+        private ITcpReconnectionPolicy reconnectPolicy;
         private CancellationTokenSource tokenSource; // Must be private or Dispose will not function properly.
         private Func<IPAddress, int, Socket> tryOpenSocket;
         private TaskCompletionSource<bool> disposed = new TaskCompletionSource<bool>();
@@ -66,7 +66,7 @@ namespace Splunk.Logging
         /// <param name="maxQueueSize">The maximum number of log entries to queue before starting to drop entries.</param>
         /// <param name="progress">An IProgress object that reports when the queue of entries to be written reaches empty or there is
         /// a reconnection failure. This is used for testing purposes only.</param>
-        public TcpSocketWriter(IPAddress host, int port, TcpReconnectionPolicy policy, 
+        public TcpSocketWriter(IPAddress host, int port, ITcpReconnectionPolicy policy, 
             int maxQueueSize, Func<IPAddress, int, Socket> connect = null)
         {
             this.host = host;

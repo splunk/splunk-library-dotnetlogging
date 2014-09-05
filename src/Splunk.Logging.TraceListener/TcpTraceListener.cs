@@ -42,18 +42,10 @@ namespace Splunk.Logging
         /// <param name="progress">An IProgress instance that will be triggered when
         /// an event is pulled from the queue and written to the TCP port (defaults to a new
         /// Progress object accessible via the Progress property).</param>
-        public TcpTraceListener(IPAddress host, int port, 
-            TcpReconnectionPolicy policy = null, 
-            int maxQueueSize = 10000) : base()
+        public TcpTraceListener(IPAddress host, int port, ITcpReconnectionPolicy policy, 
+                                int maxQueueSize = 10000) : base()
         {
-            this.writer = new TcpSocketWriter(host, port,
-                policy == null ? new ExponentialBackoffTcpReconnectionPolicy() : policy,
-                maxQueueSize);
-        }
-
-        public TcpTraceListener(TcpSocketWriter writer)
-        {
-            this.writer = writer;
+            this.writer = new TcpSocketWriter(host, port, policy, maxQueueSize);
         }
 
         /// <summary>
@@ -69,9 +61,8 @@ namespace Splunk.Logging
         /// <param name="progress">An IProgress instance that will be triggered when
         /// an event is pulled from the queue and written to the TCP port (defaults to a new
         /// Progress object accessible via the Progress property).</param>
-        public TcpTraceListener(string host, int port,
-            TcpReconnectionPolicy policy = null,
-            int maxQueueSize = 10000) :
+        public TcpTraceListener(string host, int port, ITcpReconnectionPolicy policy,
+                                int maxQueueSize = 10000) :
             this(host.HostnameToIPAddress(), port, policy, maxQueueSize) { }
 
         /// <summary>
