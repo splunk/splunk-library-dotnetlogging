@@ -36,6 +36,8 @@ namespace Splunk.Logging
             {
                 try
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                        return null;
                     return connect(host, port);
                 }
                 catch (SocketException e)

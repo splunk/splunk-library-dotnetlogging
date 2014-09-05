@@ -206,20 +206,48 @@ public class ExponentialBackoffTcpReconnectionPolicy : TcpReconnectionPolicy
 Another, simpler policy, would be trying to reconnect once, and then failing:
 
 ```
-public class SingleRetryTcpConnectionPolicy
+class TryOnceTcpConnectionPolicy : TcpReconnectionPolicy
+{
+    public Socket Connect(Func<System.Net.IPAddress, int, Socket> connect, 
+            System.Net.IPAddress host, int port, 
+            System.Threading.CancellationToken cancellationToken)
     {
-        public Socket Reconnect(Func<Socket> connect, CancellationToken cancellationToken)
+        try
         {
-            try
-            {
-                return connect();
-            }
-            catch (SocketException e)
-            {
-                throw new TcpReconnectFailure("Failed to reconnect: " + e.Message);
-            }
+            if (cancellationToken.IsCancellationRequested)
+                return null;
+            return connect(host, port);
+        }
+        catch (SocketException e)
+        {
+            throw new TcpReconnectFailureException("Reconnect failed: " + e.Message);
         }
     }
+}
+```
+
+### Handling errors from the TCP logging system
+
+It can be difficult to diagnose connection problems in TCP logging without seeing
+the exceptions that are actually thrown. The exceptions thrown during connection
+attempts and by the reconnection policy are available by adding a handler to
+TcpEventSink or TcpTraceListener.
+
+Both TcpEventSink and TcpTraceListener have a method
+
+```
+public void AddLoggingFailureHandler(Action<Exception> handler)
+```
+
+which takes an action to be executed on each exception thrown in the logging system.
+
+For example, to write them to a local console, you would write
+
+```
+TcpTraceListener listener = ...;
+listener.AddLoggingFailureHandler((ex) => {
+    Console.WriteLine("{0}", ex);
+});
 ```
 
 ### Changelog
@@ -228,7 +256,7 @@ The **CHANGELOG.md** file in the root of the repository contains a description
 of changes for each version of the Splunk Library for .NET Logging. You can also
 find it online at 
 
-    (TODO: Link to github)
+    https://github.com/splunk/splunk-library-dotnetlogging/blob/master/CHANGELOG.md
 
 ### Branches
 
