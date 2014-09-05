@@ -36,8 +36,10 @@ namespace Splunk.Logging
             {
                 try
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                        return null;
+                    // In a proper implementation, we would check for cancellation here
+                    // and return null if cancellationToken is cancelled. However, we want
+                    // to use Dispose on a TcpSocketWriter to block until all activity
+                    // has ended and still get a TcpReconnectFailureException.
                     return connect(host, port);
                 }
                 catch (SocketException e)
@@ -55,15 +57,22 @@ namespace Splunk.Logging
             int port = ((IPEndPoint)listener.Server.LocalEndPoint).Port;
             
             var writer = new TcpSocketWriter(IPAddress.Loopback, port, new TryOnceTcpConnectionPolicy(), 2);
-
+            var receiver = listener.AcceptTcpClient();
+            receiver.Close();
+            
             var errors = new List<Exception>();
-            writer.LoggingFailureHandler += (ex) => { 
+            var errorThrown = false;
+            writer.LoggingFailureHandler += (ex) => {
+                errorThrown = true;
                 errors.Add(ex); 
             };
             listener.Stop();
 
-            writer.Enqueue("test");
-            writer.Dispose(); // Blocks until everything is cleaned up.
+            while (!errorThrown)
+            {
+                writer.Enqueue("boris\r\n");
+            }
+            writer.Dispose();
 
             Assert.Equal(3, errors.Count());
             Assert.True(errors[0] is SocketException);
@@ -95,6 +104,30 @@ namespace Splunk.Logging
             writer.Dispose();
         }
 
+        public class TriggeredTcpReconnectionPolicy : TcpReconnectionPolicy
+        {
+            private AutoResetEvent trigger = new AutoResetEvent(false);
+            public Socket Connect(Func<IPAddress,int,Socket> connect, IPAddress host, int port, CancellationToken cancellationToken)
+            {
+ 	            while (true)
+                {
+                    try
+                    {
+                        trigger.WaitOne();
+                        return connect(host, port);
+                    }
+                    catch (SocketException) {
+                        Thread.Sleep(150);
+                    }
+                }
+            }
+
+            public void Trigger()
+            {
+                trigger.Set();
+            }
+        }
+
         [Fact]
         public async Task TestEventsQueuedCanBeDropped()
         {
@@ -102,29 +135,41 @@ namespace Splunk.Logging
             listener.Start();
             int port = ((IPEndPoint)listener.Server.LocalEndPoint).Port;
 
-            var writer = new TcpSocketWriter(IPAddress.Loopback, port, new ExponentialBackoffTcpReconnectionPolicy(), 2);
+            var policy = new TriggeredTcpReconnectionPolicy();
+            policy.Trigger();
+            var writer = new TcpSocketWriter(IPAddress.Loopback, port, policy, 2);
 
             var listenerClient = await listener.AcceptTcpClientAsync();
+            listenerClient.Close();
 
-            writer.Enqueue("Event 0\r\n");
+            var errors = new List<Exception>();
+            var errorThrown = false;
+            writer.LoggingFailureHandler += (ex) =>
+            {
+                errorThrown = true;
+                errors.Add(ex);
+            };
+
+            while (!errorThrown)
+            {
+                writer.Enqueue("boris\r\n");
+            }
+            for (int i = 0; i < 10; i++)
+            {
+                writer.Enqueue("boris\r\n");
+            }
+
+            policy.Trigger();
+            listenerClient = await listener.AcceptTcpClientAsync();
+            
+            writer.Dispose();
 
             var receiverReader = new StreamReader(listenerClient.GetStream());
 
-            Assert.Equal("Event 0", await receiverReader.ReadLineAsync());
-
-            listenerClient.Close();
-            
-            writer.Enqueue("Event 0\r\n");
-            writer.Enqueue("Event 1\r\n");
-            writer.Enqueue("Event 2\r\n");
-            writer.Enqueue("Event 3\r\n");
-
-            listenerClient = await listener.AcceptTcpClientAsync();
-            receiverReader = new StreamReader(listenerClient.GetStream());
-            Assert.Equal("Event 2", await receiverReader.ReadLineAsync());
-            Assert.Equal("Event 3", await receiverReader.ReadLineAsync());
-
-            writer.Dispose();
+            // Then check what was left in the queue when we disconnected
+            Assert.Equal("boris", await receiverReader.ReadLineAsync());
+            Assert.Equal("boris", await receiverReader.ReadLineAsync());
+            Assert.Equal(0, listenerClient.Available);
         }
     }
 }

@@ -118,7 +118,7 @@ namespace Splunk.Logging
                     threadReady.SetResult(true); // Signal the calling thread that we are ready.
 
                     string entry = null;
-                    while (true)
+                    while (this.socket != null) // null indicates that the thread has been cancelled and cleaned up.
                     {
                         if (tokenSource.Token.IsCancellationRequested)
                         {
@@ -137,20 +137,23 @@ namespace Splunk.Logging
                             }
                             break;
                         }
-                        if (eventQueue.TryDequeue(out entry))
+                        else if (entry == null)
                         {
-                            while (true)
+                            eventQueue.TryDequeue(out entry);
+                        }
+                        else if (entry != null)
+                        {
+                            try
                             {
-                                try
+                                if (this.socket.Send(Encoding.UTF8.GetBytes(entry)) != -1)
                                 {
-                                    if (this.socket.Send(Encoding.UTF8.GetBytes(entry)) != -1)
-                                        break;
+                                    entry = null;
                                 }
-                                catch (SocketException ex)
-                                {
-                                    LoggingFailureHandler(ex);
-                                    this.socket = this.reconnectPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
-                                }
+                            }
+                            catch (SocketException ex)
+                            {
+                                LoggingFailureHandler(ex);
+                                this.socket = this.reconnectPolicy.Connect(tryOpenSocket, host, port, tokenSource.Token);
                             }
                         }
                     }
