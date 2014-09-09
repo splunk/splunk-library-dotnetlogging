@@ -15,7 +15,7 @@
     <tags>Splunk</tags>
     <language>en-US</language>
     <dependencies>
-          <dependency id="Splunk.Logging.Common" version="1.0" />
+          <dependency id="Splunk.Logging.Common" version="$VERSION$" />
     </dependencies>
   </metadata>
 </package>
