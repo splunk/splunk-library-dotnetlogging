@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Splunk.Logging.Common</id>
-    <version>1.0</version>
+    <version>1.0.0</version>
     <title>Splunk Library for .NET Logging - Common Components</title>
     <authors>Splunk, Inc.</authors>
     <owners>Splunk, Inc.</owners>

@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Splunk.Logging.TraceListener</id>
-    <version>1.0</version>
+    <version>1.0.0</version>
     <title>Splunk Library for .NET Logging - TraceListener</title>
     <authors>Splunk, Inc.</authors>
     <owners>Splunk, Inc.</owners>
@@ -15,7 +15,7 @@
     <tags>Splunk</tags>
     <language>en-US</language>
     <dependencies>
-      <dependency id="Splunk.Logging.Common" version="1.0" />
+      <dependency id="Splunk.Logging.Common" version="$version$" />
     </dependencies>
   </metadata>
 </package>
