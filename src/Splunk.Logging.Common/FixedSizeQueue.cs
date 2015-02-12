@@ -15,6 +15,7 @@
  * under the License.
  */
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace Splunk.Logging
 {
@@ -23,19 +24,22 @@ namespace Splunk.Logging
     /// and a new item is queued, the oldest item in the queue is dropped.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class FixedSizeQueue<T> : ConcurrentQueue<T>
+    internal class FixedSizeQueue<T>
     {
         public int Size { get; private set; }
         public IProgress<bool> Progress = new Progress<bool>();
         public bool IsCompleted { get; private set; }
 
+        private readonly BlockingCollection<T> _collection = new BlockingCollection<T>();
+
         public FixedSizeQueue(int size)
+            : base()
         {
             Size = size;
             IsCompleted = false;
         }
 
-        public new void Enqueue(T obj)
+        public void Enqueue(T obj)
         {
             lock (this)
             {
@@ -43,13 +47,12 @@ namespace Splunk.Logging
                 {
                     throw new InvalidOperationException("Tried to add an item to a completed queue.");
                 }
-        
-                base.Enqueue(obj);
-                T tmp;
 
-                while (base.Count > Size)
+                _collection.Add(obj);
+
+                while (_collection.Count > Size)
                 {
-                    base.TryDequeue(out tmp);
+                    _collection.Take();
                 }
                 Progress.Report(true);
             }
@@ -62,5 +65,18 @@ namespace Splunk.Logging
                 IsCompleted = true;
             }
         }
+
+        public T Dequeue(CancellationToken cancellationToken)
+        {
+            return _collection.Take(cancellationToken);
+        }
+
+        public T Dequeue()
+        {
+            return _collection.Take();
+        }
+
+
+        public decimal Count { get { return _collection.Count; } }
     }
 }
