@@ -15,6 +15,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -170,6 +171,38 @@ namespace Splunk.Logging
             Assert.Equal("boris", await receiverReader.ReadLineAsync());
             Assert.Equal("boris", await receiverReader.ReadLineAsync());
             Assert.Equal(0, listenerClient.Available);
+        }
+
+        [Fact]
+        public void TestCPUUsage()
+        {
+            var cpuCounter = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);            
+            cpuCounter.NextValue();
+            
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+
+            // Read inital CPU usage
+            var startProcessorPercent = cpuCounter.NextValue();
+
+            // Setup writer
+
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.Server.LocalEndPoint).Port;
+
+            var policy = new TriggeredTcpReconnectionPolicy();
+            policy.Trigger();
+            using (var writer = new TcpSocketWriter(IPAddress.Loopback, port, policy, 2))
+            {
+
+                Thread.Sleep(TimeSpan.FromSeconds(2));
+
+                // Read new CPU usage value
+                var newProcessorPercent = cpuCounter.NextValue();
+
+                // Assert difference in CPU usage
+                Assert.InRange(newProcessorPercent - startProcessorPercent, -5, 5);
+            }
         }
     }
 }

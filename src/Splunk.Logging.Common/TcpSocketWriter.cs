@@ -66,7 +66,7 @@ namespace Splunk.Logging
         /// <param name="maxQueueSize">The maximum number of log entries to queue before starting to drop entries.</param>
         /// <param name="progress">An IProgress object that reports when the queue of entries to be written reaches empty or there is
         /// a reconnection failure. This is used for testing purposes only.</param>
-        public TcpSocketWriter(IPAddress host, int port, ITcpReconnectionPolicy policy, 
+        public TcpSocketWriter(IPAddress host, int port, ITcpReconnectionPolicy policy,
             int maxQueueSize, Func<IPAddress, int, Socket> connect = null)
         {
             this.host = host;
@@ -74,7 +74,7 @@ namespace Splunk.Logging
             this.reconnectPolicy = policy;
             this.eventQueue = new FixedSizeQueue<string>(maxQueueSize);
             this.tokenSource = new CancellationTokenSource();
-            
+
             if (connect == null)
             {
                 this.tryOpenSocket = (h, p) =>
@@ -95,17 +95,17 @@ namespace Splunk.Logging
             else
             {
                 this.tryOpenSocket = (h, p) =>
+                {
+                    try
                     {
-                        try
-                        {
-                            return connect(h, p);
-                        }
-                        catch (SocketException e)
-                        {
-                            LoggingFailureHandler(e);
-                            throw;
-                        }
-                    };
+                        return connect(h, p);
+                    }
+                    catch (SocketException e)
+                    {
+                        LoggingFailureHandler(e);
+                        throw;
+                    }
+                };
             }
 
             var threadReady = new TaskCompletionSource<bool>();
@@ -124,8 +124,9 @@ namespace Splunk.Logging
                         {
                             eventQueue.CompleteAdding();
                             // Post-condition: no further items will be added to the queue, so there will be a finite number of items to handle.
-                            while (eventQueue.TryDequeue(out entry))
+                            while (eventQueue.Count > 0)
                             {
+                                entry = eventQueue.Dequeue();
                                 try
                                 {
                                     this.socket.Send(Encoding.UTF8.GetBytes(entry));
@@ -139,7 +140,7 @@ namespace Splunk.Logging
                         }
                         else if (entry == null)
                         {
-                            eventQueue.TryDequeue(out entry);
+                            entry = eventQueue.Dequeue(tokenSource.Token);
                         }
                         else if (entry != null)
                         {
@@ -184,7 +185,7 @@ namespace Splunk.Logging
             // writer thread to stop the queue from accepting entries and write what it has
             // before cleaning up, then wait until that cleanup is finished.
             this.tokenSource.Cancel();
-            Task.Run(async () => await disposed.Task).Wait();                
+            Task.Run(async () => await disposed.Task).Wait();
         }
 
         /// <summary>
