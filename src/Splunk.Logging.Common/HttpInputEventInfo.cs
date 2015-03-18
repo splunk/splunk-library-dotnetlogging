@@ -14,13 +14,13 @@
  * under the License.
  */
 
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 
 namespace Splunk.Logging
 {
-    [DataContract]
+    [JsonObject(MemberSerialization.OptIn)]
     public struct HttpInputEventInfo
     {
         public const string MetadataTimeTag = "time";
@@ -30,16 +30,15 @@ namespace Splunk.Logging
 
         private Dictionary<string, string> metadata;
 
-        [DataContract]
         public struct EventInfo
         {
-            [DataMember(Name = "id", EmitDefaultValue = false)]
+            [JsonProperty(PropertyName = "id", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public readonly string Id;
 
-            [DataMember(Name = "severity", EmitDefaultValue = false)]
+           [JsonProperty(PropertyName = "severity", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public readonly string Severity;
 
-            [DataMember(Name = "message", EmitDefaultValue = false)]
+            [JsonProperty(PropertyName = "message", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public readonly string Message;
 
             public EventInfo(string id, string severity, string message)
@@ -50,28 +49,28 @@ namespace Splunk.Logging
             }
         }
 
-        [DataMember(Name = MetadataTimeTag, EmitDefaultValue = false)]
+        [JsonProperty(PropertyName = "time")]
         public readonly string Timestamp;
 
-        [DataMember(Name = MetadataIndexTag, EmitDefaultValue = false)]
+        [JsonProperty(PropertyName = "index", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string Index { 
             get { return GetMetadataValue(MetadataIndexTag); }
             private set { } 
         }
 
-        [DataMember(Name = MetadataSourceTag, EmitDefaultValue = false)]
+        [JsonProperty(PropertyName = "source", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string Source { 
             get { return GetMetadataValue(MetadataSourceTag); }
             private set { } 
         }
 
-        [DataMember(Name = MetadataSourceTypeTag, EmitDefaultValue = false)]
+        [JsonProperty(PropertyName = "sourcetype", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string SourceType { 
             get { return GetMetadataValue(MetadataSourceTypeTag); } 
             private set { } 
         }
 
-        [DataMember(Name = "event", EmitDefaultValue = false)]
+        [JsonProperty(PropertyName = "event", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public readonly EventInfo Event;
 
         public HttpInputEventInfo(string id, string severity, string message, Dictionary<string, string> metadata)

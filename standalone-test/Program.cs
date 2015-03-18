@@ -31,13 +31,19 @@ namespace standalone_test
 
         static void HttpInput()
         {
+            Console.WriteLine("start");
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
             var listener = new HttpInputTraceListener();
             trace.Listeners.Add(listener);
-            trace.TraceEvent(TraceEventType.Information, 1, "hello world");
+            for (int i = 0; i < 10000; i++)
+            {
+                if (i % 1000 == 0) Console.WriteLine(i);
+                trace.TraceEvent(TraceEventType.Information, 1, "hello world");
+            }
             trace.TraceEvent(TraceEventType.Error, 2, "error");
             trace.TraceInformation("hello");
+            Console.WriteLine("end");
             System.Threading.Thread.Sleep(20000);
         }
     }

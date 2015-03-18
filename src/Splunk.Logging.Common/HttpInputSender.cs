@@ -21,6 +21,7 @@ using System.Runtime.Serialization.Json;
 using System.Net.Http;
 using System.Text;
 using System.Net;
+using Newtonsoft.Json;
 
 namespace Splunk.Logging
 {
@@ -69,6 +70,8 @@ namespace Splunk.Logging
             }
         }
 
+        int before = 0, after = 0;
+
         private async void postEventsAsync(List<HttpInputEventInfo> events)
         {
             // append all events into a single string
@@ -82,9 +85,18 @@ namespace Splunk.Logging
             httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderTag,
                 string.Format(AuthorizationHeaderScheme, token));
 
+            before++;
             var response = await httpClient.PostAsync(url, content);
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                after++;
+                Console.WriteLine("{0} -- {1}", before, after);
+            }
             if (response.StatusCode != HttpStatusCode.OK)
             {
+                after++;
+                Console.WriteLine("ERROR {0}", response.StatusCode);  
                 // \todo - error handling
                 // \todo - resend
             }
@@ -92,13 +104,7 @@ namespace Splunk.Logging
 
         private string serializeEventInfo(HttpInputEventInfo eventInfo) 
         {
-            DataContractJsonSerializer serializer = 
-                new DataContractJsonSerializer(typeof(HttpInputEventInfo));
-            MemoryStream stream = new MemoryStream();
-            serializer.WriteObject(stream, eventInfo);
-            string jsonString = Encoding.UTF8.GetString(stream.ToArray());
-            stream.Close();
-            return jsonString;
+            return JsonConvert.SerializeObject(eventInfo);
         }
     }
 }

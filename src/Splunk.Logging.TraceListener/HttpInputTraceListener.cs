@@ -41,37 +41,37 @@ namespace Splunk.Logging
         
         public override void Write(string message) 
         {
-            System.Console.Write("->" + message);
+            sender.Send(null, null, message);
         }
 
         public override void WriteLine(string message) {
-            System.Console.WriteLine("=>" + message);
+            sender.Send(null, null, message);
         }
 
         public override void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id, params object[] data)
         {
-            System.Console.WriteLine("1->" + eventType);
+            sender.Send(id.ToString(), eventType.ToString(), null);
         }
 
         public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id)
         {
-            System.Console.WriteLine("2->" + eventType);
+            sender.Send(id.ToString(), eventType.ToString(), null);
         }
 
         public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string message)
         {
             sender.Send(id.ToString(), eventType.ToString(), message);
-            System.Console.WriteLine("3->" + eventType + message);
         }
 
         public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string format, params object[] args)
         {
-            System.Console.WriteLine("4->" + eventType + format);
+            string message = args != null ? string.Format(format, args) : format;
+            sender.Send(id.ToString(), eventType.ToString(), message);
         }
 
         public override void TraceTransfer(TraceEventCache eventCache, string source, int id, string message, Guid relatedActivityId)
         {
-            System.Console.WriteLine("5->" + message);
+            sender.Send(id.ToString(), null, message);
         }
         
         public override void Close()
