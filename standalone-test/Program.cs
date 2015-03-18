@@ -14,6 +14,9 @@ namespace standalone_test
     {
         static void Main(string[] args)
         {
+            HttpInput();
+           
+            /*
             var traceSource = new TraceSource("UnitTestLogger");
             traceSource.Listeners.Remove("Default");
             traceSource.Switch.Level = SourceLevels.All;
@@ -23,6 +26,19 @@ namespace standalone_test
 
             for (int i = 0; i < 10; i++)
                 traceSource.TraceEvent(TraceEventType.Information, 100, string.Format("Boris {0}", i));
+            */
+        }
+
+        static void HttpInput()
+        {
+            var trace = new TraceSource("HttpInputLogger");
+            trace.Switch.Level = SourceLevels.All;
+            var listener = new HttpInputTraceListener();
+            trace.Listeners.Add(listener);
+            trace.TraceEvent(TraceEventType.Information, 1, "hello world");
+            trace.TraceEvent(TraceEventType.Error, 2, "error");
+            trace.TraceInformation("hello");
+            System.Threading.Thread.Sleep(20000);
         }
     }
 }
