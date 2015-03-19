@@ -113,11 +113,16 @@ namespace Splunk.Logging
             Sleep();
 
             // test metadata
+            ulong now =
+                (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             server.Method = (auth, input) =>
             {
                 Assert.True(input.index.Value == "main");
                 Assert.True(input.source.Value == "localhost");
                 Assert.True(input.sourcetype.Value == "log");
+                // check that timestamp is correct
+                ulong time = ulong.Parse(input.time.Value);
+                Assert.True(time - now <= 1);
                 return new HttpServer.Response();
             };
             trace.TraceEvent(TraceEventType.Information, 1, "info");
