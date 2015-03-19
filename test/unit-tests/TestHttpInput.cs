@@ -19,7 +19,7 @@ namespace Splunk.Logging
         private const string Uri = "http://localhost:5555";
         private const string HttpInputUrl = Uri + "/services/receivers/token/";
 
-        // A dummy http input server  
+        // A dummy http input server
         private class HttpServer
         {
             private readonly HttpListener listener = new HttpListener();
@@ -51,20 +51,18 @@ namespace Splunk.Logging
                                 try
                                 {
                                     string input = new StreamReader(context.Request.InputStream).ReadToEnd();
-                                    string authorization = context.Request.Headers.Get("Authorization");
-                                    
-                                    input = "{\"x\":1}";
-
-                                    JObject jobj = JObject.Parse(input);
+                                    string authorization = context.Request.Headers.Get("Authorization");                                    
+                                    dynamic jobj = JObject.Parse(input);
                                     Response response = Method(authorization, jobj);
                                     context.Response.StatusCode = response.Code;
                                     byte[] buf = Encoding.UTF8.GetBytes(response.Context);
                                     context.Response.ContentLength64 = buf.Length;
                                     context.Response.OutputStream.Write(buf, 0, buf.Length);                                    
                                 }
-                                catch (Exception e) {
-                                    Console.WriteLine(e);
-                                } // suppress any exceptions
+                                catch (Exception e) 
+                                {
+                                    Assert.True(false, e.ToString());   
+                                } 
                                 finally
                                 {
                                     // always close the stream
@@ -94,7 +92,7 @@ namespace Splunk.Logging
 
         [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListener")]
         [Fact]
-        public void HttpInputListenerTest()
+        public void HttpInputTraceListener()
         {
             // setup the logger
             var trace = new TraceSource("HttpInputLogger");
@@ -113,11 +111,35 @@ namespace Splunk.Logging
             };
             trace.TraceEvent(TraceEventType.Information, 1, "info");
             Sleep();
+
+            // test metadata
+            server.Method = (auth, input) =>
+            {
+                Assert.True(input.index.Value == "main");
+                Assert.True(input.source.Value == "localhost");
+                Assert.True(input.sourcetype.Value == "log");
+                return new HttpServer.Response();
+            };
+            trace.TraceEvent(TraceEventType.Information, 1, "info");
+            Sleep();
+
+            // test event info
+            server.Method = (auth, input) =>
+            {
+                Assert.True(input["event"].id.Value == "123");
+                Assert.True(input["event"].severity.Value == "Error");
+                Assert.True(input["event"].message.Value == "Test error");
+                return new HttpServer.Response();
+            };
+            trace.TraceEvent(TraceEventType.Error, 123, "Test error");
+            Sleep();
+
+            server.Stop();
         }
 
         private void Sleep()
         {
-            // logger and server are async we need short sleeps during the test
+            // logger and server are async thus we need short delays between individual tests
             Thread.Sleep(500); 
         }
     }
