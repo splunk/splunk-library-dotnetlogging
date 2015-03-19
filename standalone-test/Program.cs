@@ -34,17 +34,27 @@ namespace standalone_test
             Console.WriteLine("start");
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
-            var listener = new HttpInputTraceListener();
+            var meta = new Dictionary<string, string>();
+            meta["index"] = "main";
+            meta["source"] = "host";
+            meta["sourcetype"] = "log";
+            var listener = new HttpInputTraceListener(
+                "http://oizmerly-mbp:8089", "E6099437-3E1F-4793-90AB-0E5D9438A918",
+                0, 0, 0, 0, 
+                meta
+            );
             trace.Listeners.Add(listener);
-            for (int i = 0; i < 10000; i++)
+            string[] data =  {"hello", "world"};
+            trace.TraceData(TraceEventType.Error, 2, data);
+            for (int i = 0; i < 10; i++)
             {
-                if (i % 1000 == 0) Console.WriteLine(i);
+                if (i % 100 == 0) Console.WriteLine(i);
                 trace.TraceEvent(TraceEventType.Information, 1, "hello world");
             }
             trace.TraceEvent(TraceEventType.Error, 2, "error");
             trace.TraceInformation("hello");
             Console.WriteLine("end");
-            System.Threading.Thread.Sleep(20000);
+            System.Threading.Thread.Sleep(200000);
         }
     }
 }

@@ -1,5 +1,7 @@
-/*
- * Copyright 2015 Splunk, Inc.
+/**
+ * @copyright
+ *
+ * Copyright 2013-2015 Splunk, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"): you may
  * not use this file except in compliance with the License. You may obtain
@@ -20,72 +22,122 @@ using System.Collections.Generic;
 
 namespace Splunk.Logging
 {
-    [JsonObject(MemberSerialization.OptIn)]
+    /// <summary>
+    /// HttpInputEventInfo is a wrapper container for .NET events information.
+    /// An instance of HttpInputEventInfo can be easily serialized into json
+    /// format using JsonConvert.SerializeObject. 
+    /// </summary>
     public struct HttpInputEventInfo
     {
+        /// <summary>
+        /// Common metadata tags that can be specified by http input logger.
+        /// </summary>
+        #region metadata tags
         public const string MetadataTimeTag = "time";
         public const string MetadataIndexTag = "index";
         public const string MetadataSourceTag = "source";
         public const string MetadataSourceTypeTag = "sourcetype";
+        #endregion
 
-        private Dictionary<string, string> metadata;
-
-        public struct EventInfo
+        /// <summary>
+        /// A wrapper for logger event information.
+        /// </summary>
+        public struct LoggerEvent
         {
+            /// <summary>
+            /// Logging event id.
+            /// </summary>
             [JsonProperty(PropertyName = "id", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public readonly string Id;
-
+           
+            /// <summary>
+            /// Logging event severity info.
+            /// </summary>
            [JsonProperty(PropertyName = "severity", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public readonly string Severity;
 
+            /// <summary>
+            /// Logging event message.
+            /// </summary>
             [JsonProperty(PropertyName = "message", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public readonly string Message;
 
-            public EventInfo(string id, string severity, string message)
+            /// <summary>
+            /// Auxiliary event data.
+            /// </summary>
+            [JsonProperty(PropertyName = "data", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public readonly object Data;
+
+            /// <summary>
+            /// LoggerEvent c-or.
+            /// </summary>
+            /// <param name="id">Event id.</param>
+            /// <param name="severity">Event severity info.</param>
+            /// <param name="message">Event message.</param>
+            /// <param name="data">Event data.</param>
+            public LoggerEvent(string id, string severity, string message, object data)
             {
                 Id = id;
                 Severity = severity;
                 Message = message;
+                Data = data;
             }
         }
 
-        [JsonProperty(PropertyName = "time")]
+        /// <summary>
+        /// Event timestamp in epoch format.
+        /// </summary>
+        [JsonProperty(PropertyName = MetadataTimeTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
         public readonly string Timestamp;
 
-        [JsonProperty(PropertyName = "index", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string Index { 
-            get { return GetMetadataValue(MetadataIndexTag); }
-            private set { } 
-        }
+        /// <summary>
+        /// Event metadata index.
+        /// </summary>
+        [JsonProperty(PropertyName = MetadataIndexTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public readonly string Index; 
 
-        [JsonProperty(PropertyName = "source", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string Source { 
-            get { return GetMetadataValue(MetadataSourceTag); }
-            private set { } 
-        }
+        /// <summary>
+        /// Event metadata source.
+        /// </summary>
+        [JsonProperty(PropertyName = MetadataSourceTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public readonly string Source;
 
-        [JsonProperty(PropertyName = "sourcetype", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string SourceType { 
-            get { return GetMetadataValue(MetadataSourceTypeTag); } 
-            private set { } 
-        }
+        /// <summary>
+        /// Event metadata sourcetype.
+        /// </summary>
+        [JsonProperty(PropertyName = MetadataSourceTypeTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public readonly string SourceType;
 
+        /// <summary>
+        /// Logger event info.
+        /// </summary>
         [JsonProperty(PropertyName = "event", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public readonly EventInfo Event;
+        public readonly LoggerEvent Event;
 
-        public HttpInputEventInfo(string id, string severity, string message, Dictionary<string, string> metadata)
+        /// <summary>
+        /// HttpInputEventInfo c-or.
+        /// </summary>
+        /// <param name="id">Event id.</param>
+        /// <param name="severity">Event severity info.</param>
+        /// <param name="message">Event message text.</param>
+        /// <param name="data">Event auxiliary data.</param>
+        /// <param name="metadata">Logger metadata.</param>
+        public HttpInputEventInfo(
+            string id, string severity, string message, object data, 
+            Dictionary<string, string> metadata)
         {
-            this.metadata = metadata; 
-            Event = new EventInfo(id, severity, message);
-            Timestamp = ((ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString();
+            Event = new LoggerEvent(id, severity, message, data);
+            // set timestamp to the current UTC epoch time 
+            Timestamp = 
+                ((ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString();
+            // fill metadata values
+            Index = GetMetadataValue(metadata, MetadataIndexTag);
+            Source = GetMetadataValue(metadata, MetadataSourceTag);
+            SourceType = GetMetadataValue(metadata, MetadataSourceTypeTag);
         }
 
-        public int Size()
-        {
-            return Event.Severity.Length + Event.Message.Length;
-        }
-
-        private string GetMetadataValue(string tag)
+        // Safe get metadata value, returns null when value cannot be found
+        private static string GetMetadataValue(Dictionary<string, string> metadata, string tag)
         {
             string value = null;
             metadata.TryGetValue(tag, out value);

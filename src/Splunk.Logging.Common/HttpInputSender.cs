@@ -1,5 +1,7 @@
-/*
- * Copyright 2015 Splunk, Inc.
+/**
+ * @copyright
+ *
+ * Copyright 2013-2015 Splunk, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"): you may
  * not use this file except in compliance with the License. You may obtain
@@ -16,8 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Runtime.Serialization.Json;
 using System.Net.Http;
 using System.Text;
 using System.Net;
@@ -25,17 +25,42 @@ using Newtonsoft.Json;
 
 namespace Splunk.Logging
 {
+    /// <summary>
+    /// Http input client side implementation that collects, serializes and send 
+    /// events to Splunk http input endpoint. This class shouldn't be used directly
+    /// by user applications.
+    /// </summary>
+    /// <remarks>
+    /// HttpInputSender is thread safe. Events are are sending asynchronously thus 
+    /// call to the Send method doesn't block a user application.
+    /// </remarks>
     public class HttpInputSender
     {
         private const string HttpInputPath = "/services/receivers/token";
         private const string AuthorizationHeaderTag = "Authorization";
         private const string AuthorizationHeaderScheme = "Splunk {0}";
 
-        private string url;
-        private string token;
-        private List<HttpInputEventInfo> eventsBatch = new List<HttpInputEventInfo>();
-        private Dictionary<string, string> metadata;
+        private string url; // http input endpoint full url
+        private string token; // authorization token
+        private Dictionary<string, string> metadata; // logger metadata
 
+        // events batching properties and collection 
+        uint batchInterval = 0; 
+        uint batchSizeBytes = 0;
+        uint batchSizeCount = 0;
+        uint retriesOnError = 0;
+        private List<HttpInputEventInfo> eventsBatch = new List<HttpInputEventInfo>();
+        
+        /// <summary>
+        /// HttpInputSender c-or.
+        /// </summary>
+        /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
+        /// <param name="token">Http input authorization token.</param>
+        /// <param name="batchInterval">Batch interval in milliseconds.</param>
+        /// <param name="batchSizeBytes">Batch max size.</param>
+        /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
+        /// <param name="retriesOnError">Number of retries in case of connectivity problem.</param>
+        /// <param name="metadata">Logger metadata.</param>
         public HttpInputSender(
             string uri, string token,
             uint batchInterval, uint batchSizeBytes, uint batchSizeCount, 
@@ -44,21 +69,41 @@ namespace Splunk.Logging
         {
             this.url = uri + HttpInputPath;
             this.token = token;
+            this.batchInterval = batchInterval;
+            this.batchSizeBytes = batchSizeBytes;
+            this.batchSizeCount = batchSizeCount;
+            this.retriesOnError = retriesOnError;
             this.metadata = metadata;
         }
 
-        public void Send(string id, string severity, string message) 
+        /// <summary>
+        /// Send an event to Splunk http endpoint. Actual event send is done 
+        /// asynchronously and this method doesn't block client application.
+        /// </summary>
+        /// <param name="id">Event id.</param>
+        /// <param name="severity">Event severity info.</param>
+        /// <param name="message">Event message text.</param>
+        /// <param name="data">Additional event data.</param>
+        public void Send(
+            string id = null, 
+            string severity = null, 
+            string message = null, 
+            object data = null) 
         {
-            HttpInputEventInfo ei = new HttpInputEventInfo(id, severity, message, metadata);
+            HttpInputEventInfo ei = 
+                new HttpInputEventInfo(id, severity, message, data, metadata);
             lock (eventsBatch)
             {
                 eventsBatch.Add(ei);
-                // todo - batching
-                flush();
+                // @TODO - batching
+                Flush();
             }
         }
 
-        public void flush()
+        /// <summary>
+        /// Flush all batched events immediately. 
+        /// </summary>
+        public void Flush()
         {
             lock (eventsBatch)
             {
@@ -69,8 +114,6 @@ namespace Splunk.Logging
                 }
             }
         }
-
-        int before = 0, after = 0;
 
         private async void postEventsAsync(List<HttpInputEventInfo> events)
         {
@@ -85,21 +128,21 @@ namespace Splunk.Logging
             httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderTag,
                 string.Format(AuthorizationHeaderScheme, token));
 
-            before++;
-            var response = await httpClient.PostAsync(url, content);
+            try
+            {
+                var response = await httpClient.PostAsync(url, content);
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    // @TODO - error handling
+                    // @TODO - resend
+                    Console.WriteLine("ERROR {0}", response.StatusCode);
+                }
 
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                after++;
-                Console.WriteLine("{0} -- {1}", before, after);
             }
-            if (response.StatusCode != HttpStatusCode.OK)
+            catch (System.Net.WebException)
             {
-                after++;
-                Console.WriteLine("ERROR {0}", response.StatusCode);  
-                // \todo - error handling
-                // \todo - resend
-            }
+                // @TODO - error handling
+            }    
         }
 
         private string serializeEventInfo(HttpInputEventInfo eventInfo) 
