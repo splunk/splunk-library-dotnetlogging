@@ -101,7 +101,7 @@ namespace Splunk.Logging
             meta["index"] = "main";
             meta["source"] = "localhost";
             meta["sourcetype"] = "log";
-            trace.Listeners.Add(new HttpInputTraceListener(Uri, "TOKEN", 0, 0, 0, 0, meta));
+            trace.Listeners.Add(new HttpInputTraceListener(uri: Uri, token: "TOKEN", metadata: meta));
 
             // test authentication
             server.Method = (auth, input) => 

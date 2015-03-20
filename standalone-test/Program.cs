@@ -39,10 +39,9 @@ namespace standalone_test
             meta["source"] = "host";
             meta["sourcetype"] = "log";
             var listener = new HttpInputTraceListener(
-                "http://oizmerly-mbp:8089", "E6099437-3E1F-4793-90AB-0E5D9438A918",
-                0, 0, 0, 0, 
-                meta
-            );
+                uri: "http://oizmerly-mbp:8089", 
+                token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
+                metadata: meta);
             trace.Listeners.Add(listener);
             string[] data =  {"hello", "world"};
             trace.TraceData(TraceEventType.Error, 2, data);

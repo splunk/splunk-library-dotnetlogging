@@ -140,7 +140,8 @@ namespace Splunk.Logging
         private static string GetMetadataValue(Dictionary<string, string> metadata, string tag)
         {
             string value = null;
-            metadata.TryGetValue(tag, out value);
+            if (metadata != null) 
+                metadata.TryGetValue(tag, out value);
             return value;
         }
     }

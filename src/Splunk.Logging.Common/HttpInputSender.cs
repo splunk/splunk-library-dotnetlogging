@@ -56,16 +56,15 @@ namespace Splunk.Logging
         /// </summary>
         /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
         /// <param name="token">Http input authorization token.</param>
+        /// <param name="metadata">Logger metadata.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
         /// <param name="retriesOnError">Number of retries in case of connectivity problem.</param>
-        /// <param name="metadata">Logger metadata.</param>
         public HttpInputSender(
-            string uri, string token,
+            string uri, string token, Dictionary<string, string> metadata,
             uint batchInterval, uint batchSizeBytes, uint batchSizeCount, 
-            uint retriesOnError,
-            Dictionary<string, string> metadata)
+            uint retriesOnError)
         {
             this.url = uri + HttpInputPath;
             this.token = token;

@@ -24,6 +24,12 @@ namespace Splunk.Logging
 {
     /// <summary>
     /// Trace listener implementation for Splunk http input. 
+    /// Usage example:
+    /// var trace = new TraceSource("logger");
+    /// trace.listeners.Add(new HttpInputTraceListener(
+    ///     uri: "https://localhost:8089", 
+    ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918");
+    /// trace.TraceEvent(TraceEventType.Information, 1, "hello world");
     /// </summary>
     public class HttpInputTraceListener : TraceListener
     {
@@ -34,21 +40,20 @@ namespace Splunk.Logging
         /// </summary>
         /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
         /// <param name="token">Http input authorization token.</param>
+        /// <param name="metadata">Logger metadata.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
         /// <param name="retriesOnError">Number of retries in case of connectivity problem.</param>
-        /// <param name="metadata">Logger metadata.</param>
         public HttpInputTraceListener(
             string uri, string token,
-            uint batchInterval, uint batchSizeBytes, uint batchSizeCount,
-            uint retriesOnError,
-            Dictionary<string, string> metadata)
+            Dictionary<string, string> metadata = null,
+            uint batchInterval = 0, uint batchSizeBytes = 0, uint batchSizeCount = 0,
+            uint retriesOnError = 0)
         {
             sender = new HttpInputSender(
-                uri, token, 
-                batchInterval, batchSizeBytes, batchSizeCount, retriesOnError, 
-                metadata);
+                uri, token, metadata,
+                batchInterval, batchSizeBytes, batchSizeCount, retriesOnError);
         }
 
         /// <summary>
