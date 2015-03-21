@@ -16,8 +16,7 @@ namespace Splunk.Logging
 {
     public class TestHttpInput
     {
-        private const string Uri = "http://localhost:5555";
-        private const string HttpInputUrl = Uri + "/services/receivers/token/";
+        private const string HttpInputPath = "/services/receivers/token/";
 
         // A dummy http input server
         private class HttpServer
@@ -50,9 +49,23 @@ namespace Splunk.Logging
                                 var context = obj as HttpListenerContext;
                                 try
                                 {
-                                    string input = new StreamReader(context.Request.InputStream).ReadToEnd();
                                     string authorization = context.Request.Headers.Get("Authorization");                                    
-                                    dynamic jobj = JObject.Parse(input);
+                                    string input = new StreamReader(context.Request.InputStream).ReadToEnd();
+                                    dynamic jobj = null;
+                                    if (input.Contains("}{"))
+                                    {
+                                        // batch of events, convert it to a json array
+                                        input =
+                                            "[" +
+                                            input.Replace("}{", "},{") +
+                                            "]";
+                                        jobj = JArray.Parse(input);
+                                    }
+                                    else 
+                                    {
+                                       jobj = JObject.Parse(input);
+                                    }                 
+                                    
                                     Response response = Method(authorization, jobj);
                                     context.Response.StatusCode = response.Code;
                                     byte[] buf = Encoding.UTF8.GetBytes(response.Context);
@@ -81,19 +94,15 @@ namespace Splunk.Logging
                 listener.Close();
             }
         }
-
-        private HttpServer server = new HttpServer(HttpInputUrl);
  
-        public TestHttpInput()
-        {
-            server.Method = (auth, input) => { return new HttpServer.Response(); };
-            server.Run();            
-        }
-
         [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListener")]
         [Fact]
         public void HttpInputTraceListener()
         {
+            const string uri = "http://localhost:5001";
+            HttpServer server = new HttpServer(uri + HttpInputPath);
+            server.Run();  
+
             // setup the logger
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
@@ -101,7 +110,7 @@ namespace Splunk.Logging
             meta["index"] = "main";
             meta["source"] = "localhost";
             meta["sourcetype"] = "log";
-            trace.Listeners.Add(new HttpInputTraceListener(uri: Uri, token: "TOKEN", metadata: meta));
+            trace.Listeners.Add(new HttpInputTraceListener(uri: uri, token: "TOKEN", metadata: meta));
 
             // test authentication
             server.Method = (auth, input) => 
@@ -138,6 +147,130 @@ namespace Splunk.Logging
             };
             trace.TraceEvent(TraceEventType.Error, 123, "Test error");
             Sleep();
+
+            server.Stop();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingSize")]
+        [Fact]
+        public void HttpInputTraceListenerBatchingSize()
+        {
+            const string uri = "http://localhost:5002";
+            HttpServer server = new HttpServer(uri + HttpInputPath);
+            server.Run();
+
+            // setup the logger
+            var trace = new TraceSource("HttpInputLogger");
+            trace.Switch.Level = SourceLevels.All;
+            trace.Listeners.Add(new HttpInputTraceListener(
+                uri: uri, token: "TOKEN",
+                batchSizeBytes: 200 // an individual event is around 120B, so we expect 2 events per batch
+            ));
+
+            // the first event shouldn't be received
+            server.Method = (auth, input) =>
+            {
+                Assert.True(false); 
+                return null;
+            };
+            trace.TraceEvent(TraceEventType.Information, 1, "first");
+            Sleep();
+
+            // now the second event triggers sending 
+            server.Method = (auth, input) =>
+            {
+                Assert.True(input[0]["event"].message.Value == "first");
+                Assert.True(input[1]["event"].message.Value == "second");
+                return new HttpServer.Response();
+            };
+            trace.TraceEvent(TraceEventType.Information, 2, "second");
+            Sleep();
+
+            server.Stop();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingCount")]
+        [Fact]
+        public void HttpInputTraceListenerBatchingCount()
+        {
+            const string uri = "http://localhost:5003";
+            HttpServer server = new HttpServer(uri + HttpInputPath);
+            server.Run();
+ 
+            // setup the logger
+            var trace = new TraceSource("HttpInputLogger");
+            trace.Switch.Level = SourceLevels.All;
+            trace.Listeners.Add(new HttpInputTraceListener(
+                uri: uri, token: "TOKEN", 
+                batchSizeCount: 3 
+            ));
+
+            // the first event shouldn't be received by the server
+            server.Method = (auth, input) =>
+            {
+                Assert.True(false);
+                return null;
+            };
+            trace.TraceEvent(TraceEventType.Information, 1, "first");
+            Sleep();
+
+            // the second event shouldn't be received as well
+            trace.TraceEvent(TraceEventType.Information, 2, "second");
+            Sleep();
+
+            // now the third event triggers sending the batch
+            server.Method = (auth, input) =>
+            {
+                Assert.True(input[0]["event"].message.Value == "first");
+                Assert.True(input[1]["event"].message.Value == "second");
+                Assert.True(input[2]["event"].message.Value == "third");
+                return new HttpServer.Response();
+            };
+            trace.TraceEvent(TraceEventType.Information, 3, "third");
+            Sleep();
+            
+            server.Stop();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingFlush")]
+        [Fact]
+        public void HttpInputTraceListenerBatchingFlush()
+        {
+            const string uri = "http://localhost:5004";
+            HttpServer server = new HttpServer(uri + HttpInputPath);
+            server.Run();
+
+            // setup the logger
+            var trace = new TraceSource("HttpInputLogger");
+            trace.Switch.Level = SourceLevels.All;
+            var meta = new Dictionary<string, string>();
+            meta["index"] = "main";
+            meta["source"] = "localhost";
+            meta["sourcetype"] = "log";
+            trace.Listeners.Add(new HttpInputTraceListener(
+                uri: uri, token: "TOKEN", metadata: meta,
+                batchSizeCount: uint.MaxValue,
+                batchSizeBytes: uint.MaxValue));
+
+            // send multiple events, no event should be received immediately 
+            server.Method = (auth, input) =>
+            {
+                Assert.True(false);
+                return null;
+            };
+            for (int i = 0; i < 1000; i ++)
+                trace.TraceEvent(TraceEventType.Information, 1, "hello");            
+            Sleep();
+
+            int receivedCount = 0;
+            server.Method = (auth, input) =>
+            {
+                receivedCount = input.Count;
+                return new HttpServer.Response();
+            };
+            trace.Close(); // flush all events
+            Sleep();
+            Assert.True(receivedCount == 1000);
 
             server.Stop();
         }

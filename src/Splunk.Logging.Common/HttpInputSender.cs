@@ -50,7 +50,8 @@ namespace Splunk.Logging
         uint batchSizeCount = 0;
         uint retriesOnError = 0;
         private List<HttpInputEventInfo> eventsBatch = new List<HttpInputEventInfo>();
-        
+        private StringBuilder serializedEventsBatch = new StringBuilder();
+
         /// <summary>
         /// HttpInputSender c-or.
         /// </summary>
@@ -73,6 +74,17 @@ namespace Splunk.Logging
             this.batchSizeCount = batchSizeCount;
             this.retriesOnError = retriesOnError;
             this.metadata = metadata;
+
+            // when size configuration setting is missing it's treated as "infinity",
+            // i.e., any value is accepted.
+            if (this.batchSizeCount == 0 && this.batchSizeBytes > 0)
+            {
+                this.batchSizeCount = uint.MaxValue;
+            }
+            else if (this.batchSizeBytes == 0 && this.batchSizeCount > 0)
+            {
+                this.batchSizeBytes = uint.MaxValue;
+            }
         }
 
         /// <summary>
@@ -91,11 +103,17 @@ namespace Splunk.Logging
         {
             HttpInputEventInfo ei = 
                 new HttpInputEventInfo(id, severity, message, data, metadata);
-            lock (eventsBatch)
+            lock (serializedEventsBatch)
             {
                 eventsBatch.Add(ei);
-                // @TODO - batching
-                Flush();
+                serializedEventsBatch.Append(serializeEventInfo(ei));
+                if (eventsBatch.Count >= batchSizeCount ||
+                    serializedEventsBatch.Length >= batchSizeBytes)
+                {
+                    // there are enough events in the batch
+                    Flush();
+
+                }
             }
         }
 
@@ -104,29 +122,31 @@ namespace Splunk.Logging
         /// </summary>
         public void Flush()
         {
-            lock (eventsBatch)
+            lock (serializedEventsBatch)
             {
-                if (eventsBatch.Count > 0)
+                if (serializedEventsBatch.Length > 0)
                 {
-                    postEventsAsync(eventsBatch);
-                    eventsBatch.Clear();
+                    postEventsAsync(eventsBatch, serializedEventsBatch.ToString());
+                    serializedEventsBatch.Clear();
+                    // we explicitly create a new events list instead to clear
+                    // and reuse the old one because Flush works in async mode
+                    // and can use use "previous" containers for error handling
+                    eventsBatch = new List<HttpInputEventInfo>();                    
                 }
             }
         }
 
-        private async void postEventsAsync(List<HttpInputEventInfo> events)
+        private async void postEventsAsync(
+            List<HttpInputEventInfo> events, String serializedEvents)
         {
-            // append all events into a single string
-            StringBuilder sb = new StringBuilder();
-            events.ForEach((e) => sb.Append(serializeEventInfo(e)));
-
+            // init http client
             HttpClient httpClient = new HttpClient();
             HttpContent content = new StringContent(
-                sb.ToString(), Encoding.UTF8, "application/json");
-
+                serializedEvents, Encoding.UTF8, "application/json");
+            // setup http input authentication 
             httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderTag,
                 string.Format(AuthorizationHeaderScheme, token));
-
+            // send the data to http input
             try
             {
                 var response = await httpClient.PostAsync(url, content);

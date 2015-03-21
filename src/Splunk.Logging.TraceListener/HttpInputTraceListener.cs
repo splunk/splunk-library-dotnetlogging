@@ -125,7 +125,7 @@ namespace Splunk.Logging
 
         public override void Close()
         {
-            // @TODO - wait for async events (SPL-98289)
+            sender.Flush();
         }
     }
 }
