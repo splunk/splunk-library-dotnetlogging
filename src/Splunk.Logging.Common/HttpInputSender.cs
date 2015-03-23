@@ -22,6 +22,7 @@ using System.Net.Http;
 using System.Text;
 using System.Net;
 using Newtonsoft.Json;
+using System.Threading;
 
 namespace Splunk.Logging
 {
@@ -31,10 +32,12 @@ namespace Splunk.Logging
     /// by user applications.
     /// </summary>
     /// <remarks>
-    /// HttpInputSender is thread safe. Events are are sending asynchronously thus 
-    /// call to the Send method doesn't block a user application.
+    /// * HttpInputSender is thread safe and Send(...) method may be called from
+    /// different threads.
+    /// * Events are are sending asynchronously and Send(...) method doesn't 
+    /// block the caller code.
     /// </remarks>
-    public class HttpInputSender
+    public class HttpInputSender 
     {
         private const string HttpInputPath = "/services/receivers/token";
         private const string AuthorizationHeaderTag = "Authorization";
@@ -51,6 +54,7 @@ namespace Splunk.Logging
         uint retriesOnError = 0;
         private List<HttpInputEventInfo> eventsBatch = new List<HttpInputEventInfo>();
         private StringBuilder serializedEventsBatch = new StringBuilder();
+        private Timer timer; 
 
         /// <summary>
         /// HttpInputSender c-or.
@@ -85,6 +89,12 @@ namespace Splunk.Logging
             {
                 this.batchSizeBytes = uint.MaxValue;
             }
+
+            // setup the timer
+            if (batchInterval != 0) // 0 means - no timer
+            {
+                timer = new Timer(OnTimer, null, (int)batchInterval, (int)batchInterval);        
+            }
         }
 
         /// <summary>
@@ -103,6 +113,8 @@ namespace Splunk.Logging
         {
             HttpInputEventInfo ei = 
                 new HttpInputEventInfo(id, severity, message, data, metadata);
+            // we use lock serializedEventsBatch to synchronize both 
+            // serializedEventsBatch and serializedEvents
             lock (serializedEventsBatch)
             {
                 eventsBatch.Add(ei);
@@ -112,7 +124,6 @@ namespace Splunk.Logging
                 {
                     // there are enough events in the batch
                     Flush();
-
                 }
             }
         }
@@ -162,6 +173,11 @@ namespace Splunk.Logging
             {
                 // @TODO - error handling
             }    
+        }
+
+        private void OnTimer(object state)
+        {
+            Flush();
         }
 
         private string serializeEventInfo(HttpInputEventInfo eventInfo) 

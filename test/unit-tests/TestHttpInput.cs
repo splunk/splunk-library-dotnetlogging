@@ -21,6 +21,8 @@ namespace Splunk.Logging
         // A dummy http input server
         private class HttpServer
         {
+            private static int port = 5000;
+            private string uri;
             private readonly HttpListener listener = new HttpListener();
 
             public class Response
@@ -30,12 +32,19 @@ namespace Splunk.Logging
             }
             public Func<string, dynamic, Response> Method { get; set; }
 
-            public HttpServer(string url)
+            public HttpServer()
             {
+                // the tests are running simultaneously thus we start a new multiple 
+                // http servers with different ports 
+                port++;
+                uri = "http://localhost:" + port;
+                string url = uri + HttpInputPath;
                 listener.Prefixes.Add(url);
                 listener.Start();
+                Run();
             }
- 
+
+            public string Uri { get { return uri; } }
             public void Run()
             {
                 ThreadPool.QueueUserWorkItem((wi) =>
@@ -99,9 +108,7 @@ namespace Splunk.Logging
         [Fact]
         public void HttpInputTraceListener()
         {
-            const string uri = "http://localhost:5001";
-            HttpServer server = new HttpServer(uri + HttpInputPath);
-            server.Run();  
+            HttpServer server = new HttpServer();
 
             // setup the logger
             var trace = new TraceSource("HttpInputLogger");
@@ -110,7 +117,7 @@ namespace Splunk.Logging
             meta["index"] = "main";
             meta["source"] = "localhost";
             meta["sourcetype"] = "log";
-            trace.Listeners.Add(new HttpInputTraceListener(uri: uri, token: "TOKEN", metadata: meta));
+            trace.Listeners.Add(new HttpInputTraceListener(uri: server.Uri, token: "TOKEN", metadata: meta));
 
             // test authentication
             server.Method = (auth, input) => 
@@ -147,23 +154,19 @@ namespace Splunk.Logging
             };
             trace.TraceEvent(TraceEventType.Error, 123, "Test error");
             Sleep();
-
-            server.Stop();
         }
 
         [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingSize")]
         [Fact]
         public void HttpInputTraceListenerBatchingSize()
         {
-            const string uri = "http://localhost:5002";
-            HttpServer server = new HttpServer(uri + HttpInputPath);
-            server.Run();
+            HttpServer server = new HttpServer();            
 
             // setup the logger
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
             trace.Listeners.Add(new HttpInputTraceListener(
-                uri: uri, token: "TOKEN",
+                uri: server.Uri, token: "TOKEN",
                 batchSizeBytes: 200 // an individual event is around 120B, so we expect 2 events per batch
             ));
 
@@ -186,22 +189,19 @@ namespace Splunk.Logging
             trace.TraceEvent(TraceEventType.Information, 2, "second");
             Sleep();
 
-            server.Stop();
         }
 
         [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingCount")]
         [Fact]
         public void HttpInputTraceListenerBatchingCount()
         {
-            const string uri = "http://localhost:5003";
-            HttpServer server = new HttpServer(uri + HttpInputPath);
-            server.Run();
+            HttpServer server = new HttpServer();
  
             // setup the logger
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
             trace.Listeners.Add(new HttpInputTraceListener(
-                uri: uri, token: "TOKEN", 
+                uri: server.Uri, token: "TOKEN", 
                 batchSizeCount: 3 
             ));
 
@@ -227,28 +227,20 @@ namespace Splunk.Logging
                 return new HttpServer.Response();
             };
             trace.TraceEvent(TraceEventType.Information, 3, "third");
-            Sleep();
-            
-            server.Stop();
+            Sleep();            
         }
 
         [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingFlush")]
         [Fact]
         public void HttpInputTraceListenerBatchingFlush()
         {
-            const string uri = "http://localhost:5004";
-            HttpServer server = new HttpServer(uri + HttpInputPath);
-            server.Run();
+            HttpServer server = new HttpServer();
 
             // setup the logger
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new Dictionary<string, string>();
-            meta["index"] = "main";
-            meta["source"] = "localhost";
-            meta["sourcetype"] = "log";
             trace.Listeners.Add(new HttpInputTraceListener(
-                uri: uri, token: "TOKEN", metadata: meta,
+                uri: server.Uri, token: "TOKEN",
                 batchSizeCount: uint.MaxValue,
                 batchSizeBytes: uint.MaxValue));
 
@@ -271,14 +263,48 @@ namespace Splunk.Logging
             trace.Close(); // flush all events
             Sleep();
             Assert.True(receivedCount == 1000);
+        }
 
-            server.Stop();
+        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingTimer")]
+        [Fact]
+        public void HttpInputTraceListenerBatchingTimer()
+        {
+            HttpServer server = new HttpServer();
+
+            // setup the logger
+            var trace = new TraceSource("HttpInputLogger");
+            trace.Switch.Level = SourceLevels.All;
+            trace.Listeners.Add(new HttpInputTraceListener(
+                uri: server.Uri, token: "TOKEN",
+                batchInterval: 1000,
+                batchSizeCount: uint.MaxValue,
+                batchSizeBytes: uint.MaxValue));
+
+            // send multiple events, no event should be received immediately 
+            server.Method = (auth, input) =>
+            {
+                Assert.True(false);
+                return null;
+            };
+            for (int i = 0; i < 10; i++)
+                trace.TraceEvent(TraceEventType.Information, 1, "hello");
+            Sleep();
+
+            int receivedCount = 0;
+            server.Method = (auth, input) =>
+            {
+                receivedCount = input.Count;
+                return new HttpServer.Response();
+            };
+            Thread.Sleep(1100); // wait for more than 1 second, the timer should
+            // flush all events            
+            Assert.True(receivedCount == 10);
         }
 
         private void Sleep()
         {
             // logger and server are async thus we need short delays between individual tests
-            Thread.Sleep(500); 
+            Thread.Sleep(100); 
         }
     }
 }

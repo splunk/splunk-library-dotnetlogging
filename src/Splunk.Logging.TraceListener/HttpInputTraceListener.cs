@@ -25,11 +25,33 @@ namespace Splunk.Logging
     /// <summary>
     /// Trace listener implementation for Splunk http input. 
     /// Usage example:
+    /// <code>
     /// var trace = new TraceSource("logger");
     /// trace.listeners.Add(new HttpInputTraceListener(
     ///     uri: "https://localhost:8089", 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918");
     /// trace.TraceEvent(TraceEventType.Information, 1, "hello world");
+    /// </code>
+    /// 
+    /// Trace listener supports events batching (off by default) that allows to 
+    /// decrease number of http requests to Splunk server. The batching is 
+    /// controlled by three parameters: "batch size count", "batch size bytes" 
+    /// and "batch interval". If batch size parameters are specified then  
+    /// Send(...) adds logging events into an internal data buffer and multiple events
+    /// are sending simultaneously when data buffer exceeds batching parameters.
+    /// Batch interval controls a timer that forcefully sends events batch 
+    /// regardless of its size.
+    /// <code>
+    /// var trace = new TraceSource("logger");
+    /// trace.listeners.Add(new HttpInputTraceListener(
+    ///     uri: "https://localhost:8089", 
+    ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
+    ///     batchInterval: 1000, // send events at least every second
+    ///     batchSizeBytes: 1024, // 1KB
+    ///     batchSizeCount: 10 // events batch contains at most 10 individual events
+    /// );
+    /// trace.TraceEvent(TraceEventType.Information, 1, "hello batching");
+    /// </code> 
     /// </summary>
     public class HttpInputTraceListener : TraceListener
     {
