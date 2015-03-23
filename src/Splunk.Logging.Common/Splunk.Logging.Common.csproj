@@ -53,6 +53,7 @@
     <Compile Include="Util.cs" />
     <Compile Include="HttpInputSender.cs" />
     <Compile Include="HttpInputEventInfo.cs" />
+    <Compile Include="HttpInputException.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

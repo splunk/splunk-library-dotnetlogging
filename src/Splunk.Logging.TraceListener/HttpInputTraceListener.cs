@@ -57,6 +57,17 @@ namespace Splunk.Logging
     /// connectivity problems and it is controlled by retriesOnError parameter. 
     /// In case of problem that can be fixed by resending the data the listener 
     /// makes up to retriesOnError reties.
+    /// 
+    /// A user application code can register an error handler that is invoked 
+    /// when http input isn't able to send data. 
+    /// <code>
+    /// listener.AddLoggingFailureHandler((HttpInputException e) =>
+    /// {
+    ///     // do something ...            
+    /// });
+    /// </code>
+    /// HttpInputException contains information about the error and the list of 
+    /// events caused the problem.
     /// </summary>
     public class HttpInputTraceListener : TraceListener
     {
@@ -84,11 +95,13 @@ namespace Splunk.Logging
         }
 
         /// <summary>
-        /// @TODO - error handling
+        /// Add a handler to be invoked when some problem is detected during the 
+        /// operation of http input and it cannot be fixed by resending the data.
         /// </summary>
-        /// <param name="handler"></param>
-        public void AddLoggingFailureHandler(Action<Exception> handler)
+        /// <param name="handler">A function to handle the exception.</param>
+        public void AddLoggingFailureHandler(Action<HttpInputException> handler)
         {
+            sender.OnError += handler;
         }
 
         #region TraceListener output callbacks

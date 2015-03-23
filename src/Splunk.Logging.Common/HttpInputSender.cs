@@ -64,7 +64,9 @@ namespace Splunk.Logging
         uint retriesOnError = 0;
         private List<HttpInputEventInfo> eventsBatch = new List<HttpInputEventInfo>();
         private StringBuilder serializedEventsBatch = new StringBuilder();
-        private Timer timer; 
+        private Timer timer;
+
+        public event Action<HttpInputException> OnError = (e)=>{};
 
         /// <summary>
         /// HttpInputSender c-or.
@@ -206,7 +208,12 @@ namespace Splunk.Logging
             }
             if (statusCode != HttpStatusCode.OK || webException != null)
             {
-                // @TODO - error detection
+                OnError(new HttpInputException(
+                    code: statusCode,
+                    webException: webException,
+                    reply: serverReply,
+                    events: events
+                ));
             }
         }
 

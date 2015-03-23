@@ -27,9 +27,9 @@ namespace Splunk.Logging
 
             public class Response
             {
-                public int Code;
+                public HttpStatusCode Code;
                 public string Context;
-                public Response(int code = 200, string context = "{\"text\":\"Success\",\"code\":0}")
+                public Response(HttpStatusCode code = HttpStatusCode.OK, string context = "{\"text\":\"Success\",\"code\":0}")
                 {
                     Code = code;
                     Context = context;
@@ -81,7 +81,7 @@ namespace Splunk.Logging
                                     }                 
                                     
                                     Response response = Method(authorization, jobj);                                    
-                                    context.Response.StatusCode = response.Code;
+                                    context.Response.StatusCode = (int)response.Code;
                                     byte[] buf = Encoding.UTF8.GetBytes(response.Context);
                                     context.Response.ContentLength64 = buf.Length;
                                     context.Response.OutputStream.Write(buf, 0, buf.Length);                                    
@@ -301,7 +301,7 @@ namespace Splunk.Logging
                 receivedCount = input.Count;
                 return new HttpServer.Response();
             };
-            Thread.Sleep(1100); // wait for more than 1 second, the timer should
+            Thread.Sleep(1500); // wait for more than 1 second, the timer should
             // flush all events            
             Assert.True(receivedCount == 10);
         }
@@ -319,11 +319,10 @@ namespace Splunk.Logging
                 uri: server.Uri, token: "TOKEN",
                 retriesOnError: 1000));
 
-            // send multiple events, no event should be received immediately 
             server.Method = (auth, input) =>
             {
                 // mimic a server problem that causes resending the data
-                return new HttpServer.Response(code: 503);
+                return new HttpServer.Response(HttpStatusCode.ServiceUnavailable);
             };
             trace.TraceEvent(TraceEventType.Information, 1, "hello");
             Sleep();
@@ -333,6 +332,33 @@ namespace Splunk.Logging
                 // "fix" the server
                 return new HttpServer.Response();   
             };
+            Sleep();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerErrorHandler")]
+        [Fact]
+        public void HttpInputTraceListenerErrorHandler()
+        {
+            HttpServer server = new HttpServer();
+
+            // setup the logger
+            var trace = new TraceSource("HttpInputLogger");
+            trace.Switch.Level = SourceLevels.All;
+            var listener = new HttpInputTraceListener(
+                uri: server.Uri, token: "TOKEN");
+            trace.Listeners.Add(listener);
+
+            listener.AddLoggingFailureHandler((HttpInputException e) =>
+            {
+                Assert.True(e.StatusCode == HttpStatusCode.ServiceUnavailable);
+                Assert.True(e.Events[0].Event.Message == "hello");
+            });
+            server.Method = (auth, input) =>
+            {
+                // mimic a server problem that causes resending the data
+                return new HttpServer.Response(code: HttpStatusCode.ServiceUnavailable);
+            };
+            trace.TraceEvent(TraceEventType.Information, 1, "hello");
             Sleep();
         }
 
