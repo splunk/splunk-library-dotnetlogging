@@ -52,6 +52,11 @@ namespace Splunk.Logging
     /// );
     /// trace.TraceEvent(TraceEventType.Information, 1, "hello batching");
     /// </code> 
+    /// 
+    /// Trace listener has a built in mechanism that recovers from transient
+    /// connectivity problems and it is controlled by retriesOnError parameter. 
+    /// In case of problem that can be fixed by resending the data the listener 
+    /// makes up to retriesOnError reties.
     /// </summary>
     public class HttpInputTraceListener : TraceListener
     {

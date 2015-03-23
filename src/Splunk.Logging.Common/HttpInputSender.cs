@@ -43,6 +43,16 @@ namespace Splunk.Logging
         private const string AuthorizationHeaderTag = "Authorization";
         private const string AuthorizationHeaderScheme = "Splunk {0}";
 
+        // List of http input server application error statuses. These statuses 
+        // indicate non-transient problems that cannot be fixed by resending the 
+        // data.
+        private static readonly HttpStatusCode[] HttpInputApplicationErrors = 
+        {
+            HttpStatusCode.Forbidden,
+            HttpStatusCode.MethodNotAllowed,
+            HttpStatusCode.BadRequest                  
+        };
+
         private string url; // http input endpoint full url
         private string token; // authorization token
         private Dictionary<string, string> metadata; // logger metadata
@@ -148,31 +158,56 @@ namespace Splunk.Logging
         }
 
         private async void postEventsAsync(
-            List<HttpInputEventInfo> events, String serializedEvents)
+            List<HttpInputEventInfo> events, 
+            String serializedEvents)
         {
-            // init http client
-            HttpClient httpClient = new HttpClient();
-            HttpContent content = new StringContent(
-                serializedEvents, Encoding.UTF8, "application/json");
-            // setup http input authentication 
-            httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderTag,
-                string.Format(AuthorizationHeaderScheme, token));
-            // send the data to http input
-            try
+            // send data to http input   
+            HttpStatusCode statusCode = HttpStatusCode.OK;
+            WebException webException = null;
+            string serverReply = null;
+           // retry sending data until success
+            for (uint retriesCount = 0; retriesCount <= retriesOnError; retriesCount++)
             {
-                var response = await httpClient.PostAsync(url, content);
-                if (response.StatusCode != HttpStatusCode.OK)
+                try
                 {
-                    // @TODO - error handling
-                    // @TODO - resend
-                    Console.WriteLine("ERROR {0}", response.StatusCode);
+                    // init http client
+                    HttpClient httpClient = new HttpClient();
+                    HttpContent content = new StringContent(
+                        serializedEvents, Encoding.UTF8, "application/json");
+                    // setup http input authentication 
+                    httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderTag,
+                        string.Format(AuthorizationHeaderScheme, token));
+                    // post data
+                    var response = await httpClient.PostAsync(url, content);
+                    statusCode = response.StatusCode;
+                    if (statusCode == HttpStatusCode.OK)
+                    {
+                        // the data has been sent successfully
+                        webException = null;
+                        break; 
+                    }
+                    else if (Array.IndexOf(HttpInputApplicationErrors, statusCode) >= 0)
+                    {
+                        // Http input application error detected - resend wouldn't help
+                        // in this case. Record server reply and break.
+                        serverReply = await response.Content.ReadAsStringAsync();
+                        break;
+                    }
+                    else
+                    {
+                        // retry
+                    }
                 }
-
+                catch (System.Net.WebException e)
+                {
+                    // connectivity problem - record exception and retry
+                    webException = e;
+                }
             }
-            catch (System.Net.WebException)
+            if (statusCode != HttpStatusCode.OK || webException != null)
             {
-                // @TODO - error handling
-            }    
+                // @TODO - error detection
+            }
         }
 
         private void OnTimer(object state)

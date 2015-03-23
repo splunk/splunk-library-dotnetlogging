@@ -27,8 +27,13 @@ namespace Splunk.Logging
 
             public class Response
             {
-                public int Code = 200;
-                public string Context = "{\"text\":\"Success\",\"code\":0}";
+                public int Code;
+                public string Context;
+                public Response(int code = 200, string context = "{\"text\":\"Success\",\"code\":0}")
+                {
+                    Code = code;
+                    Context = context;
+                }
             }
             public Func<string, dynamic, Response> Method { get; set; }
 
@@ -75,7 +80,7 @@ namespace Splunk.Logging
                                        jobj = JObject.Parse(input);
                                     }                 
                                     
-                                    Response response = Method(authorization, jobj);
+                                    Response response = Method(authorization, jobj);                                    
                                     context.Response.StatusCode = response.Code;
                                     byte[] buf = Encoding.UTF8.GetBytes(response.Context);
                                     context.Response.ContentLength64 = buf.Length;
@@ -299,6 +304,36 @@ namespace Splunk.Logging
             Thread.Sleep(1100); // wait for more than 1 second, the timer should
             // flush all events            
             Assert.True(receivedCount == 10);
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerRetry")]
+        [Fact]
+        public void HttpInputTraceListenerRetry()
+        {
+            HttpServer server = new HttpServer();
+
+            // setup the logger
+            var trace = new TraceSource("HttpInputLogger");
+            trace.Switch.Level = SourceLevels.All;
+            trace.Listeners.Add(new HttpInputTraceListener(
+                uri: server.Uri, token: "TOKEN",
+                retriesOnError: 1000));
+
+            // send multiple events, no event should be received immediately 
+            server.Method = (auth, input) =>
+            {
+                // mimic a server problem that causes resending the data
+                return new HttpServer.Response(code: 503);
+            };
+            trace.TraceEvent(TraceEventType.Information, 1, "hello");
+            Sleep();
+            server.Method = (auth, input) =>
+            {
+                Assert.True(input["event"].message.Value == "hello");
+                // "fix" the server
+                return new HttpServer.Response();   
+            };
+            Sleep();
         }
 
         private void Sleep()
