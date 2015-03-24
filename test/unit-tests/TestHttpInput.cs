@@ -35,7 +35,7 @@ namespace Splunk.Logging
                     Context = context;
                 }
             }
-            public Func<string, dynamic, Response> Method { get; set; }
+            public Func<string, dynamic, Response> RequestHandler { get; set; }
 
             public HttpServer()
             {
@@ -80,7 +80,7 @@ namespace Splunk.Logging
                                        jobj = JObject.Parse(input);
                                     }                 
                                     
-                                    Response response = Method(authorization, jobj);                                    
+                                    Response response = RequestHandler(authorization, jobj);                                    
                                     context.Response.StatusCode = (int)response.Code;
                                     byte[] buf = Encoding.UTF8.GetBytes(response.Context);
                                     context.Response.ContentLength64 = buf.Length;
@@ -122,10 +122,11 @@ namespace Splunk.Logging
             meta["index"] = "main";
             meta["source"] = "localhost";
             meta["sourcetype"] = "log";
+            meta["host"] = "demohost";
             trace.Listeners.Add(new HttpInputTraceListener(uri: server.Uri, token: "TOKEN", metadata: meta));
 
             // test authentication
-            server.Method = (auth, input) => 
+            server.RequestHandler = (auth, input) => 
             {
                 Assert.True(auth == "Splunk TOKEN", "wrong authentication");
                 return new HttpServer.Response(); 
@@ -136,11 +137,12 @@ namespace Splunk.Logging
             // test metadata
             ulong now =
                 (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 Assert.True(input.index.Value == "main");
                 Assert.True(input.source.Value == "localhost");
                 Assert.True(input.sourcetype.Value == "log");
+                Assert.True(input.host.Value == "demohost");
                 // check that timestamp is correct
                 ulong time = ulong.Parse(input.time.Value);
                 Assert.True(time - now <= 1);
@@ -150,7 +152,7 @@ namespace Splunk.Logging
             Sleep();
 
             // test event info
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 Assert.True(input["event"].id.Value == "123");
                 Assert.True(input["event"].severity.Value == "Error");
@@ -176,7 +178,7 @@ namespace Splunk.Logging
             ));
 
             // the first event shouldn't be received
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 Assert.True(false); 
                 return null;
@@ -185,7 +187,7 @@ namespace Splunk.Logging
             Sleep();
 
             // now the second event triggers sending 
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 Assert.True(input[0]["event"].message.Value == "first");
                 Assert.True(input[1]["event"].message.Value == "second");
@@ -211,7 +213,7 @@ namespace Splunk.Logging
             ));
 
             // the first event shouldn't be received by the server
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 Assert.True(false);
                 return null;
@@ -224,7 +226,7 @@ namespace Splunk.Logging
             Sleep();
 
             // now the third event triggers sending the batch
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 Assert.True(input[0]["event"].message.Value == "first");
                 Assert.True(input[1]["event"].message.Value == "second");
@@ -250,7 +252,7 @@ namespace Splunk.Logging
                 batchSizeBytes: uint.MaxValue));
 
             // send multiple events, no event should be received immediately 
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 Assert.True(false);
                 return null;
@@ -260,7 +262,7 @@ namespace Splunk.Logging
             Sleep();
 
             int receivedCount = 0;
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 receivedCount = input.Count;
                 return new HttpServer.Response();
@@ -286,7 +288,7 @@ namespace Splunk.Logging
                 batchSizeBytes: uint.MaxValue));
 
             // send multiple events, no event should be received immediately 
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 Assert.True(false);
                 return null;
@@ -296,7 +298,7 @@ namespace Splunk.Logging
             Sleep();
 
             int receivedCount = 0;
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 receivedCount = input.Count;
                 return new HttpServer.Response();
@@ -319,14 +321,14 @@ namespace Splunk.Logging
                 uri: server.Uri, token: "TOKEN",
                 retriesOnError: 1000));
 
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 // mimic a server problem that causes resending the data
                 return new HttpServer.Response(HttpStatusCode.ServiceUnavailable);
             };
             trace.TraceEvent(TraceEventType.Information, 1, "hello");
             Sleep();
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 Assert.True(input["event"].message.Value == "hello");
                 // "fix" the server
@@ -353,7 +355,7 @@ namespace Splunk.Logging
                 Assert.True(e.StatusCode == HttpStatusCode.ServiceUnavailable);
                 Assert.True(e.Events[0].Event.Message == "hello");
             });
-            server.Method = (auth, input) =>
+            server.RequestHandler = (auth, input) =>
             {
                 // mimic a server problem that causes resending the data
                 return new HttpServer.Response(code: HttpStatusCode.ServiceUnavailable);

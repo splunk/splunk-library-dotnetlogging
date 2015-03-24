@@ -37,7 +37,7 @@ namespace Splunk.Logging
     /// * Events are are sending asynchronously and Send(...) method doesn't 
     /// block the caller code.
     /// </remarks>
-    public class HttpInputSender 
+    public class HttpInputSender : IDisposable
     {
         private const string HttpInputPath = "/services/receivers/token";
         private const string AuthorizationHeaderTag = "Authorization";
@@ -62,6 +62,7 @@ namespace Splunk.Logging
         uint batchSizeBytes = 0;
         uint batchSizeCount = 0;
         uint retriesOnError = 0;
+        HttpClient httpClient = null;
         private List<HttpInputEventInfo> eventsBatch = new List<HttpInputEventInfo>();
         private StringBuilder serializedEventsBatch = new StringBuilder();
         private Timer timer;
@@ -107,6 +108,11 @@ namespace Splunk.Logging
             {
                 timer = new Timer(OnTimer, null, (int)batchInterval, (int)batchInterval);        
             }
+
+            // setup http client            
+            httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderTag,
+                string.Format(AuthorizationHeaderScheme, token));
         }
 
         /// <summary>
@@ -167,37 +173,35 @@ namespace Splunk.Logging
             HttpStatusCode statusCode = HttpStatusCode.OK;
             WebException webException = null;
             string serverReply = null;
-           // retry sending data until success
+            // retry sending data until success
             for (uint retriesCount = 0; retriesCount <= retriesOnError; retriesCount++)
             {
                 try
                 {
-                    // init http client
-                    HttpClient httpClient = new HttpClient();
+                    // encode data
                     HttpContent content = new StringContent(
                         serializedEvents, Encoding.UTF8, "application/json");
-                    // setup http input authentication 
-                    httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderTag,
-                        string.Format(AuthorizationHeaderScheme, token));
                     // post data
-                    var response = await httpClient.PostAsync(url, content);
-                    statusCode = response.StatusCode;
-                    if (statusCode == HttpStatusCode.OK)
+                    using (var response = await httpClient.PostAsync(url, content))
                     {
-                        // the data has been sent successfully
-                        webException = null;
-                        break; 
-                    }
-                    else if (Array.IndexOf(HttpInputApplicationErrors, statusCode) >= 0)
-                    {
-                        // Http input application error detected - resend wouldn't help
-                        // in this case. Record server reply and break.
-                        serverReply = await response.Content.ReadAsStringAsync();
-                        break;
-                    }
-                    else
-                    {
-                        // retry
+                        statusCode = response.StatusCode;
+                        if (statusCode == HttpStatusCode.OK)
+                        {
+                            // the data has been sent successfully
+                            webException = null;
+                            break;
+                        }
+                        else if (Array.IndexOf(HttpInputApplicationErrors, statusCode) >= 0)
+                        {
+                            // Http input application error detected - resend wouldn't help
+                            // in this case. Record server reply and break.
+                            serverReply = await response.Content.ReadAsStringAsync();
+                            break;
+                        }
+                        else
+                        {
+                            // retry
+                        }
                     }
                 }
                 catch (System.Net.WebException e)
@@ -226,5 +230,33 @@ namespace Splunk.Logging
         {
             return JsonConvert.SerializeObject(eventInfo);
         }
+
+        #region IDispose
+
+        private bool disposed = false;
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+            if (disposing)
+            {
+                httpClient.Dispose();
+            }
+            disposed = true;
+        }
+
+        ~HttpInputSender()
+        {
+            Dispose(false);
+        }
+
+        #endregion
     }
 }

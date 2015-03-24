@@ -37,6 +37,7 @@ namespace Splunk.Logging
         public const string MetadataIndexTag = "index";
         public const string MetadataSourceTag = "source";
         public const string MetadataSourceTypeTag = "sourcetype";
+        public const string MetadataHostTag = "host";
         #endregion
 
         /// <summary>
@@ -109,6 +110,12 @@ namespace Splunk.Logging
         public readonly string SourceType;
 
         /// <summary>
+        /// Event metadata host.
+        /// </summary>
+        [JsonProperty(PropertyName = MetadataHostTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public readonly string Host;
+
+        /// <summary>
         /// Logger event info.
         /// </summary>
         [JsonProperty(PropertyName = "event", DefaultValueHandling = DefaultValueHandling.Ignore)]
@@ -134,6 +141,7 @@ namespace Splunk.Logging
             Index = GetMetadataValue(metadata, MetadataIndexTag);
             Source = GetMetadataValue(metadata, MetadataSourceTag);
             SourceType = GetMetadataValue(metadata, MetadataSourceTypeTag);
+            Host = GetMetadataValue(metadata, MetadataHostTag);
         }
 
         // Safe get metadata value, returns null when value cannot be found
