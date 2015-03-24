@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Net.Http;
 
 namespace Splunk.Logging
 {
@@ -19,12 +20,8 @@ namespace Splunk.Logging
         private const string HttpInputPath = "/services/receivers/token/";
 
         // A dummy http input server
-        private class HttpServer
+        private class HttpServer : HttpInputResendMessageHandler
         {
-            private static int port = 5000;
-            private Uri uri;
-            private readonly HttpListener listener = new HttpListener();
-
             public class Response
             {
                 public HttpStatusCode Code;
@@ -36,76 +33,45 @@ namespace Splunk.Logging
                 }
             }
             public Func<string, dynamic, Response> RequestHandler { get; set; }
+            public Uri Uri { get { return new Uri("http://localhost:8089"); } }
 
-            public HttpServer()
-            {
-                // the tests are running simultaneously thus we start a new multiple 
-                // http servers with different ports 
-                port++;
-                uri = new Uri("http://localhost:" + port);
-                Uri fullUri = new Uri(uri, HttpInputPath);
-                listener.Prefixes.Add(fullUri.ToString());
-                listener.Start();
-                Run();
-            }
+            public HttpServer(uint retriesOnError = 0)
+                : base(retriesOnError)
+            { }
 
-            public Uri Uri { get { return uri; } }
-            public void Run()
+            protected override async Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                ThreadPool.QueueUserWorkItem((wi) =>
-                {
-                    try
+                HttpResponseMessage responseMessage = new HttpResponseMessage();
+                try
+                {                    
+                    string authorization = request.Headers.Authorization.ToString();
+                    string input = await request.Content.ReadAsStringAsync();;
+                    dynamic jobj = null;
+                    if (input.Contains("}{"))
                     {
-                        while (listener.IsListening)
-                        {
-                            ThreadPool.QueueUserWorkItem((obj) =>
-                            {
-                                var context = obj as HttpListenerContext;
-                                try
-                                {
-                                    string authorization = context.Request.Headers.Get("Authorization");                                    
-                                    string input = new StreamReader(context.Request.InputStream).ReadToEnd();
-                                    dynamic jobj = null;
-                                    if (input.Contains("}{"))
-                                    {
-                                        // batch of events, convert it to a json array
-                                        input =
-                                            "[" +
-                                            input.Replace("}{", "},{") +
-                                            "]";
-                                        jobj = JArray.Parse(input);
-                                    }
-                                    else 
-                                    {
-                                       jobj = JObject.Parse(input);
-                                    }                 
-                                    
-                                    Response response = RequestHandler(authorization, jobj);                                    
-                                    context.Response.StatusCode = (int)response.Code;
-                                    byte[] buf = Encoding.UTF8.GetBytes(response.Context);
-                                    context.Response.ContentLength64 = buf.Length;
-                                    context.Response.OutputStream.Write(buf, 0, buf.Length);                                    
-                                }
-                                catch (Exception e) 
-                                {
-                                    Assert.True(false, e.ToString());   
-                                } 
-                                finally
-                                {
-                                    // always close the stream
-                                    context.Response.OutputStream.Close();
-                                }
-                            }, listener.GetContext());
-                        }
+                        // batch of events, convert it to a json array
+                        input =
+                            "[" +
+                            input.Replace("}{", "},{") +
+                            "]";
+                        jobj = JArray.Parse(input);
                     }
-                    catch { } // suppress any exceptions
-                });
-            }
+                    else
+                    {
+                        jobj = JObject.Parse(input);
+                    }
 
-            public void Stop()
-            {
-                listener.Stop();
-                listener.Close();
+                    Response response = RequestHandler(authorization, jobj);
+                    responseMessage.StatusCode = response.Code;
+                    byte[] buf = Encoding.UTF8.GetBytes(response.Context);
+                    responseMessage.Content = new StringContent(response.Context);
+                }
+                catch (Exception e)
+                {
+                    Assert.True(false, e.ToString());
+                }
+                return responseMessage;
             }
         }
  
@@ -249,7 +215,8 @@ namespace Splunk.Logging
             trace.Listeners.Add(new HttpInputTraceListener(
                 uri: server.Uri, token: "TOKEN",
                 batchSizeCount: uint.MaxValue,
-                batchSizeBytes: uint.MaxValue));
+                batchSizeBytes: uint.MaxValue,
+                messageHandler: server));
 
             // send multiple events, no event should be received immediately 
             server.RequestHandler = (auth, input) =>
@@ -285,7 +252,8 @@ namespace Splunk.Logging
                 uri: server.Uri, token: "TOKEN",
                 batchInterval: 1000,
                 batchSizeCount: uint.MaxValue,
-                batchSizeBytes: uint.MaxValue));
+                batchSizeBytes: uint.MaxValue,
+                messageHandler: server));
 
             // send multiple events, no event should be received immediately 
             server.RequestHandler = (auth, input) =>
@@ -312,14 +280,14 @@ namespace Splunk.Logging
         [Fact]
         public void HttpInputTraceListenerRetry()
         {
-            HttpServer server = new HttpServer();
+            HttpServer server = new HttpServer(1000);
 
             // setup the logger
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
             trace.Listeners.Add(new HttpInputTraceListener(
                 uri: server.Uri, token: "TOKEN",
-                retriesOnError: 1000));
+                messageHandler: server));
 
             server.RequestHandler = (auth, input) =>
             {
@@ -347,7 +315,8 @@ namespace Splunk.Logging
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
             var listener = new HttpInputTraceListener(
-                uri: server.Uri, token: "TOKEN");
+                uri: server.Uri, token: "TOKEN",
+                messageHandler: server);
             trace.Listeners.Add(listener);
 
             listener.AddLoggingFailureHandler((object sender, HttpInputException e) =>

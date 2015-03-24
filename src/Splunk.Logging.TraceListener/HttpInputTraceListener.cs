@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Net.Http;
 
 namespace Splunk.Logging
 {
@@ -54,17 +55,24 @@ namespace Splunk.Logging
     /// trace.TraceEvent(TraceEventType.Information, 1, "hello batching");
     /// </code> 
     /// 
-    /// Trace listener has a built in mechanism that recovers from transient
-    /// connectivity problems and it is controlled by retriesOnError parameter. 
-    /// In case of problem that can be fixed by resending the data the listener 
-    /// makes up to retriesOnError reties.
+    /// Trace listener allows recovering from transient connectivity problems 
+    /// and it is controlled by messageHandler parameter. HttpInputResendMessageHandler 
+    /// implements http handler that resends data multiple times.
+    /// 
+    /// <code>
+    /// trace.listeners.Add(new HttpInputTraceListener(
+    ///     uri: "https://localhost:8089", 
+    ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
+    ///     new HttpInputResendMessageHandler(100) // retry up to 10 times
+    /// );
+    /// </code>
     /// 
     /// A user application code can register an error handler that is invoked 
     /// when http input isn't able to send data. 
     /// <code>
-    /// listener.AddLoggingFailureHandler((HttpInputException e) =>
+    /// listener.AddLoggingFailureHandler((sender, HttpInputException e) =>
     /// {
-    ///     // do something ...            
+    ///     // do something             
     /// });
     /// </code>
     /// HttpInputException contains information about the error and the list of 
@@ -83,16 +91,17 @@ namespace Splunk.Logging
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
-        /// <param name="retriesOnError">Number of retries in case of connectivity problem.</param>
+        /// <param name="messageHandler">Http message handler. By default 
+        /// HttpInputResendMessageHandler with parameter 0 is used.</param>
         public HttpInputTraceListener(
             Uri uri, string token,
             Dictionary<string, string> metadata = null,
             uint batchInterval = 0, uint batchSizeBytes = 0, uint batchSizeCount = 0,
-            uint retriesOnError = 0)
+            HttpMessageHandler messageHandler = null)
         {
             sender = new HttpInputSender(
                 uri, token, metadata,
-                batchInterval, batchSizeBytes, batchSizeCount, retriesOnError);
+                batchInterval, batchSizeBytes, batchSizeCount, messageHandler);
         }
 
         /// <summary>

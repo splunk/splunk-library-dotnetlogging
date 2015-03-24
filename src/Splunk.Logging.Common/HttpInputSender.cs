@@ -24,6 +24,7 @@ using System.Net;
 using Newtonsoft.Json;
 using System.Threading;
 using System.Net.Http.Headers;
+using System.Threading.Tasks;
 
 namespace Splunk.Logging
 {
@@ -42,17 +43,6 @@ namespace Splunk.Logging
     {
         private const string HttpInputPath = "/services/receivers/token";
         private const string AuthorizationHeaderScheme = "Splunk";
-
-        // List of http input server application error statuses. These statuses 
-        // indicate non-transient problems that cannot be fixed by resending the 
-        // data.
-        private static readonly HttpStatusCode[] HttpInputApplicationErrors = 
-        {
-            HttpStatusCode.Forbidden,
-            HttpStatusCode.MethodNotAllowed,
-            HttpStatusCode.BadRequest                  
-        };
-
         private Uri httpInputEndpointUri; // http input endpoint full uri
         private Dictionary<string, string> metadata; // logger metadata
 
@@ -60,13 +50,13 @@ namespace Splunk.Logging
         uint batchInterval = 0; 
         uint batchSizeBytes = 0;
         uint batchSizeCount = 0;
-        uint retriesOnError = 0;
         HttpClient httpClient = null;
         private List<HttpInputEventInfo> eventsBatch = new List<HttpInputEventInfo>();
         private StringBuilder serializedEventsBatch = new StringBuilder();
         private Timer timer;
 
         public event EventHandler<HttpInputException> OnError = (s, e)=>{};
+
 
         /// <summary>
         /// HttpInputSender c-or.
@@ -77,17 +67,16 @@ namespace Splunk.Logging
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
-        /// <param name="retriesOnError">Number of retries in case of connectivity problem.</param>
+        /// <param name="messageHandler">Http messages client.</param>
         public HttpInputSender(
             Uri uri, string token, Dictionary<string, string> metadata,
             uint batchInterval, uint batchSizeBytes, uint batchSizeCount, 
-            uint retriesOnError)
+            HttpMessageHandler messageHandler)
         {
             this.httpInputEndpointUri = new Uri(uri, HttpInputPath);
             this.batchInterval = batchInterval;
             this.batchSizeBytes = batchSizeBytes;
             this.batchSizeCount = batchSizeCount;
-            this.retriesOnError = retriesOnError;
             this.metadata = metadata;
 
             // when size configuration setting is missing it's treated as "infinity",
@@ -108,7 +97,12 @@ namespace Splunk.Logging
             }
 
             // setup http client            
-            httpClient = new HttpClient();
+            if (messageHandler == null)
+            {
+                // by default we use message handler without resend
+                messageHandler = new HttpInputResendMessageHandler(0);
+            }
+            httpClient = new HttpClient(messageHandler);
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue(AuthorizationHeaderScheme, token);
         }
@@ -153,7 +147,7 @@ namespace Splunk.Logging
             {
                 if (serializedEventsBatch.Length > 0)
                 {
-                    postEventsAsync(eventsBatch, serializedEventsBatch.ToString());
+                    PostEvents(eventsBatch, serializedEventsBatch.ToString());
                     serializedEventsBatch.Clear();
                     // we explicitly create a new events list instead to clear
                     // and reuse the old one because Flush works in async mode
@@ -163,59 +157,22 @@ namespace Splunk.Logging
             }
         }
 
-        private async void postEventsAsync(
+        private async void PostEvents(
             List<HttpInputEventInfo> events, 
             String serializedEvents)
         {
-            // send data to http input   
-            HttpStatusCode statusCode = HttpStatusCode.OK;
-            WebException webException = null;
-            string serverReply = null;
-            // retry sending data until success
-            for (uint retriesCount = 0; retriesCount <= retriesOnError; retriesCount++)
+            // encode data
+            HttpContent content = new StringContent(
+                serializedEvents, Encoding.UTF8, "application/json");
+            try
             {
-                try
-                {
-                    // encode data
-                    HttpContent content = new StringContent(
-                        serializedEvents, Encoding.UTF8, "application/json");
-                    // post data
-                    using (var response = await httpClient.PostAsync(httpInputEndpointUri, content))
-                    {
-                        statusCode = response.StatusCode;
-                        if (statusCode == HttpStatusCode.OK)
-                        {
-                            // the data has been sent successfully
-                            webException = null;
-                            break;
-                        }
-                        else if (Array.IndexOf(HttpInputApplicationErrors, statusCode) >= 0)
-                        {
-                            // Http input application error detected - resend wouldn't help
-                            // in this case. Record server reply and break.
-                            serverReply = await response.Content.ReadAsStringAsync();
-                            break;
-                        }
-                        else
-                        {
-                            // retry
-                        }
-                    }
-                }
-                catch (System.Net.WebException e)
-                {
-                    // connectivity problem - record exception and retry
-                    webException = e;
-                }
+                // post data
+                await httpClient.PostAsync(httpInputEndpointUri, content);
             }
-            if (statusCode != HttpStatusCode.OK || webException != null)
+            catch (HttpInputException e) 
             {
-                OnError(this, new HttpInputException(
-                    code: statusCode,
-                    webException: webException,
-                    reply: serverReply,
-                    events: events
-                ));
+                e.Events = events;
+                OnError(this, e);
             }
         }
 

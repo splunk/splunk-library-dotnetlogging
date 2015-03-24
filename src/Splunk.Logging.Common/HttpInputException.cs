@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 
 namespace Splunk.Logging
 {
@@ -45,9 +46,14 @@ namespace Splunk.Logging
         public string ServerReply { get; private set; }
 
         /// <summary>
+        /// Reply from the Splunk server. This value can be null.
+        /// </summary>
+        public HttpResponseMessage Response { get; private set; }
+
+        /// <summary>
         /// List of events that caused the problem.
         /// </summary>
-        public List<HttpInputEventInfo> Events { get; private set; }
+        public List<HttpInputEventInfo> Events { get; set; }
 
         /// <summary>
         /// Http input exception container.
@@ -60,11 +66,13 @@ namespace Splunk.Logging
             HttpStatusCode code, 
             Exception webException, 
             string reply, 
+            HttpResponseMessage response,
             List<HttpInputEventInfo> events)
         {
             StatusCode = code;
             WebException = webException;
             ServerReply = reply;
+            Response = response;
             Events = events;
         }
     }
