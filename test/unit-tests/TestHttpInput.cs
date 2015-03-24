@@ -22,7 +22,7 @@ namespace Splunk.Logging
         private class HttpServer
         {
             private static int port = 5000;
-            private string uri;
+            private Uri uri;
             private readonly HttpListener listener = new HttpListener();
 
             public class Response
@@ -42,14 +42,14 @@ namespace Splunk.Logging
                 // the tests are running simultaneously thus we start a new multiple 
                 // http servers with different ports 
                 port++;
-                uri = "http://localhost:" + port;
-                string url = uri + HttpInputPath;
-                listener.Prefixes.Add(url);
+                uri = new Uri("http://localhost:" + port);
+                Uri fullUri = new Uri(uri, HttpInputPath);
+                listener.Prefixes.Add(fullUri.ToString());
                 listener.Start();
                 Run();
             }
 
-            public string Uri { get { return uri; } }
+            public Uri Uri { get { return uri; } }
             public void Run()
             {
                 ThreadPool.QueueUserWorkItem((wi) =>
@@ -268,7 +268,7 @@ namespace Splunk.Logging
                 return new HttpServer.Response();
             };
             trace.Close(); // flush all events
-            Sleep();
+            Thread.Sleep(500); // wait long enough to receive the events
             Assert.True(receivedCount == 1000);
         }
 

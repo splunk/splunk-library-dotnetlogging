@@ -84,7 +84,7 @@ namespace Splunk.Logging
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
         /// <param name="retriesOnError">Number of retries in case of connectivity problem.</param>
         public HttpInputTraceListener(
-            string uri, string token,
+            Uri uri, string token,
             Dictionary<string, string> metadata = null,
             uint batchInterval = 0, uint batchSizeBytes = 0, uint batchSizeCount = 0,
             uint retriesOnError = 0)

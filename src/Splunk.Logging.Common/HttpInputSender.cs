@@ -23,6 +23,7 @@ using System.Text;
 using System.Net;
 using Newtonsoft.Json;
 using System.Threading;
+using System.Net.Http.Headers;
 
 namespace Splunk.Logging
 {
@@ -40,8 +41,7 @@ namespace Splunk.Logging
     public class HttpInputSender : IDisposable
     {
         private const string HttpInputPath = "/services/receivers/token";
-        private const string AuthorizationHeaderTag = "Authorization";
-        private const string AuthorizationHeaderScheme = "Splunk {0}";
+        private const string AuthorizationHeaderScheme = "Splunk";
 
         // List of http input server application error statuses. These statuses 
         // indicate non-transient problems that cannot be fixed by resending the 
@@ -53,7 +53,7 @@ namespace Splunk.Logging
             HttpStatusCode.BadRequest                  
         };
 
-        private string url; // http input endpoint full url
+        private Uri httpInputEndpointUri; // http input endpoint full url
         private string token; // authorization token
         private Dictionary<string, string> metadata; // logger metadata
 
@@ -80,11 +80,11 @@ namespace Splunk.Logging
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
         /// <param name="retriesOnError">Number of retries in case of connectivity problem.</param>
         public HttpInputSender(
-            string uri, string token, Dictionary<string, string> metadata,
+            Uri uri, string token, Dictionary<string, string> metadata,
             uint batchInterval, uint batchSizeBytes, uint batchSizeCount, 
             uint retriesOnError)
         {
-            this.url = uri + HttpInputPath;
+            this.httpInputEndpointUri = new Uri(uri, HttpInputPath);
             this.token = token;
             this.batchInterval = batchInterval;
             this.batchSizeBytes = batchSizeBytes;
@@ -111,8 +111,8 @@ namespace Splunk.Logging
 
             // setup http client            
             httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderTag,
-                string.Format(AuthorizationHeaderScheme, token));
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue(AuthorizationHeaderScheme, token);
         }
 
         /// <summary>
@@ -136,7 +136,7 @@ namespace Splunk.Logging
             lock (serializedEventsBatch)
             {
                 eventsBatch.Add(ei);
-                serializedEventsBatch.Append(serializeEventInfo(ei));
+                serializedEventsBatch.Append(SerializeEventInfo(ei));
                 if (eventsBatch.Count >= batchSizeCount ||
                     serializedEventsBatch.Length >= batchSizeBytes)
                 {
@@ -182,7 +182,7 @@ namespace Splunk.Logging
                     HttpContent content = new StringContent(
                         serializedEvents, Encoding.UTF8, "application/json");
                     // post data
-                    using (var response = await httpClient.PostAsync(url, content))
+                    using (var response = await httpClient.PostAsync(httpInputEndpointUri, content))
                     {
                         statusCode = response.StatusCode;
                         if (statusCode == HttpStatusCode.OK)
@@ -226,7 +226,7 @@ namespace Splunk.Logging
             Flush();
         }
 
-        private string serializeEventInfo(HttpInputEventInfo eventInfo) 
+        private string SerializeEventInfo(HttpInputEventInfo eventInfo) 
         {
             return JsonConvert.SerializeObject(eventInfo);
         }

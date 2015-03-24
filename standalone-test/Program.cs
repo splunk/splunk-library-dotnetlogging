@@ -38,7 +38,6 @@ namespace standalone_test
             {
                 return true; 
             };
-
             Console.WriteLine("start");
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
@@ -47,7 +46,7 @@ namespace standalone_test
             meta["source"] = "host";
             meta["sourcetype"] = "log";
             var listener = new HttpInputTraceListener(
-                uri: "https://oizmerly-mbp:8089", 
+                uri: new Uri("https://oizmerly-mbp:8089"), 
                 token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
                 metadata: meta,
                 batchInterval: 1000);
