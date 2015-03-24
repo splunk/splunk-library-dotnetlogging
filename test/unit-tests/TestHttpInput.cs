@@ -350,7 +350,7 @@ namespace Splunk.Logging
                 uri: server.Uri, token: "TOKEN");
             trace.Listeners.Add(listener);
 
-            listener.AddLoggingFailureHandler((HttpInputException e) =>
+            listener.AddLoggingFailureHandler((object sender, HttpInputException e) =>
             {
                 Assert.True(e.StatusCode == HttpStatusCode.ServiceUnavailable);
                 Assert.True(e.Events[0].Event.Message == "hello");

@@ -49,25 +49,25 @@ namespace Splunk.Logging
             /// Logging event id.
             /// </summary>
             [JsonProperty(PropertyName = "id", DefaultValueHandling = DefaultValueHandling.Ignore)]
-            public readonly string Id;
+            public string Id { get; private set; }
            
             /// <summary>
             /// Logging event severity info.
             /// </summary>
            [JsonProperty(PropertyName = "severity", DefaultValueHandling = DefaultValueHandling.Ignore)]
-            public readonly string Severity;
+            public string Severity { get; private set; }
 
             /// <summary>
             /// Logging event message.
             /// </summary>
             [JsonProperty(PropertyName = "message", DefaultValueHandling = DefaultValueHandling.Ignore)]
-            public readonly string Message;
+           public string Message { get; private set; }
 
             /// <summary>
             /// Auxiliary event data.
             /// </summary>
             [JsonProperty(PropertyName = "data", DefaultValueHandling = DefaultValueHandling.Ignore)]
-            public readonly object Data;
+            public object Data { get; private set; }
 
             /// <summary>
             /// LoggerEvent c-or.
@@ -76,7 +76,7 @@ namespace Splunk.Logging
             /// <param name="severity">Event severity info.</param>
             /// <param name="message">Event message.</param>
             /// <param name="data">Event data.</param>
-            public LoggerEvent(string id, string severity, string message, object data)
+            public LoggerEvent(string id, string severity, string message, object data) : this()
             {
                 Id = id;
                 Severity = severity;
@@ -89,37 +89,37 @@ namespace Splunk.Logging
         /// Event timestamp in epoch format.
         /// </summary>
         [JsonProperty(PropertyName = MetadataTimeTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public readonly string Timestamp;
+        public string Timestamp { get; private set; }
 
         /// <summary>
         /// Event metadata index.
         /// </summary>
         [JsonProperty(PropertyName = MetadataIndexTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public readonly string Index; 
+        public string Index { get; private set; }
 
         /// <summary>
         /// Event metadata source.
         /// </summary>
         [JsonProperty(PropertyName = MetadataSourceTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public readonly string Source;
+        public string Source { get; private set; }
 
         /// <summary>
         /// Event metadata sourcetype.
         /// </summary>
         [JsonProperty(PropertyName = MetadataSourceTypeTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public readonly string SourceType;
+        public string SourceType { get; private set; }
 
         /// <summary>
         /// Event metadata host.
         /// </summary>
         [JsonProperty(PropertyName = MetadataHostTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public readonly string Host;
+        public string Host { get; private set; }
 
         /// <summary>
         /// Logger event info.
         /// </summary>
         [JsonProperty(PropertyName = "event", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public readonly LoggerEvent Event;
+        public LoggerEvent Event { get; private set; }
 
         /// <summary>
         /// HttpInputEventInfo c-or.
@@ -131,7 +131,7 @@ namespace Splunk.Logging
         /// <param name="metadata">Logger metadata.</param>
         public HttpInputEventInfo(
             string id, string severity, string message, object data, 
-            Dictionary<string, string> metadata)
+            Dictionary<string, string> metadata) : this()
         {
             Event = new LoggerEvent(id, severity, message, data);
             // set timestamp to the current UTC epoch time 

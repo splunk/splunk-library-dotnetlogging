@@ -26,28 +26,28 @@ namespace Splunk.Logging
     /// Http input exception. This class is used when an http input client is 
     /// unable to send events to the server;
     /// </summary>
-    public class HttpInputException : Exception
+    public class HttpInputException : Exception 
     {
         /// <summary>
         /// Http status code.
         /// </summary>
-        public readonly HttpStatusCode StatusCode;
+        public HttpStatusCode StatusCode { get; private set; }
 
         /// <summary>
         /// Exception thrown by http client when sending the data. This value 
         /// can be null.
         /// </summary>
-        public readonly Exception WebException;
+        public Exception WebException { get; private set; }
         
         /// <summary>
         /// Reply from the Splunk server. This value can be null.
         /// </summary>
-        public readonly string ServerReply;
+        public string ServerReply { get; private set; }
 
         /// <summary>
         /// List of events that caused the problem.
         /// </summary>
-        public readonly List<HttpInputEventInfo> Events;
+        public List<HttpInputEventInfo> Events { get; private set; }
 
         /// <summary>
         /// Http input exception container.

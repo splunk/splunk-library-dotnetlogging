@@ -53,8 +53,7 @@ namespace Splunk.Logging
             HttpStatusCode.BadRequest                  
         };
 
-        private Uri httpInputEndpointUri; // http input endpoint full url
-        private string token; // authorization token
+        private Uri httpInputEndpointUri; // http input endpoint full uri
         private Dictionary<string, string> metadata; // logger metadata
 
         // events batching properties and collection 
@@ -67,7 +66,7 @@ namespace Splunk.Logging
         private StringBuilder serializedEventsBatch = new StringBuilder();
         private Timer timer;
 
-        public event Action<HttpInputException> OnError = (e)=>{};
+        public event EventHandler<HttpInputException> OnError = (s, e)=>{};
 
         /// <summary>
         /// HttpInputSender c-or.
@@ -85,7 +84,6 @@ namespace Splunk.Logging
             uint retriesOnError)
         {
             this.httpInputEndpointUri = new Uri(uri, HttpInputPath);
-            this.token = token;
             this.batchInterval = batchInterval;
             this.batchSizeBytes = batchSizeBytes;
             this.batchSizeCount = batchSizeCount;
@@ -212,7 +210,7 @@ namespace Splunk.Logging
             }
             if (statusCode != HttpStatusCode.OK || webException != null)
             {
-                OnError(new HttpInputException(
+                OnError(this, new HttpInputException(
                     code: statusCode,
                     webException: webException,
                     reply: serverReply,

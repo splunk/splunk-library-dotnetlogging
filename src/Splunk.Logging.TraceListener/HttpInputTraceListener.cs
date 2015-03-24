@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace Splunk.Logging
 {
@@ -99,7 +100,7 @@ namespace Splunk.Logging
         /// operation of http input and it cannot be fixed by resending the data.
         /// </summary>
         /// <param name="handler">A function to handle the exception.</param>
-        public void AddLoggingFailureHandler(Action<HttpInputException> handler)
+        public void AddLoggingFailureHandler(EventHandler<HttpInputException> handler)
         {
             sender.OnError += handler;
         }
@@ -116,7 +117,12 @@ namespace Splunk.Logging
             sender.Send(message: message);
         }
 
-        public override void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id, params object[] data)
+        public override void TraceData(
+            TraceEventCache eventCache, 
+            string source, 
+            TraceEventType eventType, 
+            int id, 
+            params object[] data)
         {
             sender.Send(
                 id: id.ToString(), 
@@ -125,7 +131,11 @@ namespace Splunk.Logging
             );
         }
 
-        public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id)
+        public override void TraceEvent(
+            TraceEventCache eventCache, 
+            string source, 
+            TraceEventType eventType, 
+            int id)
         {
             sender.Send(
                 id: id.ToString(),
@@ -133,7 +143,12 @@ namespace Splunk.Logging
             );
         }
 
-        public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string message)
+        public override void TraceEvent(
+            TraceEventCache eventCache, 
+            string source, 
+            TraceEventType eventType, 
+            int id, 
+            string message)
         {
             sender.Send(
                 id: id.ToString(), 
@@ -142,9 +157,15 @@ namespace Splunk.Logging
             );
         }
 
-        public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string format, params object[] args)
+        public override void TraceEvent(
+            TraceEventCache eventCache, 
+            string source, 
+            TraceEventType eventType, 
+            int id, 
+            string format, 
+            params object[] args)
         {
-            string message = args != null ? string.Format(format, args) : format;
+            string message = args != null ? string.Format(CultureInfo.InvariantCulture, format, args) : format;
             sender.Send(
                 id: id.ToString(),
                 severity: eventType.ToString(),
@@ -152,7 +173,12 @@ namespace Splunk.Logging
             );
         }
 
-        public override void TraceTransfer(TraceEventCache eventCache, string source, int id, string message, Guid relatedActivityId)
+        public override void TraceTransfer(
+            TraceEventCache eventCache, 
+            string source, 
+            int id, 
+            string message, 
+            Guid relatedActivityId)
         {
             sender.Send(
                 id: id.ToString(),
