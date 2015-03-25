@@ -29,7 +29,7 @@ using System.Threading.Tasks;
 namespace Splunk.Logging
 {
     /// <summary>
-    /// Http input client side implementation that collects, serializes and send 
+    /// HTTP input client side implementation that collects, serializes and send 
     /// events to Splunk http input endpoint. This class shouldn't be used directly
     /// by user applications.
     /// </summary>
@@ -45,32 +45,33 @@ namespace Splunk.Logging
         private const string AuthorizationHeaderScheme = "Splunk";
         private Uri httpInputEndpointUri; // http input endpoint full uri
         private Dictionary<string, string> metadata; // logger metadata
-
         // events batching properties and collection 
-        uint batchInterval = 0; 
-        uint batchSizeBytes = 0;
-        uint batchSizeCount = 0;
-        HttpClient httpClient = null;
+        private int batchInterval = 0; 
+        private int batchSizeBytes = 0;
+        private int batchSizeCount = 0;
+        private HttpClient httpClient = null;
         private List<HttpInputEventInfo> eventsBatch = new List<HttpInputEventInfo>();
         private StringBuilder serializedEventsBatch = new StringBuilder();
         private Timer timer;
 
-        public event EventHandler<HttpInputException> OnError = (s, e)=>{};
-
-
         /// <summary>
-        /// HttpInputSender c-or.
+        /// On error callbacks.
         /// </summary>
+        public event EventHandler<HttpInputException> OnError = (s, e) => { };
+
         /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
-        /// <param name="token">Http input authorization token.</param>
+        /// <param name="token">HTTP input authorization token.</param>
         /// <param name="metadata">Logger metadata.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
-        /// <param name="messageHandler">Http messages client.</param>
+        /// <param name="messageHandler">HTTP messages client.</param>
+        /// <remarks>
+        /// Zero values for the batching params mean that batching is off. 
+        /// </remarks>
         public HttpInputSender(
             Uri uri, string token, Dictionary<string, string> metadata,
-            uint batchInterval, uint batchSizeBytes, uint batchSizeCount, 
+            int batchInterval, int batchSizeBytes, int batchSizeCount, 
             HttpMessageHandler messageHandler)
         {
             this.httpInputEndpointUri = new Uri(uri, HttpInputPath);
@@ -83,17 +84,17 @@ namespace Splunk.Logging
             // i.e., any value is accepted.
             if (this.batchSizeCount == 0 && this.batchSizeBytes > 0)
             {
-                this.batchSizeCount = uint.MaxValue;
+                this.batchSizeCount = int.MaxValue;
             }
             else if (this.batchSizeBytes == 0 && this.batchSizeCount > 0)
             {
-                this.batchSizeBytes = uint.MaxValue;
+                this.batchSizeBytes = int.MaxValue;
             }
 
             // setup the timer
             if (batchInterval != 0) // 0 means - no timer
             {
-                timer = new Timer(OnTimer, null, (int)batchInterval, (int)batchInterval);        
+                timer = new Timer(OnTimer, null, batchInterval, batchInterval);        
             }
 
             // setup http client            
@@ -125,15 +126,16 @@ namespace Splunk.Logging
                 new HttpInputEventInfo(id, severity, message, data, metadata);
             // we use lock serializedEventsBatch to synchronize both 
             // serializedEventsBatch and serializedEvents
+            string serializedEventInfo = SerializeEventInfo(ei);
             lock (serializedEventsBatch)
             {
                 eventsBatch.Add(ei);
-                serializedEventsBatch.Append(SerializeEventInfo(ei));
+                serializedEventsBatch.Append(serializedEventInfo);
                 if (eventsBatch.Count >= batchSizeCount ||
                     serializedEventsBatch.Length >= batchSizeBytes)
                 {
                     // there are enough events in the batch
-                    Flush();
+                    FlushUnlocked();
                 }
             }
         }
@@ -145,15 +147,20 @@ namespace Splunk.Logging
         {
             lock (serializedEventsBatch)
             {
-                if (serializedEventsBatch.Length > 0)
-                {
-                    PostEvents(eventsBatch, serializedEventsBatch.ToString());
-                    serializedEventsBatch.Clear();
-                    // we explicitly create a new events list instead to clear
-                    // and reuse the old one because Flush works in async mode
-                    // and can use use "previous" containers for error handling
-                    eventsBatch = new List<HttpInputEventInfo>();                    
-                }
+                FlushUnlocked();
+            }
+        }
+
+        private void FlushUnlocked()
+        {
+            if (serializedEventsBatch.Length > 0)
+            {
+                PostEvents(eventsBatch, serializedEventsBatch.ToString());
+                serializedEventsBatch.Clear();
+                // we explicitly create a new events list instead to clear
+                // and reuse the old one because Flush works in async mode
+                // and can use use "previous" containers for error handling
+                eventsBatch = new List<HttpInputEventInfo>();
             }
         }
 

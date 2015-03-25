@@ -19,7 +19,7 @@ namespace Splunk.Logging
     {
         private const string HttpInputPath = "/services/receivers/token/";
 
-        // A dummy http input server
+        // A dummy HTTP input server
         private class HttpServer : HttpInputResendMessageHandler
         {
             public class Response
@@ -35,7 +35,7 @@ namespace Splunk.Logging
             public Func<string, dynamic, Response> RequestHandler { get; set; }
             public Uri Uri { get { return new Uri("http://localhost:8089"); } }
 
-            public HttpServer(uint retriesOnError = 0)
+            public HttpServer(int retriesOnError = 0)
                 : base(retriesOnError)
             { }
 
@@ -71,6 +71,15 @@ namespace Splunk.Logging
                 {
                     Assert.True(false, e.ToString());
                 }
+                if (responseMessage.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new HttpInputException(
+                        code: responseMessage.StatusCode,
+                        webException: null,
+                        reply: null,
+                        response: responseMessage
+                    );
+                }
                 return responseMessage;
             }
         }
@@ -89,7 +98,12 @@ namespace Splunk.Logging
             meta["source"] = "localhost";
             meta["sourcetype"] = "log";
             meta["host"] = "demohost";
-            trace.Listeners.Add(new HttpInputTraceListener(uri: server.Uri, token: "TOKEN", metadata: meta));
+            trace.Listeners.Add
+                (new HttpInputTraceListener(
+                    uri: server.Uri, 
+                    token: "TOKEN", 
+                    metadata: meta, 
+                    messageHandler: server));
 
             // test authentication
             server.RequestHandler = (auth, input) => 
@@ -126,6 +140,18 @@ namespace Splunk.Logging
                 return new HttpServer.Response();
             };
             trace.TraceEvent(TraceEventType.Error, 123, "Test error");
+            Sleep();
+
+            // test trace data
+            server.RequestHandler = (auth, input) =>
+            {
+                Assert.True(input["event"].id.Value == "123");
+                Assert.True(input["event"].data[0].Value == "one");
+                Assert.True(input["event"].data[1].Value == "two");
+                return new HttpServer.Response();
+            };
+            string[] data = { "one", "two" };
+            trace.TraceData(TraceEventType.Error, 123, data);
             Sleep();
         }
 
@@ -214,8 +240,8 @@ namespace Splunk.Logging
             trace.Switch.Level = SourceLevels.All;
             trace.Listeners.Add(new HttpInputTraceListener(
                 uri: server.Uri, token: "TOKEN",
-                batchSizeCount: uint.MaxValue,
-                batchSizeBytes: uint.MaxValue,
+                batchSizeCount: int.MaxValue,
+                batchSizeBytes: int.MaxValue,
                 messageHandler: server));
 
             // send multiple events, no event should be received immediately 
@@ -251,8 +277,8 @@ namespace Splunk.Logging
             trace.Listeners.Add(new HttpInputTraceListener(
                 uri: server.Uri, token: "TOKEN",
                 batchInterval: 1000,
-                batchSizeCount: uint.MaxValue,
-                batchSizeBytes: uint.MaxValue,
+                batchSizeCount: int.MaxValue,
+                batchSizeBytes: int.MaxValue,
                 messageHandler: server));
 
             // send multiple events, no event should be received immediately 

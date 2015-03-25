@@ -30,7 +30,7 @@ namespace Splunk.Logging
     /// Usage:
     /// <code>
     /// trace.listeners.Add(new HttpInputTraceListener(
-    ///     uri: "https://localhost:8089", 
+    ///     uri: new Uri("https://localhost:8089"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
     ///     new HttpInputResendMessageHandler(100) // retry up to 10 times
     /// );
@@ -48,9 +48,9 @@ namespace Splunk.Logging
             HttpStatusCode.BadRequest                  
         };
 
-        private uint retriesOnError = 0;
+        private int retriesOnError = 0;
             
-        public HttpInputResendMessageHandler(uint retriesOnError)
+        public HttpInputResendMessageHandler(int retriesOnError)
         {
             this.retriesOnError = retriesOnError;
         }
@@ -63,7 +63,7 @@ namespace Splunk.Logging
             WebException webException = null;
             string serverReply = null;
             // retry sending data until success
-            for (uint retriesCount = 0; retriesCount <= retriesOnError; retriesCount++)
+            for (int retriesCount = 0; retriesCount <= retriesOnError; retriesCount++)
             {
                 try
                 {
@@ -77,7 +77,7 @@ namespace Splunk.Logging
                     }
                     else if (Array.IndexOf(HttpInputApplicationErrors, statusCode) >= 0)
                     {
-                        // Http input application error detected - resend wouldn't help
+                        // HTTP input application error detected - resend wouldn't help
                         // in this case. Record server reply and break.
                         serverReply = await response.Content.ReadAsStringAsync();
                         break;
@@ -99,8 +99,7 @@ namespace Splunk.Logging
                     code: statusCode,
                     webException: webException,
                     reply: serverReply,
-                    response: response,
-                    events: null
+                    response: response
                 );
             }
             return response;

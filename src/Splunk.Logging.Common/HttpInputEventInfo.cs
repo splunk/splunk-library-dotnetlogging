@@ -76,7 +76,7 @@ namespace Splunk.Logging
             /// <param name="severity">Event severity info.</param>
             /// <param name="message">Event message.</param>
             /// <param name="data">Event data.</param>
-            public LoggerEvent(string id, string severity, string message, object data) : this()
+            internal LoggerEvent(string id, string severity, string message, object data) : this()
             {
                 Id = id;
                 Severity = severity;
@@ -129,7 +129,7 @@ namespace Splunk.Logging
         /// <param name="message">Event message text.</param>
         /// <param name="data">Event auxiliary data.</param>
         /// <param name="metadata">Logger metadata.</param>
-        public HttpInputEventInfo(
+        internal HttpInputEventInfo(
             string id, string severity, string message, object data, 
             Dictionary<string, string> metadata) : this()
         {
