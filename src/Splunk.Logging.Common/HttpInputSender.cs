@@ -55,7 +55,7 @@ namespace Splunk.Logging
     /// Middleware components can apply additional logic before and after posting
     /// the data to Splunk server. See HttpInputResendMiddleware.
     /// </remarks>
-    public class HttpInputSender : HttpClientHandler
+    public class HttpInputSender : IDisposable
     {
         /// <summary>
         /// Post request delegate. 
@@ -141,7 +141,7 @@ namespace Splunk.Logging
             // setup HTTP client
             httpClient = middleware == null ? 
                 new HttpClient() : 
-                new HttpClient(this);
+                new HttpClient(new HttpMiddlewareClientHandler(middleware));
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue(AuthorizationHeaderScheme, token);
         }
@@ -274,16 +274,6 @@ namespace Splunk.Logging
             return responseCode;
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-             // plug middleware into HTTP call
-            return middleware(request, async (HttpRequestMessage) =>
-            {                
-                return await base.SendAsync(request, cancellationToken);                
-            });
-        }
-
         private void OnTimer(object state)
         {
             Flush();
@@ -293,7 +283,12 @@ namespace Splunk.Logging
 
         private bool disposed = false;
 
-        override protected void Dispose(bool disposing)
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        protected void Dispose(bool disposing)
         {
             if (disposed)
                 return;
@@ -302,12 +297,36 @@ namespace Splunk.Logging
                 httpClient.Dispose();
             }
             disposed = true;
-            base.Dispose(disposing);
         }
 
         ~HttpInputSender()
         {
             Dispose(false);
+        }
+
+        #endregion
+
+        #region HTTP middleware handler
+
+        private class HttpMiddlewareClientHandler : HttpClientHandler
+        {
+            private HttpInputMiddleware middleware = null;
+
+            public HttpMiddlewareClientHandler(HttpInputMiddleware middleware)
+            {
+                this.middleware = middleware;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                // plug middleware into HTTP call
+                return middleware(request, async (HttpRequestMessage) =>
+                {
+                    return await base.SendAsync(request, cancellationToken);
+                });
+            }
+
         }
 
         #endregion
