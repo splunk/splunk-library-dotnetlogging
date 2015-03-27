@@ -2,9 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 
-namespace functional
+namespace Splunk.Logging.FunctionalTest
 {
     class Splunk
     {
@@ -14,13 +15,13 @@ namespace functional
         public void DeleteIndex(string indexName)
         {
             string stdOut, stdError;
-            ExecuteSplunkCli(string.Format("remove index {0}", indexName), out stdOut, out stdError);
+            ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "remove index {0}", indexName), out stdOut, out stdError);
         }
 
         public void CreateIndex(string indexName)
         {
             string stdOut, stdError;
-            if (!ExecuteSplunkCli(string.Format("add index {0}", indexName), out stdOut, out stdError))
+            if (!ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "add index {0}", indexName), out stdOut, out stdError))
             {
                 Console.WriteLine("Failed to create index. {1} {2}", stdOut, stdError);
                 Environment.Exit(2);
@@ -30,33 +31,34 @@ namespace functional
         public int GetSearchCount(string searchQuery)
         {
             string stdOut, stdError;
-            if (!ExecuteSplunkCli(string.Format("search \"{0} | stats count\" -preview false", searchQuery), out stdOut, out stdError))
+            if (!ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "search \"{0} | stats count\" -preview false", searchQuery), out stdOut, out stdError))
             {
                 Console.WriteLine("Failed to run search query '{0}'. {1} {2}", searchQuery, stdOut, stdError);
                 Environment.Exit(2);
             }
-            return Convert.ToInt32(stdOut.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[2]);
+            return Convert.ToInt32(stdOut.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[2], CultureInfo.InvariantCulture);
         }
 
-        public double GetEpochTime()
+        public static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        public static double GetEpochTime()
         {
-            TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
-            return t.TotalSeconds;
+            return (DateTime.UtcNow - UnixEpoch).TotalSeconds;
         }
 
-        public void WaitForIndexingToComplete(string indexName, double startTime)
+        public void WaitForIndexingToComplete(string indexName, double startTime=0)
         {
-            string query = string.Format("index={0} earliest={1:F2}", indexName, startTime);
+            string query = string.Format(CultureInfo.InvariantCulture, "index={0} earliest={1:F2}", indexName, startTime);
             int eventCount = GetSearchCount(query);
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 10; i++) // Exit only if there were no indexing activities for 10 straight seconds
             {
                 do
                 {
-                    Thread.Sleep(5000);
+                    Thread.Sleep(1000);
                     int updatedEventCount = GetSearchCount(query);
                     if (updatedEventCount == eventCount)
                         break;
                     eventCount = updatedEventCount;
+                    i = 0; // Indexing is still goes on, reset waiting 
                 } while (true);
             }
         }
@@ -67,8 +69,8 @@ namespace functional
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = splunkCmd,
-                    Arguments = string.Format("{0} -auth {1}:{2}", command, userName, password),
+                    FileName = this.splunkCmd,
+                    Arguments = string.Format(CultureInfo.InvariantCulture, "{0} -auth {1}:{2}", command, userName, password),
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -87,7 +89,7 @@ namespace functional
 
         private bool ExecuteSplunkCliHttpInput(string command, out string stdOut, out string stdError)
         {
-            return ExecuteSplunkCli(string.Format("http-input {0} -uri https://127.0.0.1:8089", command), out stdOut, out stdError);
+            return ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "http-input {0} -uri https://127.0.0.1:8089", command), out stdOut, out stdError);
         }
 
         public void EnableHttp()
@@ -103,23 +105,23 @@ namespace functional
         public void DeleteToken(string tokenName)
         {
             string stdOut, stdError;
-            ExecuteSplunkCliHttpInput(string.Format("delete -name {0}", tokenName), out stdOut, out stdError);
+            ExecuteSplunkCliHttpInput(string.Format(CultureInfo.InvariantCulture, "delete -name {0}", tokenName), out stdOut, out stdError);
         }
 
         public string CreateToken(string tokenName, string indexes = null, string index = null)
         {
             string stdOut, stdError;
-            string createCmd = string.Format("create -name {0}", tokenName);
+            string createCmd = string.Format(CultureInfo.InvariantCulture, "create -name {0}", tokenName);
             if (!string.IsNullOrEmpty(indexes))
-                createCmd += string.Format(" -indexes {0}", indexes);
+                createCmd += string.Format(CultureInfo.InvariantCulture, " -indexes {0}", indexes);
             if (!string.IsNullOrEmpty(index))
-                createCmd += string.Format(" -index {0}", index);
+                createCmd += string.Format(CultureInfo.InvariantCulture, " -index {0}", index);
             if (!ExecuteSplunkCliHttpInput(createCmd, out stdOut, out stdError))
             {
                 Console.WriteLine("Failed to create token. {1} {2}", stdOut, stdError);
                 Environment.Exit(2);
             }
-            int idx1 = stdOut.IndexOf("token=") + 6, idx2 = idx1;
+            int idx1 = stdOut.IndexOf("token=", StringComparison.Ordinal) + 6, idx2 = idx1;
             while (stdOut[idx2] != '\r')
                 idx2++;
             string result = stdOut.Substring(idx1, idx2 - idx1);
@@ -150,14 +152,14 @@ namespace functional
                 Console.WriteLine("Failed to execute query command, exit code {0}. Output is {1}", serviceQuery.ExitCode, output);
                 Environment.Exit(1);
             }
-            int idx1 = output.IndexOf("BINARY_PATH_NAME");
-            idx1 = output.IndexOf(":", idx1 + 1) + 1;
+            int idx1 = output.IndexOf("BINARY_PATH_NAME", StringComparison.Ordinal);
+            idx1 = output.IndexOf(":", idx1 + 1,StringComparison.Ordinal) + 1;
             while (output[idx1] == ' ')
                 idx1++;
-            int idx2 = output.IndexOf("service", idx1) - 1;
+            int idx2 = output.IndexOf("service", idx1, StringComparison.Ordinal) - 1;
             while (output[idx2] == ' ')
                 idx2--;
-            splunkCmd = output.Substring(idx1, idx2 - idx1 + 1).Replace("splunkd.exe", "splunk.exe");
+            this.splunkCmd = output.Substring(idx1, idx2 - idx1 + 1).Replace("splunkd.exe", "splunk.exe");
         }
     }
 
@@ -168,9 +170,9 @@ namespace functional
             // Generate data
             int eventCounter = GenerateData(trace);
             Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
-            splunk.WaitForIndexingToComplete(indexName, testStartTime);
+            splunk.WaitForIndexingToComplete(indexName);
             int eventsFound = splunk.GetSearchCount("index=" + indexName);
-            Console.WriteLine("Indexing completed, {0} events were found. Elapsed time {1:F2} seconds", eventsFound, splunk.GetEpochTime() - testStartTime);
+            Console.WriteLine("Indexing completed, {0} events were found. Elapsed time {1:F2} seconds", eventsFound, Splunk.GetEpochTime() - testStartTime);
             Console.WriteLine(eventCounter == eventsFound ? "Test PASSED." : "Test FAILED.");
             Console.WriteLine();
             return eventCounter == eventsFound;
@@ -232,9 +234,8 @@ namespace functional
             string tokenName = "batchedbytimetoken";
             string indexName = "batchedbytimeindex";
             Splunk splunk = new Splunk();
-            double testStartTime = splunk.GetEpochTime();
+            double testStartTime = Splunk.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
-            Thread.Sleep(1000);
             Console.WriteLine("Test SendEventsBatchedByTime started.");
 
             var trace = new TraceSource("HttpInputLogger");
@@ -258,9 +259,8 @@ namespace functional
             string tokenName = "batchedbysizetoken";
             string indexName = "batchedbysizeindex";
             Splunk splunk = new Splunk();
-            double testStartTime = splunk.GetEpochTime();
+            double testStartTime = Splunk.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
-            Thread.Sleep(1000);
             Console.WriteLine("Test SendEventsBatchedBySize started.");
 
             var trace = new TraceSource("HttpInputLogger");
@@ -284,9 +284,8 @@ namespace functional
             string tokenName = "batchedbysizeandtimetoken";
             string indexName = "batchedbysizeandtimeindex";
             Splunk splunk = new Splunk();
-            double testStartTime = splunk.GetEpochTime();
+            double testStartTime = Splunk.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
-            Thread.Sleep(1000);
             Console.WriteLine("Test SendEventsBatchedBySizeAndTime started.");
 
             var trace = new TraceSource("HttpInputLogger");
@@ -310,9 +309,8 @@ namespace functional
             string tokenName = "unbatchedtoken";
             string indexName = "unbatchedindex";
             Splunk splunk = new Splunk();
-            double testStartTime = splunk.GetEpochTime();
+            double testStartTime = Splunk.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
-            Thread.Sleep(1000);
             Console.WriteLine("Test SendEventsUnBatched started.");
 
             var trace = new TraceSource("HttpInputLogger");
@@ -332,39 +330,68 @@ namespace functional
 
         static bool VerifyErrorsAreRaised()
         {
-            string tokenName = "errortoken";
             string indexName = "errorindex";
+            string tokenName = "errortoken";
+            double testStartTime = Splunk.GetEpochTime();
             Splunk splunk = new Splunk();
-            double testStartTime = splunk.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
-            Thread.Sleep(1000);
             Console.WriteLine("Test VerifyErrorsAreRaised started.");
 
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new Dictionary<string, string>();
-            meta["index"] = indexName;
-            meta["source"] = "host";
-            meta["sourcetype"] = "log";
-            var listener = new HttpInputTraceListener(
+
+            var validMetaData = new Dictionary<string, string>();
+            validMetaData["index"] = indexName;
+            validMetaData["source"] = "host";
+            validMetaData["sourcetype"] = "log";
+            var invalidMetaData = new Dictionary<string, string>();
+            invalidMetaData["index"] = "notexistingindex";
+            invalidMetaData["source"] = "host";
+            invalidMetaData["sourcetype"] = "log";
+
+            var listenerWithWrongToken = new HttpInputTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: "notexistingtoken",
-                metadata: meta);
-            bool errorWasRaised = false;
-            listener.AddLoggingFailureHandler((object sender, HttpInputException e) =>
+                metadata: validMetaData);
+            var listenerWithWrongUri = new HttpInputTraceListener(
+                uri: new Uri("https://127.0.0.1:8087"),
+                token: token,
+                metadata: validMetaData);
+            var listenerWithWrongMetadata = new HttpInputTraceListener(
+                uri: new Uri("https://127.0.0.1:8089"),
+                token: token,
+                metadata: invalidMetaData);
+
+
+            bool wrongTokenWasRaised = false;
+            listenerWithWrongToken.AddLoggingFailureHandler((object sender, HttpInputException e) =>
             {
-                errorWasRaised = true;
+                wrongTokenWasRaised = true;
+            });
+            bool wrongUriWasRaised = false;
+            listenerWithWrongUri.AddLoggingFailureHandler((object sender, HttpInputException e) =>
+            {
+                wrongUriWasRaised = true;
+            });
+            bool wrongMetaDataWasRaised = false;
+            listenerWithWrongMetadata.AddLoggingFailureHandler((object sender, HttpInputException e) =>
+            {
+                wrongMetaDataWasRaised = true;
             });
 
-            trace.Listeners.Add(listener);
+            trace.Listeners.Add(listenerWithWrongToken);
+            trace.Listeners.Add(listenerWithWrongUri);
+            trace.Listeners.Add(listenerWithWrongMetadata);
             // Generate data
             int eventCounter = GenerateData(trace);
-            Console.WriteLine("{0} events were created, waiting for error to be raised.", eventCounter);
-            Thread.Sleep(15*1000);
-            Console.WriteLine("Wait completed, error was {0}. Elapsed time {1:F2} seconds", errorWasRaised ? "detected" : "not detected", splunk.GetEpochTime() - testStartTime);
-            Console.WriteLine(errorWasRaised ? "Test PASSED." : "Test FAILED.");
+            Console.WriteLine("{0} events were created, waiting for errors to be raised.", eventCounter);
+            Thread.Sleep(30*1000);
+            Console.WriteLine(wrongTokenWasRaised ? "Wrong token error was raised." : "Wrong token error was not raised.");
+            Console.WriteLine(wrongUriWasRaised ? "Wrong URI error was raised." : "Wrong URI error was not raised.");
+            Console.WriteLine(wrongMetaDataWasRaised ? "Wrong metadata error was raised." : "Wrong metadata error was not raised.");
+            Console.WriteLine((wrongTokenWasRaised && wrongUriWasRaised && wrongMetaDataWasRaised) ? "Test PASSED." : "Test FAILED.");
             Console.WriteLine();
-            return errorWasRaised;
+            return wrongTokenWasRaised && wrongUriWasRaised && wrongMetaDataWasRaised;
         }
 
         static void Main(string[] args)
@@ -379,21 +406,21 @@ namespace functional
             bool testResults = true;
             foreach (string testName in args)
             {
-                switch (testName.ToLower())
+                switch (testName.ToUpperInvariant())
                 {
-                    case "sendeventsbatchedbytime":
+                    case "SENDEVENTSBATCHEDBYTIME":
                         testResults = SendEventsBatchedByTime() && testResults;
                         break;
-                    case "sendeventsbatchedbysize":
+                    case "SENDEVENTSBATCHEDBYSIZE":
                         testResults = SendEventsBatchedBySize() && testResults;
                         break;
-                    case "sendeventsbatchedbysizeandtime":
+                    case "SENDEVENTSBATCHEDBYSIZEANDTIME":
                         testResults = SendEventsBatchedBySizeAndTime() && testResults;
                         break;
-                    case "sendeventsunbatched":
+                    case "SENDEVENTSUNBATCHED":
                         testResults = SendEventsUnBatched() && testResults;
                         break;
-                    case "verifyerrorsareraised":
+                    case "VERIFYERRORSARERAISED":
                         testResults = VerifyErrorsAreRaised() && testResults;
                         break;
                     default:
