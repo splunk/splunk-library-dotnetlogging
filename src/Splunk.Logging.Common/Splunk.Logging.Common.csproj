@@ -54,7 +54,7 @@
     <Compile Include="HttpInputSender.cs" />
     <Compile Include="HttpInputEventInfo.cs" />
     <Compile Include="HttpInputException.cs" />
-    <Compile Include="HttpInputResendMessageHandler.cs" />
+    <Compile Include="HttpInputResendMiddleware.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

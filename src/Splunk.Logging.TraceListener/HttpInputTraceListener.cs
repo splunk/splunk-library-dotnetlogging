@@ -54,17 +54,25 @@ namespace Splunk.Logging
     /// trace.TraceEvent(TraceEventType.Information, 1, "hello batching");
     /// </code> 
     /// 
-    /// Trace listener allows recovering from transient connectivity problems 
-    /// and it is controlled by messageHandler parameter. HttpInputResendMessageHandler 
-    /// implements HTTP handler that resends data multiple times.
-    /// 
+    /// There is an ability to plug middleware components that act before and 
+    /// after posting data.
+    /// For example:
     /// <code>
-    /// trace.listeners.Add(new HttpInputTraceListener(
+    /// new HttpInputTraceListener(
     ///     uri: new Uri("https://localhost:8089"), 
-    ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
-    ///     new HttpInputResendMessageHandler(100)) // retry up to 10 times
-    /// );
+    ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918,
+    ///     middleware: (request, next) => {
+    ///         // preprocess request
+    ///         var response = next(request); // post data
+    ///         // process response
+    ///         return response;
+    ///     }
+    ///     ...
+    /// )
     /// </code>
+    /// Middleware components can apply additional logic before and after posting
+    /// the data to Splunk server. See HttpInputResendMiddleware.
+    /// </remarks>
     /// 
     /// A user application code can register an error handler that is invoked 
     /// when HTTP input isn't able to send data. 
@@ -95,17 +103,20 @@ namespace Splunk.Logging
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
-        /// <param name="messageHandler">HTTP message handler. By default 
-        /// HttpInputResendMessageHandler with parameter 0 is used.</param>
+        /// <param name="middleware">
+        /// HTTP client middleware. This allows to plug an HttpClient handler that 
+        /// intercepts logging HTTP traffic.
+        /// </param>
         public HttpInputTraceListener(
             Uri uri, string token,
-            Dictionary<string, string> metadata = null,
+            HttpInputEventInfo.Metadata metadata = null,
             int batchInterval = 0, int batchSizeBytes = 0, int batchSizeCount = 0,
-            HttpMessageHandler messageHandler = null)
+            HttpInputSender.HttpInputMiddleware middleware = null)
         {
             sender = new HttpInputSender(
                 uri, token, metadata,
-                batchInterval, batchSizeBytes, batchSizeCount, messageHandler);
+                batchInterval, batchSizeBytes, batchSizeCount, 
+                middleware);
         }
 
         /// <summary>
@@ -122,11 +133,11 @@ namespace Splunk.Logging
         public HttpInputTraceListener(
             Uri uri, string token,
             int retriesOnError,
-            Dictionary<string, string> metadata = null,            
+            HttpInputEventInfo.Metadata metadata = null,
             int batchInterval = 0, int batchSizeBytes = 0, int batchSizeCount = 0)
             : this(uri, token, metadata, 
-                   batchInterval, batchSizeBytes, batchSizeCount, 
-                   new HttpInputResendMessageHandler(retriesOnError))
+                   batchInterval, batchSizeBytes, batchSizeCount,
+                   (new HttpInputResendMiddleware(retriesOnError)).Plugin)
         {
         }
 
