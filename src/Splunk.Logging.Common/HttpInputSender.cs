@@ -18,6 +18,7 @@
 
 using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -88,6 +89,8 @@ namespace Splunk.Logging
 
         private HttpClient httpClient = null;
         private HttpInputMiddleware middleware = null;
+        // counter for bookkeeping the async tasks 
+        long activeAsyncTasksCount = 0;
 
         /// <summary>
         /// On error callbacks.
@@ -183,7 +186,23 @@ namespace Splunk.Logging
         {
             lock (serializedEventsBatch)
             {
-                FlushUnlocked();
+                FlushUnlocked();                
+            }
+        }
+
+        /// <summary>
+        /// Flush all events synchronously, i.e., flush and wait until all events
+        /// are sent.
+        /// </summary>
+        public void FlushSync()
+        {
+            Flush();
+            // wait until all pending tasks are done
+            while(Interlocked.CompareExchange(ref activeAsyncTasksCount, 0, 0) != 0)
+            {
+                // wait for 100ms - not CPU intensive and doesn't delay process 
+                // exit too much
+                Thread.Sleep(100);
             }
         }
 
@@ -201,16 +220,23 @@ namespace Splunk.Logging
         {
             if (serializedEventsBatch.Length > 0)
             {
-                PostEvents(eventsBatch, serializedEventsBatch.ToString());
-                serializedEventsBatch.Clear();
-                // we explicitly create a new events list instead to clear
-                // and reuse the old one because Flush works in async mode
-                // and can use use "previous" containers for error handling
+                // post data and update tasks counter
+                Interlocked.Increment(ref activeAsyncTasksCount);
+                PostEvents(eventsBatch, serializedEventsBatch.ToString())
+                    .ContinueWith((_) =>
+                    {
+                        Interlocked.Decrement(ref activeAsyncTasksCount);
+                    });
+                // we explicitly create new objects instead to clear and reuse 
+                // the old ones because Flush works in async mode
+                // and can use use "previous" containers
+                serializedEventsBatch = new StringBuilder();
                 eventsBatch = new List<HttpInputEventInfo>();
             }
+    
         }
 
-        private async void PostEvents(
+        private async Task<HttpStatusCode> PostEvents(
             List<HttpInputEventInfo> events,
             String serializedEvents)
         {
@@ -246,6 +272,7 @@ namespace Splunk.Logging
                     events: events
                 ));
             }
+            return responseCode;
         }
 
         protected override Task<HttpResponseMessage> SendAsync(
@@ -272,7 +299,7 @@ namespace Splunk.Logging
             if (disposed)
                 return;
             if (disposing)
-            {
+            {               
                 httpClient.Dispose();
             }
             disposed = true;

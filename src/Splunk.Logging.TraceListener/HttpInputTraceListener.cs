@@ -237,7 +237,17 @@ namespace Splunk.Logging
 
         public override void Close()
         {
-            sender.Flush();
+            sender.FlushSync();
+        }
+
+        override protected void Dispose(bool disposing)
+        {
+            Close();
+        }
+
+        ~HttpInputTraceListener()
+        {
+            Dispose(false);
         }
     }
 }

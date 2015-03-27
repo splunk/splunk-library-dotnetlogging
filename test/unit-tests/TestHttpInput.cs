@@ -65,16 +65,6 @@ namespace Splunk.Logging
                         httpResponseMessage.Content = new StringContent(response.Context);
                     }
                     catch (Exception) { }
-                    /*
-                    if (httpResponseMessage.StatusCode != HttpStatusCode.OK)
-                    {
-                        throw new HttpInputException(
-                            code: httpResponseMessage.StatusCode,
-                            reply: response != null ? response.Context : null,
-                            response: httpResponseMessage
-                        );
-                    }
-                    */
                     return httpResponseMessage;
                 };
 
@@ -114,11 +104,13 @@ namespace Splunk.Logging
         public void HttpInputCoreTest()
         {
             // authorization
-            Trace((auth, input) =>
+            var trace = Trace((auth, input) =>
             {
                 Assert.True(auth == "Splunk TOKEN-GUID", "authentication");
                 return new Response();
-            }).TraceInformation("info");
+            });
+            trace.TraceInformation("info");
+            trace.Close();
 
             // metadata
             ulong now = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -128,7 +120,7 @@ namespace Splunk.Logging
                 sourceType: "log",
                 host: "demohost"
             );
-            Trace(
+            trace = Trace(
                 metadata: metadata,
                 handler: (auth, input) =>
                 {
@@ -141,58 +133,68 @@ namespace Splunk.Logging
                     Assert.True(time - now < 10); // it cannot be more than 10s after sending event
                     return new Response();
                 }
-            ).TraceInformation("info");
+            );
+            trace.TraceInformation("info");
+            trace.Close();
 
             // test various tracing commands
-            Trace((auth, input) =>
+            trace = Trace((auth, input) =>
             {
                 Assert.True(input["event"].message.Value == "info");
                 return new Response();
-            }).TraceInformation("info");
+            });
+            trace.TraceInformation("info");
+            trace.Close();
 
-            Trace((auth, input) =>
+            trace = Trace((auth, input) =>
             {
                 Assert.True(input["event"].severity.Value == "Information");
                 Assert.True(input["event"].id.Value == "1");
                 Assert.True(input["event"].data[0].Value == "one");
                 Assert.True(input["event"].data[1].Value == "two");
                 return new Response();
-            }).TraceData(TraceEventType.Information, 1,  new string[] { "one", "two" });
+            });
+            trace.TraceData(TraceEventType.Information, 1, new string[] { "one", "two" });
+            trace.Close();
 
-            Trace((auth, input) =>
+            trace = Trace((auth, input) =>
             {
                 Assert.True(input["event"].severity.Value == "Critical");
                 Assert.True(input["event"].id.Value == "2");
                 return new Response();
-            }).TraceEvent(TraceEventType.Critical, 2);
+            });
+            trace.TraceEvent(TraceEventType.Critical, 2);
+            trace.Close();
 
-            Trace((auth, input) =>
+            trace = Trace((auth, input) =>
             {
                 Assert.True(input["event"].severity.Value == "Error");
                 Assert.True(input["event"].id.Value == "3");
                 Assert.True(input["event"].message.Value == "hello");
                 return new Response();
-            }).TraceEvent(TraceEventType.Error, 3, "hello");
+            });
+            trace.TraceEvent(TraceEventType.Error, 3, "hello");
+            trace.Close();
 
-            Trace((auth, input) =>
+            trace = Trace((auth, input) =>
             {
                 Assert.True(input["event"].severity.Value == "Resume");
                 Assert.True(input["event"].id.Value == "4");
                 Assert.True(input["event"].message.Value == "hello world");
                 return new Response();
-            }).TraceEvent(TraceEventType.Resume, 4, "hello {0}", "world");
+            });
+            trace.TraceEvent(TraceEventType.Resume, 4, "hello {0}", "world");
+            trace.Close();
 
             string guid = "11111111-2222-3333-4444-555555555555";            
-            Trace((auth, input) =>
+            trace = Trace((auth, input) =>
             {
                 Assert.True(input["event"].id.Value == "5");
                 Assert.True(input["event"].data.Value == guid);
                 return new Response();
-            }).TraceTransfer(5, "transfer", new Guid(guid));
-
-            // Wait for all async tasks before leaving the test. @todo - remove 
-            // Sleep after SPL-98289 
-            Sleep();
+            });
+            trace.TraceTransfer(5, "transfer", new Guid(guid));
+            trace.Close();
         }
 
         [Trait("integration-tests", "Splunk.Logging.HttpInputBatchingCountTest")]
@@ -210,11 +212,16 @@ namespace Splunk.Logging
                 },
                 batchSizeCount: 3
             );            
+
             trace.TraceInformation("info 1");
             trace.TraceInformation("info 2");
             trace.TraceInformation("info 3");
 
-            Sleep();
+            trace.TraceInformation("info 1");
+            trace.TraceInformation("info 2");
+            trace.TraceInformation("info 3");            
+
+            trace.Close();
         }
 
         [Trait("integration-tests", "Splunk.Logging.HttpInputBatchingSizeTest")]
@@ -238,12 +245,18 @@ namespace Splunk.Logging
                 },
                 batchSizeBytes: 4 * size - size / 2 // 4 events trigger post  
             );
+
             trace.TraceInformation("info 1");
             trace.TraceInformation("info 2");
             trace.TraceInformation("info 3");
             trace.TraceInformation("info 4");
 
-            Sleep();
+            trace.TraceInformation("info 1");
+            trace.TraceInformation("info 2");
+            trace.TraceInformation("info 3");
+            trace.TraceInformation("info 4");
+
+            trace.Close();
         }
 
         [Trait("integration-tests", "Splunk.Logging.HttpInputBatchingIntervalTest")]
@@ -266,9 +279,8 @@ namespace Splunk.Logging
             trace.TraceInformation("info 1");
             trace.TraceInformation("info 2");
             trace.TraceInformation("info 3");
-            trace.TraceInformation("info 4");
-
-            Sleep();
+            trace.TraceInformation("info 4");            
+            trace.Close();
         }
 
         [Trait("integration-tests", "Splunk.Logging.HttpInputResendTest")]
@@ -297,17 +309,8 @@ namespace Splunk.Logging
                     Assert.True(exception.Events.Count == 1);
                     Assert.True(exception.Events[0].Event.Message == "info");
                 });
-            trace.TraceInformation("info"); 
-
-            Sleep();
-        }
-
-        private void Sleep()
-        {
-            // Currently we put a sleep at the end of each test int order to make sure
-            // that process doesn't exit before completing all async tests. This 
-            // sleep will be removed (@todo!) after  SPL-98289
-            Thread.Sleep(3000); 
+            trace.TraceInformation("info");
+            trace.Close();
         }
     }
 }
