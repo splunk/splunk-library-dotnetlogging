@@ -43,11 +43,13 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TcpEventSink.cs" />
     <Compile Include="UdpEventSink.cs" />
+    <Compile Include="HttpInputEventSink.cs" />    
     <Compile Include="Util.cs" />
   </ItemGroup>
   <ItemGroup>
