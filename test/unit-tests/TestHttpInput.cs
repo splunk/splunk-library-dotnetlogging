@@ -18,6 +18,9 @@ namespace Splunk.Logging
 {
     public class TestHttpInput
     {
+        private readonly Uri uri = new Uri("http://localhost:8089"); // a dummy uri
+        private const string token = "TOKEN-GUID"; 
+ 
         #region Trace listener interceptor that replaces a real Splunk server for testing. 
 
         private class Response
@@ -93,8 +96,8 @@ namespace Splunk.Logging
             trace.Switch.Level = SourceLevels.All;
             trace.Listeners.Add(
                 new HttpInputTraceListener(
-                    uri: new Uri("http://localhost:8089"), // dummy URI
-                    token: "TOKEN-GUID", // dummy token 
+                    uri: uri,
+                    token: token,
                     metadata: metadata,
                     batchInterval: batchInterval, 
                     batchSizeBytes: batchSizeBytes, 
@@ -105,10 +108,16 @@ namespace Splunk.Logging
         }
 
         // Event sink
-        private struct SinkTrace
+        private struct SinkTrace : IDisposable
         {
             public TestEventSource Source { set; get; }
             public HttpInputEventSink Sink { set; get; }
+            public ObservableEventListener Listener { get; set; }
+            public void Dispose()
+            {
+                Sink.OnCompleted();
+                Listener.Dispose();
+            }
         }
 
         private SinkTrace TraceSource(
@@ -121,8 +130,8 @@ namespace Splunk.Logging
         {
             var listener = new ObservableEventListener();
             var sink = new HttpInputEventSink(
-                 uri: new Uri("http://localhost:8089"), // dummy URI
-                 token: "TOKEN-GUID", // dummy token
+                 uri: uri,
+                 token: token,
                  formatter: new TestEventFormatter(),
                  metadata: metadata,
                  batchInterval: batchInterval,
@@ -130,11 +139,13 @@ namespace Splunk.Logging
                  batchSizeCount: batchSizeCount,
                  middleware: MiddlewareInterceptor(handler, middleware));
             listener.Subscribe(sink);
+
             var eventSource = TestEventSource.GetInstance();
-            listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);
+            listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);           
             return new SinkTrace() { 
                 Source = eventSource,
-                Sink = sink
+                Sink = sink,
+                Listener = listener
             };
         }
 
@@ -365,10 +376,9 @@ namespace Splunk.Logging
                 return new Response();
             });
             trace.Source.Message("", "");
-            trace.Sink.OnCompleted();
+            trace.Dispose();
 
             // metadata
-            ulong now = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             var metadata = new HttpInputEventInfo.Metadata(
                 index: "main",
                 source: "localhost",
@@ -385,14 +395,26 @@ namespace Splunk.Logging
                     Assert.True(input.source.Value == "localhost");
                     Assert.True(input.sourcetype.Value == "log");
                     Assert.True(input.host.Value == "demohost");
+                    return new Response();
+                }
+            );
+            trace.Source.Message("hello", "world");
+            trace.Dispose();
+
+            // timestamp
+            // metadata
+            ulong now = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            trace = TraceSource(
+                handler: (auth, input) =>
+                {
                     // check that timestamp is correct
                     ulong time = ulong.Parse(input.time.Value);
                     Assert.True(time - now < 10); // it cannot be more than 10s after sending event
                     return new Response();
                 }
             );
-            trace.Source.Message("hello", "world");
-            trace.Sink.OnCompleted();
+            trace.Source.Message("", "");
+            trace.Dispose();
         }
 
         [Trait("integration-tests", "Splunk.Logging.HttpInputSinkBatchingTest")]
@@ -420,7 +442,7 @@ namespace Splunk.Logging
             trace.Source.Message("2", "two");
             trace.Source.Message("3", "three");
 
-            trace.Sink.OnCompleted();
+            trace.Dispose();
         }
     }
 }

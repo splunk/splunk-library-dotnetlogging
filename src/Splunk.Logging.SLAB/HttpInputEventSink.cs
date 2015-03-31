@@ -194,13 +194,15 @@ namespace Splunk.Logging
         /// <param name="value">An event.</param>
         public void OnNext(EventEntry value)
         {
-            var sw = new StringWriter();
-            formatter.WriteEvent(value, sw);
-            sender.Send(
-                id: value.EventId.ToString(),              
-                severity: value.Schema.Level.ToString(),
-                message: sw.ToString()
-            );
+            using (var sw = new StringWriter())
+            {
+                formatter.WriteEvent(value, sw);
+                sender.Send(
+                    id: value.EventId.ToString(),
+                    severity: value.Schema.Level.ToString(),
+                    message: sw.ToString()
+                );
+            }
         }
 
         #endregion
