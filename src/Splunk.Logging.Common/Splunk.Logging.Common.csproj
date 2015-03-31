@@ -30,8 +30,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -46,8 +51,13 @@
     <Compile Include="TcpReconnectionPolicy.cs" />
     <Compile Include="TcpSocketWriter.cs" />
     <Compile Include="Util.cs" />
+    <Compile Include="HttpInputSender.cs" />
+    <Compile Include="HttpInputEventInfo.cs" />
+    <Compile Include="HttpInputException.cs" />
+    <Compile Include="HttpInputResendMiddleware.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="Splunk.Logging.Common.nuspec" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
