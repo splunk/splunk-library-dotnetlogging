@@ -25,20 +25,20 @@ using System.Threading.Tasks;
 namespace Splunk.Logging
 {
     /// <summary>
-    /// Default http input message handler that tries to resend data in case of 
-    /// a network problem.
+    /// HTTP input middleware plug in that implements a simple resend policy. 
+    /// When HTTP post reply isn't an application error we try to resend the data.
     /// Usage:
     /// <code>
     /// trace.listeners.Add(new HttpInputTraceListener(
     ///     uri: new Uri("https://localhost:8089"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
-    ///     new HttpInputResendMessageHandler(100) // retry up to 10 times
+    ///     new HttpInputResendMiddleware(10).Plugin // retry 10 times
     /// );
     /// </code>
     /// </summary>
-    public class HttpInputResendMessageHandler : HttpClientHandler
+    public class HttpInputResendMiddleware
     {
-        // List of http input server application error statuses. These statuses 
+        // List of HTTP input server application error statuses. These statuses 
         // indicate non-transient problems that cannot be fixed by resending the 
         // data.
         private static readonly HttpStatusCode[] HttpInputApplicationErrors = 
@@ -49,15 +49,25 @@ namespace Splunk.Logging
         };
 
         private int retriesOnError = 0;
-            
-        public HttpInputResendMessageHandler(int retriesOnError)
+
+        /// <param name="retriesOnError">
+        /// Max number of retries before reporting an error.
+        /// </param>
+        public HttpInputResendMiddleware(int retriesOnError)
         {
             this.retriesOnError = retriesOnError;
         }
 
-        protected override async Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
-        {
+        /// <summary>
+        /// Callback that should be used as middleware in HttpInputSender
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="next"></param>
+        /// <returns></returns>
+        public async Task<HttpResponseMessage> Plugin(
+            HttpRequestMessage request, 
+            HttpInputSender.HttpInputHandler next)
+        {          
             HttpResponseMessage response = null;
             HttpStatusCode statusCode = HttpStatusCode.OK;
             WebException webException = null;
@@ -67,7 +77,7 @@ namespace Splunk.Logging
             {
                 try
                 {
-                    response = await base.SendAsync(request, cancellationToken);
+                    response = await next(request);
                     statusCode = response.StatusCode;
                     if (statusCode == HttpStatusCode.OK)
                     {
@@ -79,7 +89,10 @@ namespace Splunk.Logging
                     {
                         // HTTP input application error detected - resend wouldn't help
                         // in this case. Record server reply and break.
-                        serverReply = await response.Content.ReadAsStringAsync();
+                        if (response.Content != null)
+                        {
+                            serverReply = await response.Content.ReadAsStringAsync();
+                        }
                         break;
                     }
                     else

@@ -24,7 +24,7 @@ using System.Net.Http;
 namespace Splunk.Logging
 {
     /// <summary>
-    /// HTTP input exception. This class is used when an http input client is 
+    /// HTTP input exception. This class is used when an HTTP input client is 
     /// unable to send events to the server;
     /// </summary>
     public class HttpInputException : Exception 
@@ -35,7 +35,7 @@ namespace Splunk.Logging
         public HttpStatusCode StatusCode { get; private set; }
 
         /// <summary>
-        /// Exception thrown by http client when sending the data. This value 
+        /// Exception thrown by HTTP client when sending the data. This value 
         /// can be null.
         /// </summary>
         public Exception WebException { get; private set; }
@@ -59,19 +59,22 @@ namespace Splunk.Logging
         /// HTTP input exception container.
         /// </summary>
         /// <param name="code">HTTP status code.</param>
-        /// <param name="webException">Exception thrown by http client when sending the data.</param>
+        /// <param name="webException">Exception thrown by HTTP client when sending the data.</param>
         /// <param name="reply">Splunk server reply.</param>
+        /// <param name="response">HTTP response.</param>
         /// <param name="events">List of events that caused the problem.</param>
         public HttpInputException(
             HttpStatusCode code, 
-            Exception webException, 
-            string reply, 
-            HttpResponseMessage response)
+            Exception webException = null, 
+            string reply = null, 
+            HttpResponseMessage response = null,
+            List<HttpInputEventInfo> events = null)
         {
-            StatusCode = code;
-            WebException = webException;
-            ServerReply = reply;
-            Response = response;
+            this.StatusCode = code;
+            this.WebException = webException;
+            this.ServerReply = reply;
+            this.Response = response;
+            this.Events = events;
         }
     }
 }
