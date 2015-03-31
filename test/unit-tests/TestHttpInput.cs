@@ -11,363 +11,438 @@ using System.Threading.Tasks;
 using Xunit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Net.Http;
+using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
 
 namespace Splunk.Logging
 {
     public class TestHttpInput
     {
-        private const string HttpInputPath = "/services/receivers/token/";
+        private readonly Uri uri = new Uri("http://localhost:8089"); // a dummy uri
+        private const string token = "TOKEN-GUID"; 
+ 
+        #region Trace listener interceptor that replaces a real Splunk server for testing. 
 
-        // A dummy http input server
-        private class HttpServer
+        private class Response
         {
-            private static int port = 5000;
-            private Uri uri;
-            private readonly HttpListener listener = new HttpListener();
-
-            public class Response
+            public HttpStatusCode Code;
+            public string Context;
+            public Response(HttpStatusCode code = HttpStatusCode.OK, string context = "{\"text\":\"Success\",\"code\":0}")
             {
-                public HttpStatusCode Code;
-                public string Context;
-                public Response(HttpStatusCode code = HttpStatusCode.OK, string context = "{\"text\":\"Success\",\"code\":0}")
-                {
-                    Code = code;
-                    Context = context;
-                }
+                Code = code;
+                Context = context;
             }
-            public Func<string, dynamic, Response> RequestHandler { get; set; }
+        }
 
-            public HttpServer()
-            {
-                // the tests are running simultaneously thus we start a new multiple 
-                // http servers with different ports 
-                port++;
-                uri = new Uri("http://localhost:" + port);
-                Uri fullUri = new Uri(uri, HttpInputPath);
-                listener.Prefixes.Add(fullUri.ToString());
-                listener.Start();
-                Run();
-            }
+        private delegate Response RequestHandler(string auth, dynamic input);
 
-            public Uri Uri { get { return uri; } }
-            public void Run()
+        // we inject this method into HTTP input middleware chain to mimic a Splunk  
+        // server
+        private HttpInputSender.HttpInputMiddleware MiddlewareInterceptor(
+            RequestHandler handler,
+            HttpInputSender.HttpInputMiddleware middleware)
+        {
+            HttpInputSender.HttpInputMiddleware interceptor = 
+            async (HttpRequestMessage request, HttpInputSender.HttpInputHandler next) =>
             {
-                ThreadPool.QueueUserWorkItem((wi) =>
+                Response response = null;
+                HttpResponseMessage httpResponseMessage = new HttpResponseMessage();
+                try
                 {
-                    try
+                    string authorization = request.Headers.Authorization.ToString();
+                    string input = await request.Content.ReadAsStringAsync();
+                    if (input.Contains("}{"))
                     {
-                        while (listener.IsListening)
-                        {
-                            ThreadPool.QueueUserWorkItem((obj) =>
-                            {
-                                var context = obj as HttpListenerContext;
-                                try
-                                {
-                                    string authorization = context.Request.Headers.Get("Authorization");                                    
-                                    string input = new StreamReader(context.Request.InputStream).ReadToEnd();
-                                    dynamic jobj = null;
-                                    if (input.Contains("}{"))
-                                    {
-                                        // batch of events, convert it to a json array
-                                        input =
-                                            "[" +
-                                            input.Replace("}{", "},{") +
-                                            "]";
-                                        jobj = JArray.Parse(input);
-                                    }
-                                    else 
-                                    {
-                                       jobj = JObject.Parse(input);
-                                    }                 
-                                    
-                                    Response response = RequestHandler(authorization, jobj);                                    
-                                    context.Response.StatusCode = (int)response.Code;
-                                    byte[] buf = Encoding.UTF8.GetBytes(response.Context);
-                                    context.Response.ContentLength64 = buf.Length;
-                                    context.Response.OutputStream.Write(buf, 0, buf.Length);                                    
-                                }
-                                catch (Exception e) 
-                                {
-                                    Assert.True(false, e.ToString());   
-                                } 
-                                finally
-                                {
-                                    // always close the stream
-                                    context.Response.OutputStream.Close();
-                                }
-                            }, listener.GetContext());
-                        }
+                        // batch of events, convert it to a json array
+                        input = "[" + input.Replace("}{", "},{") + "]";
+                        response = handler(authorization, JArray.Parse(input));
                     }
-                    catch { } // suppress any exceptions
-                });
+                    else
+                    {
+                        response = handler(authorization, JObject.Parse(input));
+                    }
+                    httpResponseMessage.StatusCode = response.Code;
+                    byte[] buf = Encoding.UTF8.GetBytes(response.Context);
+                    httpResponseMessage.Content = new StringContent(response.Context);
+                }
+                catch (Exception) { }
+                return httpResponseMessage;
+            };
+            if (middleware != null)
+            {
+                // chain middleware to interceptor
+                var temp = interceptor;
+                interceptor = (request, next) =>
+                {
+                    return middleware(request, (req) =>
+                    {
+                        return temp(req, next);
+                    });
+                };
             }
+            return interceptor;
+        }
 
-            public void Stop()
+        // Input trace listener
+        private TraceSource Trace(
+            RequestHandler handler, 
+            HttpInputEventInfo.Metadata metadata = null,
+            int batchInterval = 0, 
+            int batchSizeBytes = 0, 
+            int batchSizeCount = 0,
+            HttpInputSender.HttpInputMiddleware middleware = null)
+        {
+            var trace = new TraceSource("HttpInputLogger");
+            trace.Switch.Level = SourceLevels.All;
+            trace.Listeners.Add(
+                new HttpInputTraceListener(
+                    uri: uri,
+                    token: token,
+                    metadata: metadata,
+                    batchInterval: batchInterval, 
+                    batchSizeBytes: batchSizeBytes, 
+                    batchSizeCount: batchSizeCount,
+                    middleware: MiddlewareInterceptor(handler, middleware))
+            );            
+            return trace;
+        }
+
+        // Event sink
+        private struct SinkTrace : IDisposable
+        {
+            public TestEventSource Source { set; get; }
+            public HttpInputEventSink Sink { set; get; }
+            public ObservableEventListener Listener { get; set; }
+            public void Dispose()
             {
-                listener.Stop();
-                listener.Close();
+                Sink.OnCompleted();
+                Listener.Dispose();
             }
         }
- 
-        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListener")]
-        [Fact]
-        public void HttpInputTraceListener()
+
+        private SinkTrace TraceSource(
+            RequestHandler handler,
+            HttpInputEventInfo.Metadata metadata = null,
+            int batchInterval = 0,
+            int batchSizeBytes = 0,
+            int batchSizeCount = 0,
+            HttpInputSender.HttpInputMiddleware middleware = null)
         {
-            HttpServer server = new HttpServer();
+            var listener = new ObservableEventListener();
+            var sink = new HttpInputEventSink(
+                 uri: uri,
+                 token: token,
+                 formatter: new TestEventFormatter(),
+                 metadata: metadata,
+                 batchInterval: batchInterval,
+                 batchSizeBytes: batchSizeBytes,
+                 batchSizeCount: batchSizeCount,
+                 middleware: MiddlewareInterceptor(handler, middleware));
+            listener.Subscribe(sink);
 
-            // setup the logger
-            var trace = new TraceSource("HttpInputLogger");
-            trace.Switch.Level = SourceLevels.All;
-            var meta = new Dictionary<string, string>();
-            meta["index"] = "main";
-            meta["source"] = "localhost";
-            meta["sourcetype"] = "log";
-            meta["host"] = "demohost";
-            trace.Listeners.Add(new HttpInputTraceListener(uri: server.Uri, token: "TOKEN", metadata: meta));
-
-            // test authentication
-            server.RequestHandler = (auth, input) => 
-            {
-                Assert.True(auth == "Splunk TOKEN", "wrong authentication");
-                return new HttpServer.Response(); 
+            var eventSource = TestEventSource.GetInstance();
+            listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);           
+            return new SinkTrace() { 
+                Source = eventSource,
+                Sink = sink,
+                Listener = listener
             };
-            trace.TraceEvent(TraceEventType.Information, 1, "info");
-            Sleep();
-
-            // test metadata
-            ulong now =
-                (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            server.RequestHandler = (auth, input) =>
-            {
-                Assert.True(input.index.Value == "main");
-                Assert.True(input.source.Value == "localhost");
-                Assert.True(input.sourcetype.Value == "log");
-                Assert.True(input.host.Value == "demohost");
-                // check that timestamp is correct
-                ulong time = ulong.Parse(input.time.Value);
-                Assert.True(time - now <= 1);
-                return new HttpServer.Response();
-            };
-            trace.TraceEvent(TraceEventType.Information, 1, "info");
-            Sleep();
-
-            // test event info
-            server.RequestHandler = (auth, input) =>
-            {
-                Assert.True(input["event"].id.Value == "123");
-                Assert.True(input["event"].severity.Value == "Error");
-                Assert.True(input["event"].message.Value == "Test error");
-                return new HttpServer.Response();
-            };
-            trace.TraceEvent(TraceEventType.Error, 123, "Test error");
-            Sleep();
         }
 
-        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingSize")]
+        #endregion
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputCoreTest")]
         [Fact]
-        public void HttpInputTraceListenerBatchingSize()
+        public void HttpInputCoreTest()
         {
-            HttpServer server = new HttpServer();            
-
-            // setup the logger
-            var trace = new TraceSource("HttpInputLogger");
-            trace.Switch.Level = SourceLevels.All;
-            trace.Listeners.Add(new HttpInputTraceListener(
-                uri: server.Uri, token: "TOKEN",
-                batchSizeBytes: 200 // an individual event is around 120B, so we expect 2 events per batch
-            ));
-
-            // the first event shouldn't be received
-            server.RequestHandler = (auth, input) =>
+            // authorization
+            var trace = Trace((auth, input) =>
             {
-                Assert.True(false); 
-                return null;
-            };
-            trace.TraceEvent(TraceEventType.Information, 1, "first");
-            Sleep();
-
-            // now the second event triggers sending 
-            server.RequestHandler = (auth, input) =>
-            {
-                Assert.True(input[0]["event"].message.Value == "first");
-                Assert.True(input[1]["event"].message.Value == "second");
-                return new HttpServer.Response();
-            };
-            trace.TraceEvent(TraceEventType.Information, 2, "second");
-            Sleep();
-
-        }
-
-        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingCount")]
-        [Fact]
-        public void HttpInputTraceListenerBatchingCount()
-        {
-            HttpServer server = new HttpServer();
- 
-            // setup the logger
-            var trace = new TraceSource("HttpInputLogger");
-            trace.Switch.Level = SourceLevels.All;
-            trace.Listeners.Add(new HttpInputTraceListener(
-                uri: server.Uri, token: "TOKEN", 
-                batchSizeCount: 3 
-            ));
-
-            // the first event shouldn't be received by the server
-            server.RequestHandler = (auth, input) =>
-            {
-                Assert.True(false);
-                return null;
-            };
-            trace.TraceEvent(TraceEventType.Information, 1, "first");
-            Sleep();
-
-            // the second event shouldn't be received as well
-            trace.TraceEvent(TraceEventType.Information, 2, "second");
-            Sleep();
-
-            // now the third event triggers sending the batch
-            server.RequestHandler = (auth, input) =>
-            {
-                Assert.True(input[0]["event"].message.Value == "first");
-                Assert.True(input[1]["event"].message.Value == "second");
-                Assert.True(input[2]["event"].message.Value == "third");
-                return new HttpServer.Response();
-            };
-            trace.TraceEvent(TraceEventType.Information, 3, "third");
-            Sleep();            
-        }
-
-        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingFlush")]
-        [Fact]
-        public void HttpInputTraceListenerBatchingFlush()
-        {
-            HttpServer server = new HttpServer();
-
-            // setup the logger
-            var trace = new TraceSource("HttpInputLogger");
-            trace.Switch.Level = SourceLevels.All;
-            trace.Listeners.Add(new HttpInputTraceListener(
-                uri: server.Uri, token: "TOKEN",
-                batchSizeCount: uint.MaxValue,
-                batchSizeBytes: uint.MaxValue));
-
-            // send multiple events, no event should be received immediately 
-            server.RequestHandler = (auth, input) =>
-            {
-                Assert.True(false);
-                return null;
-            };
-            for (int i = 0; i < 1000; i ++)
-                trace.TraceEvent(TraceEventType.Information, 1, "hello");            
-            Sleep();
-
-            int receivedCount = 0;
-            server.RequestHandler = (auth, input) =>
-            {
-                receivedCount = input.Count;
-                return new HttpServer.Response();
-            };
-            trace.Close(); // flush all events
-            Thread.Sleep(500); // wait long enough to receive the events
-            Assert.True(receivedCount == 1000);
-        }
-
-        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerBatchingTimer")]
-        [Fact]
-        public void HttpInputTraceListenerBatchingTimer()
-        {
-            HttpServer server = new HttpServer();
-
-            // setup the logger
-            var trace = new TraceSource("HttpInputLogger");
-            trace.Switch.Level = SourceLevels.All;
-            trace.Listeners.Add(new HttpInputTraceListener(
-                uri: server.Uri, token: "TOKEN",
-                batchInterval: 1000,
-                batchSizeCount: uint.MaxValue,
-                batchSizeBytes: uint.MaxValue));
-
-            // send multiple events, no event should be received immediately 
-            server.RequestHandler = (auth, input) =>
-            {
-                Assert.True(false);
-                return null;
-            };
-            for (int i = 0; i < 10; i++)
-                trace.TraceEvent(TraceEventType.Information, 1, "hello");
-            Sleep();
-
-            int receivedCount = 0;
-            server.RequestHandler = (auth, input) =>
-            {
-                receivedCount = input.Count;
-                return new HttpServer.Response();
-            };
-            Thread.Sleep(1500); // wait for more than 1 second, the timer should
-            // flush all events            
-            Assert.True(receivedCount == 10);
-        }
-
-        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerRetry")]
-        [Fact]
-        public void HttpInputTraceListenerRetry()
-        {
-            HttpServer server = new HttpServer();
-
-            // setup the logger
-            var trace = new TraceSource("HttpInputLogger");
-            trace.Switch.Level = SourceLevels.All;
-            trace.Listeners.Add(new HttpInputTraceListener(
-                uri: server.Uri, token: "TOKEN",
-                retriesOnError: 1000));
-
-            server.RequestHandler = (auth, input) =>
-            {
-                // mimic a server problem that causes resending the data
-                return new HttpServer.Response(HttpStatusCode.ServiceUnavailable);
-            };
-            trace.TraceEvent(TraceEventType.Information, 1, "hello");
-            Sleep();
-            server.RequestHandler = (auth, input) =>
-            {
-                Assert.True(input["event"].message.Value == "hello");
-                // "fix" the server
-                return new HttpServer.Response();   
-            };
-            Sleep();
-        }
-
-        [Trait("integration-tests", "Splunk.Logging.HttpInputTraceListenerErrorHandler")]
-        [Fact]
-        public void HttpInputTraceListenerErrorHandler()
-        {
-            HttpServer server = new HttpServer();
-
-            // setup the logger
-            var trace = new TraceSource("HttpInputLogger");
-            trace.Switch.Level = SourceLevels.All;
-            var listener = new HttpInputTraceListener(
-                uri: server.Uri, token: "TOKEN");
-            trace.Listeners.Add(listener);
-
-            listener.AddLoggingFailureHandler((object sender, HttpInputException e) =>
-            {
-                Assert.True(e.StatusCode == HttpStatusCode.ServiceUnavailable);
-                Assert.True(e.Events[0].Event.Message == "hello");
+                Assert.True(auth == "Splunk TOKEN-GUID", "authentication");
+                return new Response();
             });
-            server.RequestHandler = (auth, input) =>
+            trace.TraceInformation("info");
+            trace.Close();
+
+            // metadata
+            ulong now = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            var metadata = new HttpInputEventInfo.Metadata(
+                index: "main",
+                source: "localhost",
+                sourceType: "log",
+                host: "demohost"
+            );
+            trace = Trace(
+                metadata: metadata,
+                handler: (auth, input) =>
+                {
+                    Assert.True(input.index.Value == "main");
+                    Assert.True(input.source.Value == "localhost");
+                    Assert.True(input.sourcetype.Value == "log");
+                    Assert.True(input.host.Value == "demohost");
+                    // check that timestamp is correct
+                    ulong time = ulong.Parse(input.time.Value);
+                    Assert.True(time - now < 10); // it cannot be more than 10s after sending event
+                    return new Response();
+                }
+            );
+            trace.TraceInformation("info");
+            trace.Close();
+
+            // test various tracing commands
+            trace = Trace((auth, input) =>
             {
-                // mimic a server problem that causes resending the data
-                return new HttpServer.Response(code: HttpStatusCode.ServiceUnavailable);
-            };
-            trace.TraceEvent(TraceEventType.Information, 1, "hello");
-            Sleep();
+                Assert.True(input["event"].message.Value == "info");
+                return new Response();
+            });
+            trace.TraceInformation("info");
+            trace.Close();
+
+            trace = Trace((auth, input) =>
+            {
+                Assert.True(input["event"].severity.Value == "Information");
+                Assert.True(input["event"].id.Value == "1");
+                Assert.True(input["event"].data[0].Value == "one");
+                Assert.True(input["event"].data[1].Value == "two");
+                return new Response();
+            });
+            trace.TraceData(TraceEventType.Information, 1, new string[] { "one", "two" });
+            trace.Close();
+
+            trace = Trace((auth, input) =>
+            {
+                Assert.True(input["event"].severity.Value == "Critical");
+                Assert.True(input["event"].id.Value == "2");
+                return new Response();
+            });
+            trace.TraceEvent(TraceEventType.Critical, 2);
+            trace.Close();
+
+            trace = Trace((auth, input) =>
+            {
+                Assert.True(input["event"].severity.Value == "Error");
+                Assert.True(input["event"].id.Value == "3");
+                Assert.True(input["event"].message.Value == "hello");
+                return new Response();
+            });
+            trace.TraceEvent(TraceEventType.Error, 3, "hello");
+            trace.Close();
+
+            trace = Trace((auth, input) =>
+            {
+                Assert.True(input["event"].severity.Value == "Resume");
+                Assert.True(input["event"].id.Value == "4");
+                Assert.True(input["event"].message.Value == "hello world");
+                return new Response();
+            });
+            trace.TraceEvent(TraceEventType.Resume, 4, "hello {0}", "world");
+            trace.Close();
+
+            string guid = "11111111-2222-3333-4444-555555555555";            
+            trace = Trace((auth, input) =>
+            {
+                Assert.True(input["event"].id.Value == "5");
+                Assert.True(input["event"].data.Value == guid);
+                return new Response();
+            });
+            trace.TraceTransfer(5, "transfer", new Guid(guid));
+            trace.Close();
         }
 
-        private void Sleep()
+        [Trait("integration-tests", "Splunk.Logging.HttpInputBatchingCountTest")]
+        [Fact]
+        public void HttpInputBatchingCountTest()
         {
-            // logger and server are async thus we need short delays between individual tests
-            Thread.Sleep(100); 
+            var trace = Trace(
+                handler: (auth, input) =>
+                {
+                    Assert.True(input.Count == 3);
+                    Assert.True(input[0]["event"].message.Value == "info 1");
+                    Assert.True(input[1]["event"].message.Value == "info 2");
+                    Assert.True(input[2]["event"].message.Value == "info 3");
+                    return new Response();
+                },
+                batchSizeCount: 3
+            );            
+
+            trace.TraceInformation("info 1");
+            trace.TraceInformation("info 2");
+            trace.TraceInformation("info 3");
+
+            trace.TraceInformation("info 1");
+            trace.TraceInformation("info 2");
+            trace.TraceInformation("info 3");            
+
+            trace.Close();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputBatchingSizeTest")]
+        [Fact]
+        public void HttpInputBatchingSizeTest()
+        {
+            // estimate serialized event size
+            HttpInputEventInfo ei = 
+                new HttpInputEventInfo(null, TraceEventType.Information.ToString(), "info ?", null, null);
+            int size = HttpInputSender.SerializeEventInfo(ei).Length;
+
+            var trace = Trace(
+                handler: (auth, input) =>
+                {
+                    Assert.True(input.Count == 4);
+                    Assert.True(input[0]["event"].message.Value == "info 1");
+                    Assert.True(input[1]["event"].message.Value == "info 2");
+                    Assert.True(input[2]["event"].message.Value == "info 3");
+                    Assert.True(input[3]["event"].message.Value == "info 4");
+                    return new Response();
+                },
+                batchSizeBytes: 4 * size - size / 2 // 4 events trigger post  
+            );
+
+            trace.TraceInformation("info 1");
+            trace.TraceInformation("info 2");
+            trace.TraceInformation("info 3");
+            trace.TraceInformation("info 4");
+
+            trace.TraceInformation("info 1");
+            trace.TraceInformation("info 2");
+            trace.TraceInformation("info 3");
+            trace.TraceInformation("info 4");
+
+            trace.Close();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputBatchingIntervalTest")]
+        [Fact]
+        public void HttpInputBatchingIntervalTest()
+        {
+            var trace = Trace(
+                handler: (auth, input) =>
+                {
+                    Assert.True(input.Count == 4);
+                    Assert.True(input[0]["event"].message.Value == "info 1");
+                    Assert.True(input[1]["event"].message.Value == "info 2");
+                    Assert.True(input[2]["event"].message.Value == "info 3");
+                    Assert.True(input[3]["event"].message.Value == "info 4");
+                    return new Response();
+                },
+                batchInterval: 1000,
+                batchSizeBytes: int.MaxValue, batchSizeCount: int.MaxValue
+            );
+            trace.TraceInformation("info 1");
+            trace.TraceInformation("info 2");
+            trace.TraceInformation("info 3");
+            trace.TraceInformation("info 4");            
+            trace.Close();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputResendTest")]
+        [Fact]
+        public void HttpInputResendTest()
+        {
+            int resendCount = 0;
+            HttpInputResendMiddleware resend = new HttpInputResendMiddleware(3);
+            var trace = Trace(
+                handler: (auth, input) =>
+                {
+                    resendCount++;
+                    // mimic server error, this problem is considered as "fixable"
+                    // by resend middleware
+                    return new Response(HttpStatusCode.InternalServerError, "{\"text\":\"Error\"}");
+                }, 
+                middleware: (new HttpInputResendMiddleware(3)).Plugin // repeat 3 times
+            );
+            (trace.Listeners[trace.Listeners.Count-1] as HttpInputTraceListener).AddLoggingFailureHandler(
+                (sender, exception) =>
+                {
+                    // error handler should be called after a single "normal post" and 3 "retries"
+                    Assert.True(resendCount == 4);
+                    
+                    // check exception events
+                    Assert.True(exception.Events.Count == 1);
+                    Assert.True(exception.Events[0].Event.Message == "info");
+                });
+            trace.TraceInformation("info");
+            trace.Close();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputSinkCoreTest")]
+        [Fact]
+        public void HttpInputSinkCoreTest()
+        {
+            // authorization
+            var trace = TraceSource((auth, input) =>
+            {
+                Assert.True(auth == "Splunk TOKEN-GUID", "authentication");
+                return new Response();
+            });
+            trace.Source.Message("", "");
+            trace.Dispose();
+
+            // metadata
+            var metadata = new HttpInputEventInfo.Metadata(
+                index: "main",
+                source: "localhost",
+                sourceType: "log",
+                host: "demohost"
+            );
+            trace = TraceSource(
+                metadata: metadata,
+                handler: (auth, input) =>
+                {
+                    Assert.True(input["event"].message.Value ==
+                        "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=world - hello\" \"message=hello\" \"caller=world\"\r\n");                
+                    Assert.True(input.index.Value == "main");
+                    Assert.True(input.source.Value == "localhost");
+                    Assert.True(input.sourcetype.Value == "log");
+                    Assert.True(input.host.Value == "demohost");
+                    return new Response();
+                }
+            );
+            trace.Source.Message("hello", "world");
+            trace.Dispose();
+
+            // timestamp
+            // metadata
+            ulong now = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            trace = TraceSource(
+                handler: (auth, input) =>
+                {
+                    // check that timestamp is correct
+                    ulong time = ulong.Parse(input.time.Value);
+                    Assert.True(time - now < 10); // it cannot be more than 10s after sending event
+                    return new Response();
+                }
+            );
+            trace.Source.Message("", "");
+            trace.Dispose();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpInputSinkBatchingTest")]
+        [Fact]
+        public void HttpInputSinkBatchingTest()
+        {
+            var trace = TraceSource((auth, input) =>
+            {
+                Assert.True(input.Count == 3);
+                Assert.True(input[0]["event"].message.Value ==
+                    "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=one - 1\" \"message=1\" \"caller=one\"\r\n");
+                Assert.True(input[1]["event"].message.Value ==
+                    "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=two - 2\" \"message=2\" \"caller=two\"\r\n");
+                Assert.True(input[2]["event"].message.Value ==
+                    "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=three - 3\" \"message=3\" \"caller=three\"\r\n");
+                return new Response();
+            },
+            batchSizeCount: 3);
+            
+            trace.Source.Message("1", "one");
+            trace.Source.Message("2", "two");
+            trace.Source.Message("3", "three");
+
+            trace.Source.Message("1", "one");
+            trace.Source.Message("2", "two");
+            trace.Source.Message("3", "three");
+
+            trace.Dispose();
         }
     }
 }

@@ -19,22 +19,23 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 
 namespace Splunk.Logging
 {
     /// <summary>
-    /// Http input exception. This class is used when an http input client is 
+    /// HTTP input exception. This class is used when an HTTP input client is 
     /// unable to send events to the server;
     /// </summary>
     public class HttpInputException : Exception 
     {
         /// <summary>
-        /// Http status code.
+        /// HTTP status code.
         /// </summary>
         public HttpStatusCode StatusCode { get; private set; }
 
         /// <summary>
-        /// Exception thrown by http client when sending the data. This value 
+        /// Exception thrown by HTTP client when sending the data. This value 
         /// can be null.
         /// </summary>
         public Exception WebException { get; private set; }
@@ -45,27 +46,35 @@ namespace Splunk.Logging
         public string ServerReply { get; private set; }
 
         /// <summary>
-        /// List of events that caused the problem.
+        /// Reply from the Splunk server. This value can be null.
         /// </summary>
-        public List<HttpInputEventInfo> Events { get; private set; }
+        public HttpResponseMessage Response { get; private set; }
 
         /// <summary>
-        /// Http input exception container.
+        /// List of events that caused the problem. This value is set by HttpInputSender.
         /// </summary>
-        /// <param name="code">Http status code.</param>
-        /// <param name="webException">Exception thrown by http client when sending the data.</param>
+        public List<HttpInputEventInfo> Events { get; set; }
+
+        /// <summary>
+        /// HTTP input exception container.
+        /// </summary>
+        /// <param name="code">HTTP status code.</param>
+        /// <param name="webException">Exception thrown by HTTP client when sending the data.</param>
         /// <param name="reply">Splunk server reply.</param>
+        /// <param name="response">HTTP response.</param>
         /// <param name="events">List of events that caused the problem.</param>
         public HttpInputException(
             HttpStatusCode code, 
-            Exception webException, 
-            string reply, 
-            List<HttpInputEventInfo> events)
+            Exception webException = null, 
+            string reply = null, 
+            HttpResponseMessage response = null,
+            List<HttpInputEventInfo> events = null)
         {
-            StatusCode = code;
-            WebException = webException;
-            ServerReply = reply;
-            Events = events;
+            this.StatusCode = code;
+            this.WebException = webException;
+            this.ServerReply = reply;
+            this.Response = response;
+            this.Events = events;
         }
     }
 }

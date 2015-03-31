@@ -39,6 +39,10 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="Microsoft.Practices.EnterpriseLibrary.SemanticLogging">
+      <HintPath>..\packages\EnterpriseLibrary.SemanticLogging.2.0.1406.1\lib\net45\Microsoft.Practices.EnterpriseLibrary.SemanticLogging.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
@@ -55,6 +59,10 @@
     <ProjectReference Include="..\src\Splunk.Logging.TraceListener\Splunk.Logging.TraceListener.csproj">
       <Project>{17f12964-d0c9-41a9-9dee-a4a5a52b24ae}</Project>
       <Name>Splunk.Logging.TraceListener</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\src\Splunk.Logging.SLAB\Splunk.Logging.SLAB.csproj">
+      <Project>{74d8f7a7-8125-400d-b744-c30562f23be0}</Project>
+      <Name>Splunk.Logging.SLAB</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

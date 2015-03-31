@@ -27,17 +27,44 @@ namespace Splunk.Logging
     /// An instance of HttpInputEventInfo can be easily serialized into json
     /// format using JsonConvert.SerializeObject. 
     /// </summary>
-    public struct HttpInputEventInfo
+    public class HttpInputEventInfo
     {
+        #region metadata
+
         /// <summary>
-        /// Common metadata tags that can be specified by http input logger.
+        /// Common metadata tags that can be specified by HTTP input logger.
         /// </summary>
-        #region metadata tags
-        public const string MetadataTimeTag = "time";
-        public const string MetadataIndexTag = "index";
-        public const string MetadataSourceTag = "source";
+        public const string MetadataTimeTag       = "time";
+        public const string MetadataIndexTag      = "index";
+        public const string MetadataSourceTag     = "source";
         public const string MetadataSourceTypeTag = "sourcetype";
-        public const string MetadataHostTag = "host";
+        public const string MetadataHostTag       = "host";
+        
+        /// <summary>
+        /// Metadata container
+        /// </summary>
+        public class Metadata
+        {
+            public string Index { get; private set; }
+            public string Source { get; private set; }
+            public string SourceType { get; private set; }
+            public string Host { get; private set; }
+
+            public Metadata(
+                string index = null, 
+                string source = null, 
+                string sourceType = null, 
+                string host = null)                
+            {
+                this.Index = index;
+                this.Source = source;
+                this.SourceType = sourceType;
+                this.Host = host;
+            }
+        }
+
+        private Metadata metadata;
+
         #endregion
 
         /// <summary>
@@ -76,44 +103,44 @@ namespace Splunk.Logging
             /// <param name="severity">Event severity info.</param>
             /// <param name="message">Event message.</param>
             /// <param name="data">Event data.</param>
-            public LoggerEvent(string id, string severity, string message, object data) : this()
+            internal LoggerEvent(string id, string severity, string message, object data) : this()
             {
-                Id = id;
-                Severity = severity;
-                Message = message;
-                Data = data;
+                this.Id = id;
+                this.Severity = severity;
+                this.Message = message;
+                this.Data = data;
             }
         }
 
         /// <summary>
         /// Event timestamp in epoch format.
         /// </summary>
-        [JsonProperty(PropertyName = MetadataTimeTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        [JsonProperty(PropertyName = MetadataTimeTag)]
         public string Timestamp { get; private set; }
 
         /// <summary>
         /// Event metadata index.
         /// </summary>
         [JsonProperty(PropertyName = MetadataIndexTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string Index { get; private set; }
+        public string Index { get { return metadata.Index; } }
 
         /// <summary>
         /// Event metadata source.
         /// </summary>
         [JsonProperty(PropertyName = MetadataSourceTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string Source { get; private set; }
+        public string Source { get { return metadata.Source; } }
 
         /// <summary>
         /// Event metadata sourcetype.
         /// </summary>
         [JsonProperty(PropertyName = MetadataSourceTypeTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string SourceType { get; private set; }
+        public string SourceType { get { return metadata.SourceType; } }
 
         /// <summary>
         /// Event metadata host.
         /// </summary>
         [JsonProperty(PropertyName = MetadataHostTag, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string Host { get; private set; }
+        public string Host { get { return metadata.Host; } }
 
         /// <summary>
         /// Logger event info.
@@ -131,26 +158,12 @@ namespace Splunk.Logging
         /// <param name="metadata">Logger metadata.</param>
         public HttpInputEventInfo(
             string id, string severity, string message, object data, 
-            Dictionary<string, string> metadata) : this()
+            Metadata metadata)
         {
             Event = new LoggerEvent(id, severity, message, data);
             // set timestamp to the current UTC epoch time 
-            Timestamp = 
-                ((ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString();
-            // fill metadata values
-            Index = GetMetadataValue(metadata, MetadataIndexTag);
-            Source = GetMetadataValue(metadata, MetadataSourceTag);
-            SourceType = GetMetadataValue(metadata, MetadataSourceTypeTag);
-            Host = GetMetadataValue(metadata, MetadataHostTag);
-        }
-
-        // Safe get metadata value, returns null when value cannot be found
-        private static string GetMetadataValue(Dictionary<string, string> metadata, string tag)
-        {
-            string value = null;
-            if (metadata != null) 
-                metadata.TryGetValue(tag, out value);
-            return value;
+            Timestamp = ((ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString();
+            this.metadata = metadata ?? new Metadata();
         }
     }
 }
