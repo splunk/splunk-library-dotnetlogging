@@ -233,7 +233,7 @@ namespace Splunk.Logging.FunctionalTest
             List<string> metaData = splunk.GetMetadataResults(searchQuery);
             if(metaData[0] != "customhostname")
             {
-                Console.WriteLine("Wrong metadata. Host name is '{0}' instead of 'customehostname'. Test FAILED.", metaData[0]);
+                Console.WriteLine("Wrong metadata. Host name is '{0}' instead of 'customhostname'. Test FAILED.", metaData[0]);
                 Console.WriteLine();
                 return false;
             }
@@ -312,11 +312,7 @@ namespace Splunk.Logging.FunctionalTest
 
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new Dictionary<string, string>();
-            meta["index"] = indexName;
-            meta["source"] = "host";
-            meta["sourcetype"] = "log";
-            meta["host"] = "customhostname";
+            var meta = new HttpInputEventInfo.Metadata(index: indexName, source:"host", sourceType: "log", host: "customhostname");
             var listener = new HttpInputTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
@@ -339,11 +335,7 @@ namespace Splunk.Logging.FunctionalTest
 
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new Dictionary<string, string>();
-            meta["index"] = indexName;
-            meta["source"] = "host";
-            meta["sourcetype"] = "log";
-            meta["host"] = "customhostname";
+            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
             var listener = new HttpInputTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
@@ -365,11 +357,7 @@ namespace Splunk.Logging.FunctionalTest
 
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new Dictionary<string, string>();
-            meta["index"] = indexName;
-            meta["source"] = "host";
-            meta["sourcetype"] = "log";
-            meta["host"] = "customhostname";
+            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
             var listener = new HttpInputTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
@@ -391,11 +379,7 @@ namespace Splunk.Logging.FunctionalTest
 
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new Dictionary<string, string>();
-            meta["index"] = indexName;
-            meta["source"] = "host";
-            meta["sourcetype"] = "log";
-            meta["host"] = "customhostname";
+            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
             var listener = new HttpInputTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
@@ -417,15 +401,8 @@ namespace Splunk.Logging.FunctionalTest
             var trace = new TraceSource("HttpInputLogger");
             trace.Switch.Level = SourceLevels.All;
 
-            var validMetaData = new Dictionary<string, string>();
-            validMetaData["index"] = indexName;
-            validMetaData["source"] = "host";
-            validMetaData["sourcetype"] = "log";
-            validMetaData["host"] = "customhostname";
-            var invalidMetaData = new Dictionary<string, string>();
-            invalidMetaData["index"] = "notexistingindex";
-            invalidMetaData["source"] = "host";
-            invalidMetaData["sourcetype"] = "log";
+            var validMetaData = new HttpInputEventInfo.Metadata(index: indexName, source:"host", sourceType: "log", host: "customhostname");
+            var invalidMetaData = new HttpInputEventInfo.Metadata(index: "notexistingindex", source:"host", sourceType: "log", host: "customhostname");
 
             var listenerWithWrongToken = new HttpInputTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
@@ -464,9 +441,9 @@ namespace Splunk.Logging.FunctionalTest
             int eventCounter = GenerateData(trace);
             Console.WriteLine("{0} events were created, waiting for errors to be raised.", eventCounter);
             Thread.Sleep(30*1000);
-            Console.WriteLine(wrongTokenWasRaised ? "Wrong token error was raised." : "Wrong token error was not raised.");
-            Console.WriteLine(wrongUriWasRaised ? "Wrong URI error was raised." : "Wrong URI error was not raised.");
-            Console.WriteLine(wrongMetaDataWasRaised ? "Wrong metadata error was raised." : "Wrong metadata error was not raised.");
+            Console.WriteLine(wrongTokenWasRaised ? "token error was raised." : "token error was not raised.");
+            Console.WriteLine(wrongUriWasRaised ? "URI error was raised." : "URI error was not raised.");
+            Console.WriteLine(wrongMetaDataWasRaised ? "metadata error was raised." : "metadata error was not raised.");
             Console.WriteLine((wrongTokenWasRaised && wrongUriWasRaised && wrongMetaDataWasRaised) ? "Test PASSED." : "Test FAILED.");
             Console.WriteLine();
             return wrongTokenWasRaised && wrongUriWasRaised && wrongMetaDataWasRaised;
