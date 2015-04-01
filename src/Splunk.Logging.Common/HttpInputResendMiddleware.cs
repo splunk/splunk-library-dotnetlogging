@@ -70,7 +70,7 @@ namespace Splunk.Logging
         {          
             HttpResponseMessage response = null;
             HttpStatusCode statusCode = HttpStatusCode.OK;
-            WebException webException = null;
+            Exception webException = null;
             string serverReply = null;
             // retry sending data until success
             for (int retriesCount = 0; retriesCount <= retriesOnError; retriesCount++)
@@ -100,7 +100,7 @@ namespace Splunk.Logging
                         // retry
                     }
                 }
-                catch (System.Net.WebException e)
+                catch (Exception e)
                 {
                     // connectivity problem - record exception and retry
                     webException = e;
