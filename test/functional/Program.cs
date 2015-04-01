@@ -22,9 +22,58 @@ namespace Splunk.Logging.FunctionalTest
             string stdOut, stdError;
             if (!ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "add index {0}", indexName), out stdOut, out stdError))
             {
-                Console.WriteLine("Failed to create index. {1} {2}", stdOut, stdError);
+                Console.WriteLine("Failed to create index. {0} {1}", stdOut, stdError);
                 Environment.Exit(2);
             }
+        }
+
+        public bool SplunkIsRunning()
+        {
+            string stdOut, stdError;
+            ExecuteSplunkCli("status", out stdOut, out stdError);
+            return stdOut.Contains("Splunkd: Running");
+        }
+
+        public void StartServer()
+        {
+            if (SplunkIsRunning())
+                return;
+
+            string stdOut, stdError;
+            Console.WriteLine("Starting Splunk server.");
+            Process splunkProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "net.exe",
+                    Arguments = "start splunkd",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+            };
+            if(!ExecuteProcess(splunkProcess, out stdOut, out stdError))
+            {
+                Console.WriteLine("Failed to start Splunk. {0} {1}", stdOut, stdError);
+                Environment.Exit(2);
+            }
+            Console.WriteLine("Splunk started.");
+        }
+
+        public void StopServer()
+        {
+            if (!SplunkIsRunning())
+                return;
+
+            string stdOut, stdError;
+            Console.WriteLine("Stopping Splunk server.");
+            if (!ExecuteSplunkCli("stop", out stdOut, out stdError))
+            {
+                Console.WriteLine("Failed to stop Splunk. {0} {1}", stdOut, stdError);
+                Environment.Exit(2);
+            }
+            Console.WriteLine("Splunk stopped.");
         }
 
         public int GetSearchCount(string searchQuery)
@@ -85,6 +134,18 @@ namespace Splunk.Logging.FunctionalTest
             }
         }
 
+        private bool ExecuteProcess(Process proc, out string stdOut, out string stdError)
+        {
+            proc.Start();
+            stdOut = proc.StandardOutput.ReadToEnd();
+            stdError = proc.StandardError.ReadToEnd();
+            if (proc.ExitCode != 0)
+            {
+                return false;
+            }
+            return true;
+        }
+
         private bool ExecuteSplunkCli(string command, out string stdOut, out string stdError)
         {
             Process splunkProcess = new Process
@@ -99,14 +160,7 @@ namespace Splunk.Logging.FunctionalTest
                     CreateNoWindow = true
                 }
             };
-            splunkProcess.Start();
-            stdOut = splunkProcess.StandardOutput.ReadToEnd();
-            stdError = splunkProcess.StandardError.ReadToEnd();
-            if (splunkProcess.ExitCode != 0)
-            {
-                return false;
-            }
-            return true;
+            return ExecuteProcess(splunkProcess, out stdOut, out stdError);
         }
 
         private bool ExecuteSplunkCliHttpInput(string command, out string stdOut, out string stdError)
@@ -140,7 +194,7 @@ namespace Splunk.Logging.FunctionalTest
                 createCmd += string.Format(CultureInfo.InvariantCulture, " -index {0}", index);
             if (!ExecuteSplunkCliHttpInput(createCmd, out stdOut, out stdError))
             {
-                Console.WriteLine("Failed to create token. {1} {2}", stdOut, stdError);
+                Console.WriteLine("Failed to create token. {0} {1}", stdOut, stdError);
                 Environment.Exit(2);
             }
             int idx1 = stdOut.IndexOf("token=", StringComparison.Ordinal) + 6, idx2 = idx1;
@@ -182,6 +236,7 @@ namespace Splunk.Logging.FunctionalTest
             while (output[idx2] == ' ')
                 idx2--;
             this.splunkCmd = output.Substring(idx1, idx2 - idx1 + 1).Replace("splunkd.exe", "splunk.exe");
+            this.StartServer();
         }
     }
 
@@ -254,10 +309,9 @@ namespace Splunk.Logging.FunctionalTest
             return true;
         }
 
-        private static int GenerateData(TraceSource trace)
+        private static int GenerateData(TraceSource trace, int eventsPerLoop = 50)
         {
             int eventCounter = 0, id = 0;
-            const int eventsPerLoop = 50;
             foreach (TraceEventType eventType in new TraceEventType[] { TraceEventType.Error, TraceEventType.Information, TraceEventType.Warning })
             {
                 for (int i = 0; i < eventsPerLoop; i++, id++, eventCounter++)
@@ -282,10 +336,13 @@ namespace Splunk.Logging.FunctionalTest
         private static string CreateIndexAndToken(SplunkCliWrapper splunk, string tokenName, string indexName)
         {
             splunk.EnableHttp();
+            Console.WriteLine("Enabled HTTP input.");
             splunk.DeleteToken(tokenName);
             string token = splunk.CreateToken(tokenName, indexes: indexName, index: indexName);
+            Console.WriteLine("Created token {0}.", tokenName);
             splunk.DeleteIndex(indexName);
             splunk.CreateIndex(indexName);
+            Console.WriteLine("Created index {0}.", indexName);
             return token;
         }
 
@@ -425,7 +482,6 @@ namespace Splunk.Logging.FunctionalTest
                 token: token,
                 metadata: invalidMetaData);
 
-
             bool wrongTokenWasRaised = false;
             listenerWithWrongToken.AddLoggingFailureHandler((object sender, HttpInputException e) =>
             {
@@ -458,6 +514,63 @@ namespace Splunk.Logging.FunctionalTest
             return wrongTokenWasRaised && wrongUriWasRaised && wrongMetaDataWasRaised;
         }
 
+        static bool VerifyResend()
+        {
+            string tokenName = "resendtoken";
+            string indexName = "resendindex";
+            SplunkCliWrapper splunk = new SplunkCliWrapper();
+            double testStartTime = SplunkCliWrapper.GetEpochTime();
+            string token = CreateIndexAndToken(splunk, tokenName, indexName);
+            Console.WriteLine("Test VerifyResend started.");
+            splunk.StopServer();
+
+            var trace = new TraceSource("HttpInputLogger");
+            trace.Switch.Level = SourceLevels.All;
+            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var listener = new HttpInputTraceListener(
+                uri: new Uri("https://127.0.0.1:8089"),
+                token: token,
+                retriesOnError: int.MaxValue,
+                metadata: meta);
+            trace.Listeners.Add(listener);
+
+            // Generate data, wait a little bit so retries are happenning and start Splunk. Expecting to see all data make it
+            int eventCounter = GenerateData(trace);
+            Thread.Sleep(10 * 1000);
+            splunk.StartServer();
+            string searchQuery = "index=" + indexName;
+            Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
+            splunk.WaitForIndexingToComplete(indexName);
+            int eventsFound = splunk.GetSearchCount("index=" + indexName);
+            Console.WriteLine("Indexing completed, {0} events were found. Elapsed time {1:F2} seconds. Test {2}", eventsFound, SplunkCliWrapper.GetEpochTime() - testStartTime, eventCounter == eventsFound ? "PASSED." : "FAILED.");
+            Console.WriteLine();
+            trace.Close();
+            return eventCounter == eventsFound;
+        }
+
+        static bool VerifyFlushEvents(bool firstPartOfTheTest)
+        {
+            string tokenName = "flusheventtoken";
+            string indexName = "flusheventdindex";
+            SplunkCliWrapper splunk = new SplunkCliWrapper();
+            double testStartTime = SplunkCliWrapper.GetEpochTime();
+            string token = CreateIndexAndToken(splunk, tokenName, indexName);
+            Console.WriteLine("Test SendEventsUnBatched started.");
+
+            var trace = new TraceSource("HttpInputLogger");
+            trace.Switch.Level = SourceLevels.All;
+            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var listener = new HttpInputTraceListener(
+                uri: new Uri("https://127.0.0.1:8089"),
+                token: token,
+                metadata: meta);
+            trace.Listeners.Add(listener);
+
+            bool result = GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+            trace.Close();
+            return result;
+        }
+
         static void Main(string[] args)
         {
             if(args.Length <1)
@@ -486,6 +599,15 @@ namespace Splunk.Logging.FunctionalTest
                         break;
                     case "VERIFYERRORSARERAISED":
                         testResults = VerifyErrorsAreRaised() && testResults;
+                        break;
+                    case "RESEND":
+                        testResults = VerifyResend() && testResults;
+                        break;
+                    case "FLUSHEVENTS":
+                        testResults = VerifyFlushEvents(true) && testResults;
+                        break;
+                    case "FLUSHEVENTS-PART2":
+                        testResults = VerifyFlushEvents(false) && testResults;
                         break;
                     default:
                         Console.WriteLine("Unknown test '{0}', exiting.", testName);
