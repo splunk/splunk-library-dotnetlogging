@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5142E63D-CF4A-48EA-8527-F6B2DB4718C0}"
 EndProject
@@ -24,6 +24,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Splunk.Logging.Common", "src\Splunk.Logging.Common\Splunk.Logging.Common.csproj", "{B776A5C5-A301-472E-9D21-A62306358B2C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "standalone-test", "standalone-test\standalone-test.csproj", "{027FFE79-69FE-4A69-8B71-7364F9D1D99B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "functional", "test\functional\functional.csproj", "{052B39C9-865F-4FA3-BEBD-7A23DB5C02AE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{027FFE79-69FE-4A69-8B71-7364F9D1D99B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{027FFE79-69FE-4A69-8B71-7364F9D1D99B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{027FFE79-69FE-4A69-8B71-7364F9D1D99B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{052B39C9-865F-4FA3-BEBD-7A23DB5C02AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{052B39C9-865F-4FA3-BEBD-7A23DB5C02AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{052B39C9-865F-4FA3-BEBD-7A23DB5C02AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{052B39C9-865F-4FA3-BEBD-7A23DB5C02AE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -61,5 +67,6 @@ Global
 		{74D8F7A7-8125-400D-B744-C30562F23BE0} = {5142E63D-CF4A-48EA-8527-F6B2DB4718C0}
 		{B776A5C5-A301-472E-9D21-A62306358B2C} = {5142E63D-CF4A-48EA-8527-F6B2DB4718C0}
 		{027FFE79-69FE-4A69-8B71-7364F9D1D99B} = {2F34BC99-9753-46CC-A386-33B543EFF916}
+		{052B39C9-865F-4FA3-BEBD-7A23DB5C02AE} = {2F34BC99-9753-46CC-A386-33B543EFF916}
 	EndGlobalSection
 EndGlobal
