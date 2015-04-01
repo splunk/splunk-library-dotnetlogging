@@ -321,7 +321,9 @@ namespace Splunk.Logging.FunctionalTest
                 batchInterval: 1000);
             trace.Listeners.Add(listener);
 
-            return GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+            bool result = GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+            trace.Close();
+            return result;
         }
 
         static bool SendEventsBatchedBySize()
@@ -343,7 +345,9 @@ namespace Splunk.Logging.FunctionalTest
                 batchSizeCount: 50);
             trace.Listeners.Add(listener);
 
-            return GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+            bool result = GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+            trace.Close();
+            return result;
         }
 
         static bool SendEventsBatchedBySizeAndTime()
@@ -365,7 +369,9 @@ namespace Splunk.Logging.FunctionalTest
                 batchSizeCount: 60, batchInterval:2000);
             trace.Listeners.Add(listener);
 
-            return GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+            bool result = GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+            trace.Close();
+            return result;
         }
 
         static bool SendEventsUnBatched()
@@ -386,7 +392,9 @@ namespace Splunk.Logging.FunctionalTest
                 metadata: meta);
             trace.Listeners.Add(listener);
 
-            return GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+            bool result = GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+            trace.Close();
+            return result;
         }
 
         static bool VerifyErrorsAreRaised()
@@ -446,6 +454,7 @@ namespace Splunk.Logging.FunctionalTest
             Console.WriteLine(wrongMetaDataWasRaised ? "metadata error was raised." : "metadata error was not raised.");
             Console.WriteLine((wrongTokenWasRaised && wrongUriWasRaised && wrongMetaDataWasRaised) ? "Test PASSED." : "Test FAILED.");
             Console.WriteLine();
+            trace.Close();
             return wrongTokenWasRaised && wrongUriWasRaised && wrongMetaDataWasRaised;
         }
 
