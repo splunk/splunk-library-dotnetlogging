@@ -254,6 +254,13 @@ namespace Splunk.Logging
                 {
                     // record server reply
                     serverReply = await response.Content.ReadAsStringAsync();
+                    OnError(this, new HttpInputException(
+                        code: responseCode,
+                        webException: null,
+                        reply: serverReply,
+                        response: response,
+                        events: events
+                    ));
                 }
             }
             catch (HttpInputException e)
