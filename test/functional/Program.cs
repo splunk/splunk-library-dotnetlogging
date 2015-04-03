@@ -116,11 +116,11 @@ namespace Splunk.Logging.FunctionalTest
             return (DateTime.UtcNow - UnixEpoch).TotalSeconds;
         }
 
-        public void WaitForIndexingToComplete(string indexName, double startTime=0)
+        public void WaitForIndexingToComplete(string indexName, double startTime=0, int stabilityPeriod=10)
         {
             string query = string.Format(CultureInfo.InvariantCulture, "index={0} earliest={1:F2}", indexName, startTime);
             int eventCount = GetSearchCount(query);
-            for (int i = 0; i < 10; i++) // Exit only if there were no indexing activities for 10 straight seconds
+            for (int i = 0; i < stabilityPeriod; i++) // Exit only if there were no indexing activities for %stabilityPeriod% straight seconds
             {
                 do
                 {
@@ -134,7 +134,7 @@ namespace Splunk.Logging.FunctionalTest
             }
         }
 
-        private bool ExecuteProcess(Process proc, out string stdOut, out string stdError)
+        public static bool ExecuteProcess(Process proc, out string stdOut, out string stdError)
         {
             proc.Start();
             stdOut = proc.StandardOutput.ReadToEnd();
@@ -535,12 +535,11 @@ namespace Splunk.Logging.FunctionalTest
             trace.Listeners.Add(listener);
 
             // Generate data, wait a little bit so retries are happenning and start Splunk. Expecting to see all data make it
-            int eventCounter = GenerateData(trace);
+            int eventCounter = GenerateData(trace, eventsPerLoop:200);
             Thread.Sleep(10 * 1000);
             splunk.StartServer();
-            string searchQuery = "index=" + indexName;
             Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
-            splunk.WaitForIndexingToComplete(indexName);
+            splunk.WaitForIndexingToComplete(indexName, stabilityPeriod:30);
             int eventsFound = splunk.GetSearchCount("index=" + indexName);
             Console.WriteLine("Indexing completed, {0} events were found. Elapsed time {1:F2} seconds. Test {2}", eventsFound, SplunkCliWrapper.GetEpochTime() - testStartTime, eventCounter == eventsFound ? "PASSED." : "FAILED.");
             Console.WriteLine();
@@ -548,27 +547,74 @@ namespace Splunk.Logging.FunctionalTest
             return eventCounter == eventsFound;
         }
 
-        static bool VerifyFlushEvents(bool firstPartOfTheTest)
+        static bool VerifyFlushEvents(bool mainProcess)
         {
             string tokenName = "flusheventtoken";
             string indexName = "flusheventdindex";
             SplunkCliWrapper splunk = new SplunkCliWrapper();
             double testStartTime = SplunkCliWrapper.GetEpochTime();
-            string token = CreateIndexAndToken(splunk, tokenName, indexName);
-            Console.WriteLine("Test SendEventsUnBatched started.");
+            if (!mainProcess)
+            {
+                string token = CreateIndexAndToken(splunk, tokenName, indexName);
+                splunk.StopServer();
+                Thread.Sleep(5 * 1000);
 
-            var trace = new TraceSource("HttpInputLogger");
-            trace.Switch.Level = SourceLevels.All;
-            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var listener = new HttpInputTraceListener(
-                uri: new Uri("https://127.0.0.1:8089"),
-                token: token,
-                metadata: meta);
-            trace.Listeners.Add(listener);
+                var trace = new TraceSource("HttpInputLogger");
+                trace.Switch.Level = SourceLevels.All;
+                var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+                var listener = new HttpInputTraceListener(
+                    uri: new Uri("https://127.0.0.1:8089"),
+                    token: token,
+                    retriesOnError: int.MaxValue,
+                    metadata: meta);
+                trace.Listeners.Add(listener);
 
-            bool result = GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
-            trace.Close();
-            return result;
+                // Generate data, wait a little bit so retries are happenning and start Splunk. Expecting to see all data make it
+                Console.WriteLine("Starting events generation.");
+                int eventCounter = GenerateData(trace, eventsPerLoop: 2000);
+                Console.WriteLine("Generated {0} events", eventCounter);
+                splunk.StartServer();
+                trace.Close();
+                Environment.Exit(0);
+                return true; // Compiler isn't smart enough to figure out this line will never be executed.
+            }
+            else
+            {
+                Console.WriteLine("Test VerifyFlushEvents started.");
+                string stdOut, stdError;
+
+                Process testProcess = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = Process.GetCurrentProcess().MainModule.FileName,
+                        Arguments = "FLUSHEVENTS-PART2",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    }
+                };
+                Console.WriteLine("Launching child process.");
+                if (!SplunkCliWrapper.ExecuteProcess(testProcess, out stdOut, out stdError))
+                {
+                    Console.WriteLine("Failed to execute child process. {0} {1}", stdOut, stdError);
+                    return false;
+                }
+
+                const int expectedCount = 14000;
+                Console.WriteLine("Child process completed:");
+                foreach (string s in stdOut.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    Console.WriteLine("\t{0}", s);
+                }
+                Console.WriteLine("Waiting for indexing to complete, {0} events are expected.", expectedCount);
+                splunk.WaitForIndexingToComplete(indexName, stabilityPeriod: 30);
+                int eventsFound = splunk.GetSearchCount("index=" + indexName);
+                Console.WriteLine("Indexing completed, {0} events were found. Elapsed time {1:F2} seconds. Test {2}", eventsFound, SplunkCliWrapper.GetEpochTime() - testStartTime, expectedCount == eventsFound ? "PASSED." : "FAILED.");
+                Console.WriteLine();
+                return expectedCount == eventsFound;
+            }
         }
 
         static void Main(string[] args)
