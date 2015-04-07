@@ -21,6 +21,7 @@ using System.Net.Http;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Splunk.Logging
 {
@@ -48,6 +49,7 @@ namespace Splunk.Logging
             HttpStatusCode.BadRequest                  
         };
 
+        private const int RetryDelayCeiling = 60 * 1000; // 1 minute     
         private int retriesOnError = 0;
 
         /// <param name="retriesOnError">
@@ -65,19 +67,21 @@ namespace Splunk.Logging
         /// <param name="next"></param>
         /// <returns></returns>
         public async Task<HttpResponseMessage> Plugin(
-            HttpRequestMessage request, 
+            string token, 
+            List<HttpInputEventInfo> events, 
             HttpInputSender.HttpInputHandler next)
         {          
             HttpResponseMessage response = null;
             HttpStatusCode statusCode = HttpStatusCode.OK;
             Exception webException = null;
             string serverReply = null;
+            int retryDelay = 1000; // start with 1 second
             // retry sending data until success
             for (int retriesCount = 0; retriesCount <= retriesOnError; retriesCount++)
             {
                 try
                 {
-                    response = await next(request);
+                    response = await next(token, events);
                     statusCode = response.StatusCode;
                     if (statusCode == HttpStatusCode.OK)
                     {
@@ -105,6 +109,10 @@ namespace Splunk.Logging
                     // connectivity problem - record exception and retry
                     webException = e;
                 }
+                // wait before next retry
+                Thread.Sleep(retryDelay);
+                // increase delay exponentially
+                retryDelay = Math.Min(RetryDelayCeiling, retryDelay * 2);
             }
             if (statusCode != HttpStatusCode.OK || webException != null)
             {
