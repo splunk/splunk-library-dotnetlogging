@@ -34,7 +34,7 @@ namespace Splunk.Logging
             }
         }
 
-        private delegate Response RequestHandler(string auth, dynamic input);
+        private delegate Response RequestHandler(string token, List<HttpInputEventInfo> events);
 
         // we inject this method into HTTP input middleware chain to mimic a Splunk  
         // server
@@ -43,40 +43,28 @@ namespace Splunk.Logging
             HttpInputSender.HttpInputMiddleware middleware)
         {
             HttpInputSender.HttpInputMiddleware interceptor = 
-            async (HttpRequestMessage request, HttpInputSender.HttpInputHandler next) =>
+            (string token, List<HttpInputEventInfo> events, HttpInputSender.HttpInputHandler next) =>
             {
-                Response response = null;
+                Response response = handler(token, events);
                 HttpResponseMessage httpResponseMessage = new HttpResponseMessage();
-                try
-                {
-                    string authorization = request.Headers.Authorization.ToString();
-                    string input = await request.Content.ReadAsStringAsync();
-                    if (input.Contains("}{"))
-                    {
-                        // batch of events, convert it to a json array
-                        input = "[" + input.Replace("}{", "},{") + "]";
-                        response = handler(authorization, JArray.Parse(input));
-                    }
-                    else
-                    {
-                        response = handler(authorization, JObject.Parse(input));
-                    }
-                    httpResponseMessage.StatusCode = response.Code;
-                    byte[] buf = Encoding.UTF8.GetBytes(response.Context);
-                    httpResponseMessage.Content = new StringContent(response.Context);
-                }
-                catch (Exception) { }
-                return httpResponseMessage;
+                httpResponseMessage.StatusCode = response.Code;
+                byte[] buf = Encoding.UTF8.GetBytes(response.Context);
+                httpResponseMessage.Content = new StringContent(response.Context);                
+                var task = new Task<HttpResponseMessage>(() => {
+                    return httpResponseMessage; 
+                });
+                task.RunSynchronously();
+                return task;
             };
             if (middleware != null)
             {
                 // chain middleware to interceptor
                 var temp = interceptor;
-                interceptor = (request, next) =>
+                interceptor = (token, events, next) =>
                 {
-                    return middleware(request, (req) =>
+                    return middleware(token, events, (t, e) =>
                     {
-                        return temp(req, next);
+                        return temp(t, e, next);
                     });
                 };
             }
@@ -156,9 +144,9 @@ namespace Splunk.Logging
         public void HttpInputCoreTest()
         {
             // authorization
-            var trace = Trace((auth, input) =>
+            var trace = Trace((token, input) =>
             {
-                Assert.True(auth == "Splunk TOKEN-GUID", "authentication");
+                Assert.True(token == "TOKEN-GUID", "authentication");
                 return new Response();
             });
             trace.TraceInformation("info");
@@ -174,14 +162,14 @@ namespace Splunk.Logging
             );
             trace = Trace(
                 metadata: metadata,
-                handler: (auth, input) =>
+                handler: (token, events) =>
                 {
-                    Assert.True(input.index.Value == "main");
-                    Assert.True(input.source.Value == "localhost");
-                    Assert.True(input.sourcetype.Value == "log");
-                    Assert.True(input.host.Value == "demohost");
+                    Assert.True(events[0].Index == "main");
+                    Assert.True(events[0].Source == "localhost");
+                    Assert.True(events[0].SourceType == "log");
+                    Assert.True(events[0].Host == "demohost");
                     // check that timestamp is correct
-                    ulong time = ulong.Parse(input.time.Value);
+                    ulong time = ulong.Parse(events[0].Timestamp);
                     Assert.True(time - now < 10); // it cannot be more than 10s after sending event
                     return new Response();
                 }
@@ -190,62 +178,62 @@ namespace Splunk.Logging
             trace.Close();
 
             // test various tracing commands
-            trace = Trace((auth, input) =>
+            trace = Trace((token, events) =>
             {
-                Assert.True(input["event"].message.Value == "info");
+                Assert.True(events[0].Event.Message == "info");
                 return new Response();
             });
             trace.TraceInformation("info");
             trace.Close();
 
-            trace = Trace((auth, input) =>
+            trace = Trace((token, events) =>
             {
-                Assert.True(input["event"].severity.Value == "Information");
-                Assert.True(input["event"].id.Value == "1");
-                Assert.True(input["event"].data[0].Value == "one");
-                Assert.True(input["event"].data[1].Value == "two");
+                Assert.True(events[0].Event.Severity == "Information");
+                Assert.True(events[0].Event.Id == "1");
+                Assert.True(((string[])(events[0].Event.Data))[0] == "one");
+                Assert.True(((string[])(events[0].Event.Data))[1] == "two");
                 return new Response();
             });
             trace.TraceData(TraceEventType.Information, 1, new string[] { "one", "two" });
             trace.Close();
 
-            trace = Trace((auth, input) =>
+            trace = Trace((token, events) =>
             {
-                Assert.True(input["event"].severity.Value == "Critical");
-                Assert.True(input["event"].id.Value == "2");
+                Assert.True(events[0].Event.Severity == "Critical");
+                Assert.True(events[0].Event.Id == "2");
                 return new Response();
             });
             trace.TraceEvent(TraceEventType.Critical, 2);
             trace.Close();
 
-            trace = Trace((auth, input) =>
+            trace = Trace((token, events) =>
             {
-                Assert.True(input["event"].severity.Value == "Error");
-                Assert.True(input["event"].id.Value == "3");
-                Assert.True(input["event"].message.Value == "hello");
+                Assert.True(events[0].Event.Severity == "Error");
+                Assert.True(events[0].Event.Id == "3");
+                Assert.True(events[0].Event.Message == "hello");
                 return new Response();
             });
             trace.TraceEvent(TraceEventType.Error, 3, "hello");
             trace.Close();
 
-            trace = Trace((auth, input) =>
+            trace = Trace((token, events) =>
             {
-                Assert.True(input["event"].severity.Value == "Resume");
-                Assert.True(input["event"].id.Value == "4");
-                Assert.True(input["event"].message.Value == "hello world");
+                Assert.True(events[0].Event.Severity == "Resume");
+                Assert.True(events[0].Event.Id == "4");
+                Assert.True(events[0].Event.Message == "hello world");
                 return new Response();
             });
             trace.TraceEvent(TraceEventType.Resume, 4, "hello {0}", "world");
             trace.Close();
 
-            string guid = "11111111-2222-3333-4444-555555555555";            
-            trace = Trace((auth, input) =>
+            Guid guid = new Guid("11111111-2222-3333-4444-555555555555");            
+            trace = Trace((token, events) =>
             {
-                Assert.True(input["event"].id.Value == "5");
-                Assert.True(input["event"].data.Value == guid);
+                Assert.True(events[0].Event.Id == "5");
+                Assert.True(((Guid)(events[0].Event.Data)).CompareTo(guid) == 0);
                 return new Response();
             });
-            trace.TraceTransfer(5, "transfer", new Guid(guid));
+            trace.TraceTransfer(5, "transfer", guid);
             trace.Close();
         }
 
@@ -254,12 +242,12 @@ namespace Splunk.Logging
         public void HttpInputBatchingCountTest()
         {
             var trace = Trace(
-                handler: (auth, input) =>
+                handler: (token, events) =>
                 {
-                    Assert.True(input.Count == 3);
-                    Assert.True(input[0]["event"].message.Value == "info 1");
-                    Assert.True(input[1]["event"].message.Value == "info 2");
-                    Assert.True(input[2]["event"].message.Value == "info 3");
+                    Assert.True(events.Count == 3);
+                    Assert.True(events[0].Event.Message == "info 1");
+                    Assert.True(events[1].Event.Message == "info 2");
+                    Assert.True(events[2].Event.Message == "info 3");
                     return new Response();
                 },
                 batchSizeCount: 3
@@ -286,13 +274,13 @@ namespace Splunk.Logging
             int size = HttpInputSender.SerializeEventInfo(ei).Length;
 
             var trace = Trace(
-                handler: (auth, input) =>
+                handler: (token, events) =>
                 {
-                    Assert.True(input.Count == 4);
-                    Assert.True(input[0]["event"].message.Value == "info 1");
-                    Assert.True(input[1]["event"].message.Value == "info 2");
-                    Assert.True(input[2]["event"].message.Value == "info 3");
-                    Assert.True(input[3]["event"].message.Value == "info 4");
+                    Assert.True(events.Count == 4);
+                    Assert.True(events[0].Event.Message == "info 1");
+                    Assert.True(events[1].Event.Message == "info 2");
+                    Assert.True(events[2].Event.Message == "info 3");
+                    Assert.True(events[3].Event.Message == "info 4");
                     return new Response();
                 },
                 batchSizeBytes: 4 * size - size / 2 // 4 events trigger post  
@@ -316,13 +304,13 @@ namespace Splunk.Logging
         public void HttpInputBatchingIntervalTest()
         {
             var trace = Trace(
-                handler: (auth, input) =>
+                handler: (token, events) =>
                 {
-                    Assert.True(input.Count == 4);
-                    Assert.True(input[0]["event"].message.Value == "info 1");
-                    Assert.True(input[1]["event"].message.Value == "info 2");
-                    Assert.True(input[2]["event"].message.Value == "info 3");
-                    Assert.True(input[3]["event"].message.Value == "info 4");
+                    Assert.True(events.Count == 4);
+                    Assert.True(events[0].Event.Message == "info 1");
+                    Assert.True(events[1].Event.Message == "info 2");
+                    Assert.True(events[2].Event.Message == "info 3");
+                    Assert.True(events[3].Event.Message == "info 4");
                     return new Response();
                 },
                 batchInterval: 1000,
@@ -370,9 +358,9 @@ namespace Splunk.Logging
         public void HttpInputSinkCoreTest()
         {
             // authorization
-            var trace = TraceSource((auth, input) =>
+            var trace = TraceSource((token, events) =>
             {
-                Assert.True(auth == "Splunk TOKEN-GUID", "authentication");
+                Assert.True(token == "TOKEN-GUID", "authentication");
                 return new Response();
             });
             trace.Source.Message("", "");
@@ -387,14 +375,14 @@ namespace Splunk.Logging
             );
             trace = TraceSource(
                 metadata: metadata,
-                handler: (auth, input) =>
+                handler: (token, events) =>
                 {
-                    Assert.True(input["event"].message.Value ==
+                    Assert.True(events[0].Event.Message ==
                         "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=world - hello\" \"message=hello\" \"caller=world\"\r\n");                
-                    Assert.True(input.index.Value == "main");
-                    Assert.True(input.source.Value == "localhost");
-                    Assert.True(input.sourcetype.Value == "log");
-                    Assert.True(input.host.Value == "demohost");
+                    Assert.True(events[0].Index == "main");
+                    Assert.True(events[0].Source == "localhost");
+                    Assert.True(events[0].SourceType == "log");
+                    Assert.True(events[0].Host == "demohost");
                     return new Response();
                 }
             );
@@ -405,10 +393,10 @@ namespace Splunk.Logging
             // metadata
             ulong now = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             trace = TraceSource(
-                handler: (auth, input) =>
+                handler: (token, events) =>
                 {
                     // check that timestamp is correct
-                    ulong time = ulong.Parse(input.time.Value);
+                    ulong time = ulong.Parse(events[0].Timestamp);
                     Assert.True(time - now < 10); // it cannot be more than 10s after sending event
                     return new Response();
                 }
@@ -421,14 +409,14 @@ namespace Splunk.Logging
         [Fact]
         public void HttpInputSinkBatchingTest()
         {
-            var trace = TraceSource((auth, input) =>
+            var trace = TraceSource((token, events) =>
             {
-                Assert.True(input.Count == 3);
-                Assert.True(input[0]["event"].message.Value ==
+                Assert.True(events.Count == 3);
+                Assert.True(events[0].Event.Message ==
                     "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=one - 1\" \"message=1\" \"caller=one\"\r\n");
-                Assert.True(input[1]["event"].message.Value ==
+                Assert.True(events[1].Event.Message ==
                     "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=two - 2\" \"message=2\" \"caller=two\"\r\n");
-                Assert.True(input[2]["event"].message.Value ==
+                Assert.True(events[2].Event.Message ==
                     "EventId=1 EventName=MessageInfo Level=Error \"FormattedMessage=three - 3\" \"message=3\" \"caller=three\"\r\n");
                 return new Response();
             },

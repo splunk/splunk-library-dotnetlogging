@@ -63,7 +63,7 @@ namespace Splunk.Logging
         /// <param name="request">HTTP request.</param>
         /// <returns>Server HTTP response.</returns>
         public delegate Task<HttpResponseMessage> HttpInputHandler(
-            HttpRequestMessage request);
+            string token, List<HttpInputEventInfo> events);
 
         /// <summary>
         /// HTTP input middleware plugin.
@@ -72,12 +72,14 @@ namespace Splunk.Logging
         /// <param name="next">A handler that posts data to the server.</param>
         /// <returns>Server HTTP response.</returns>
         public delegate Task<HttpResponseMessage> HttpInputMiddleware(
-            HttpRequestMessage request, HttpInputHandler next);
+            string token, List<HttpInputEventInfo> events, HttpInputHandler next);
 
         private const string HttpInputPath = "/services/receivers/token";
         private const string AuthorizationHeaderScheme = "Splunk";
         private Uri httpInputEndpointUri; // HTTP input endpoint full uri
         private HttpInputEventInfo.Metadata metadata; // logger metadata
+        private string token; // authorization token
+
         // events batching properties and collection 
         private int batchInterval = 0;
         private int batchSizeBytes = 0;
@@ -89,7 +91,7 @@ namespace Splunk.Logging
         private HttpClient httpClient = null;
         private HttpInputMiddleware middleware = null;
         // counter for bookkeeping the async tasks 
-        long activeAsyncTasksCount = 0;
+        private long activeAsyncTasksCount = 0;
 
         /// <summary>
         /// On error callbacks.
@@ -119,6 +121,7 @@ namespace Splunk.Logging
             this.batchSizeBytes = batchSizeBytes;
             this.batchSizeCount = batchSizeCount;
             this.metadata = metadata;
+            this.token = token;
             this.middleware = middleware;
 
             // when size configuration setting is missing it's treated as "infinity",
@@ -139,9 +142,7 @@ namespace Splunk.Logging
             }
 
             // setup HTTP client
-            httpClient = middleware == null ? 
-                new HttpClient() : 
-                new HttpClient(new HttpMiddlewareClientHandler(middleware));
+            httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue(AuthorizationHeaderScheme, token);
         }
@@ -243,17 +244,33 @@ namespace Splunk.Logging
             HttpResponseMessage response = null;
             string serverReply = null;
             HttpStatusCode responseCode = HttpStatusCode.OK;
-            HttpContent content = new StringContent(
-                serializedEvents, Encoding.UTF8, "application/json");
             try
             {
                 // post data
-                response = await httpClient.PostAsync(httpInputEndpointUri, content);
+                HttpInputHandler next = (t, e) =>
+                {
+                    HttpContent content = new StringContent(
+                        serializedEvents, Encoding.UTF8, "application/json");
+                    return httpClient.PostAsync(httpInputEndpointUri, content);
+                };
+                HttpInputHandler postEvents = (t, e) =>
+                {
+                    return middleware == null ?
+                        next(t, e) : middleware(t, e, next);
+                };
+                response = await postEvents(token, events);
                 responseCode = response.StatusCode;
                 if (responseCode != HttpStatusCode.OK && response.Content != null)
                 {
                     // record server reply
                     serverReply = await response.Content.ReadAsStringAsync();
+                    OnError(this, new HttpInputException(
+                        code: responseCode,
+                        webException: null,
+                        reply: serverReply,
+                        response: response,
+                        events: events
+                    ));
                 }
             }
             catch (HttpInputException e)
@@ -306,31 +323,6 @@ namespace Splunk.Logging
         ~HttpInputSender()
         {
             Dispose(false);
-        }
-
-        #endregion
-
-        #region HTTP middleware handler
-
-        private class HttpMiddlewareClientHandler : HttpClientHandler
-        {
-            private HttpInputMiddleware middleware = null;
-
-            public HttpMiddlewareClientHandler(HttpInputMiddleware middleware)
-            {
-                this.middleware = middleware;
-            }
-
-            protected override Task<HttpResponseMessage> SendAsync(
-                HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                // plug middleware into HTTP call
-                return middleware(request, async (HttpRequestMessage) =>
-                {
-                    return await base.SendAsync(request, cancellationToken);
-                });
-            }
-
         }
 
         #endregion
