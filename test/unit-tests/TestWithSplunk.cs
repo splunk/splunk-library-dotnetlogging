@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -328,6 +329,37 @@ namespace Splunk.Logging
         #endregion
 
         #region Tests implementation
+        [Trait("functional-tests", "StallWrite")]
+        [Fact]
+        public static void StallWrite()
+        {
+            string tokenName = "stallwritetoken";
+            string indexName = "stallwriteindex";
+            SplunkCliWrapper splunk = new SplunkCliWrapper();
+            double testStartTime = SplunkCliWrapper.GetEpochTime();
+            string token = CreateIndexAndToken(splunk, tokenName, indexName);
+
+            const string baseUrl = "https://127.0.0.1:8089";
+            string postData = "{ \"event\": { \"data\": \"test event\" } }";
+
+            List<HttpWebRequest> requests = new List<HttpWebRequest>();
+            List<Stream> streams = new List<Stream>();
+            byte[] byteArray = Encoding.UTF8.GetBytes(postData);
+            for (int i = 0; i < 10000; i++)
+            {
+                var request = WebRequest.Create(baseUrl + "/services/receivers/token") as HttpWebRequest;
+                requests.Add(request);
+                request.Timeout = 60 * 1000;
+                request.KeepAlive = true;
+                request.Method = "POST";
+                request.Headers.Add("Authorization", "Splunk " + token);
+                request.ContentType = "application/x-www-form-urlencoded";
+                request.ContentLength = byteArray.Length * 2;
+                Stream dataStream = request.GetRequestStream();
+                streams.Add(dataStream);
+                dataStream.Write(byteArray, 0, byteArray.Length);
+            }
+        }
         [Trait("functional-tests", "SendEventsBatchedByTime")]
         [Fact]
         public static void SendEventsBatchedByTime()
