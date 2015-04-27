@@ -74,6 +74,7 @@ namespace Splunk.Logging
         public delegate Task<HttpResponseMessage> HttpInputMiddleware(
             string token, List<HttpInputEventInfo> events, HttpInputHandler next);
 
+        private const string HttpContentType = "application/json; profile=urn:splunk:event:1.0";
         private const string HttpInputPath = "/services/receivers/token";
         private const string AuthorizationHeaderScheme = "Splunk";
         private Uri httpInputEndpointUri; // HTTP input endpoint full uri
@@ -250,7 +251,7 @@ namespace Splunk.Logging
                 HttpInputHandler next = (t, e) =>
                 {
                     HttpContent content = new StringContent(
-                        serializedEvents, Encoding.UTF8, "application/json");
+                        serializedEvents, Encoding.UTF8, HttpContentType);
                     return httpClient.PostAsync(httpInputEndpointUri, content);
                 };
                 HttpInputHandler postEvents = (t, e) =>
