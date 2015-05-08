@@ -288,12 +288,16 @@ namespace Splunk.Logging
             Dispose(true);
         }
 
-        protected void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (disposed)
                 return;
             if (disposing)
-            {               
+            {
+                if (timer != null)
+                {
+                    timer.Dispose();
+                }
                 httpClient.Dispose();
             }
             disposed = true;
