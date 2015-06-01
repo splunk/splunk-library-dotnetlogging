@@ -110,7 +110,7 @@ namespace Splunk.Logging
                     webException = e;
                 }
                 // wait before next retry
-                Thread.Sleep(retryDelay);
+                await Task.Delay(retryDelay);
                 // increase delay exponentially
                 retryDelay = Math.Min(RetryDelayCeiling, retryDelay * 2);
             }
