@@ -11,6 +11,7 @@
     <AssemblyName>standalone-test</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -59,10 +60,6 @@
     <ProjectReference Include="..\src\Splunk.Logging.TraceListener\Splunk.Logging.TraceListener.csproj">
       <Project>{17f12964-d0c9-41a9-9dee-a4a5a52b24ae}</Project>
       <Name>Splunk.Logging.TraceListener</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\src\Splunk.Logging.SLAB\Splunk.Logging.SLAB.csproj">
-      <Project>{74d8f7a7-8125-400d-b744-c30562f23be0}</Project>
-      <Name>Splunk.Logging.SLAB</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
