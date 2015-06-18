@@ -162,7 +162,9 @@ namespace Splunk.Logging
         {
             Event = new LoggerEvent(id, severity, message, data);
             // set timestamp to the current UTC epoch time 
-            Timestamp = ((ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString();
+            double epochTime =
+                (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            Timestamp = epochTime.ToString();
             this.metadata = metadata ?? new Metadata();
         }
     }
