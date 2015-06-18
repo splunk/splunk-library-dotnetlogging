@@ -125,6 +125,13 @@ namespace Splunk.Logging
             this.token = token;
             this.middleware = middleware;
 
+            // special case - if batch interval is specified without size and count
+            // they are set to "infinity", i.e., batch may have any size 
+            if (this.batchInterval > 0 && this.batchSizeBytes == 0 && this.batchSizeCount == 0)
+            {
+                this.batchSizeBytes = this.batchSizeCount = int.MaxValue;
+            }
+
             // when size configuration setting is missing it's treated as "infinity",
             // i.e., any value is accepted.
             if (this.batchSizeCount == 0 && this.batchSizeBytes > 0)
