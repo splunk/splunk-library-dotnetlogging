@@ -185,15 +185,15 @@ namespace Splunk.Logging
             return ExecuteProcess(splunkProcess, out stdOut, out stdError);
         }
 
-        private bool ExecuteSplunkCliHttpInput(string command, out string stdOut, out string stdError)
+        private bool ExecuteSplunkCliHttpEventCollector(string command, out string stdOut, out string stdError)
         {
-            return ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "http-input {0} -uri https://127.0.0.1:8089", command), out stdOut, out stdError);
+            return ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "http-event-collector {0} -uri https://127.0.0.1:8089", command), out stdOut, out stdError);
         }
 
         public void EnableHttp()
         {
             string stdOut, stdError;
-            if (!ExecuteSplunkCliHttpInput("enable", out stdOut, out stdError))
+            if (!ExecuteSplunkCliHttpEventCollector("enable", out stdOut, out stdError))
             {
                 Console.WriteLine("Failed to execute 'enable' command. {0} {1}", stdOut, stdError);
                 Environment.Exit(2);
@@ -203,7 +203,7 @@ namespace Splunk.Logging
         public void DeleteToken(string tokenName)
         {
             string stdOut, stdError;
-            ExecuteSplunkCliHttpInput(string.Format(CultureInfo.InvariantCulture, "delete -name {0}", tokenName), out stdOut, out stdError);
+            ExecuteSplunkCliHttpEventCollector(string.Format(CultureInfo.InvariantCulture, "delete -name {0}", tokenName), out stdOut, out stdError);
         }
 
         public string CreateToken(string tokenName, string indexes = null, string index = null)
@@ -214,7 +214,7 @@ namespace Splunk.Logging
                 createCmd += string.Format(CultureInfo.InvariantCulture, " -indexes {0}", indexes);
             if (!string.IsNullOrEmpty(index))
                 createCmd += string.Format(CultureInfo.InvariantCulture, " -index {0}", index);
-            if (!ExecuteSplunkCliHttpInput(createCmd, out stdOut, out stdError))
+            if (!ExecuteSplunkCliHttpEventCollector(createCmd, out stdOut, out stdError))
             {
                 Console.WriteLine("Failed to create token. {0} {1}", stdOut, stdError);
                 Environment.Exit(2);
@@ -317,7 +317,7 @@ namespace Splunk.Logging
         private static string CreateIndexAndToken(SplunkCliWrapper splunk, string tokenName, string indexName)
         {
             splunk.EnableHttp();
-            Console.WriteLine("Enabled HTTP input.");
+            Console.WriteLine("Enabled HTTP event collector.");
             splunk.DeleteToken(tokenName);
             string token = splunk.CreateToken(tokenName, indexes: indexName, index: indexName);
             Console.WriteLine("Created token {0}.", tokenName);
@@ -370,10 +370,10 @@ namespace Splunk.Logging
             double testStartTime = SplunkCliWrapper.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
 
-            var trace = new TraceSource("HttpInputLogger");
+            var trace = new TraceSource("HttpEventCollectorLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var listener = new HttpInputTraceListener(
+            var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var listener = new HttpEventCollectorTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
                 metadata: meta,
@@ -395,10 +395,10 @@ namespace Splunk.Logging
             double testStartTime = SplunkCliWrapper.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
 
-            var trace = new TraceSource("HttpInputLogger");
+            var trace = new TraceSource("HttpEventCollectorLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var listener = new HttpInputTraceListener(
+            var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var listener = new HttpEventCollectorTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
                 metadata: meta,
@@ -419,10 +419,10 @@ namespace Splunk.Logging
             double testStartTime = SplunkCliWrapper.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
 
-            var trace = new TraceSource("HttpInputLogger");
+            var trace = new TraceSource("HttpEventCollectorLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var listener = new HttpInputTraceListener(
+            var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var listener = new HttpEventCollectorTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
                 metadata: meta,
@@ -443,10 +443,10 @@ namespace Splunk.Logging
             double testStartTime = SplunkCliWrapper.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
 
-            var trace = new TraceSource("HttpInputLogger");
+            var trace = new TraceSource("HttpEventCollectorLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var listener = new HttpInputTraceListener(
+            var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var listener = new HttpEventCollectorTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
                 metadata: meta);
@@ -466,37 +466,37 @@ namespace Splunk.Logging
             SplunkCliWrapper splunk = new SplunkCliWrapper();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
 
-            var trace = new TraceSource("HttpInputLogger");
+            var trace = new TraceSource("HttpEventCollectorLogger");
             trace.Switch.Level = SourceLevels.All;
 
-            var validMetaData = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var invalidMetaData = new HttpInputEventInfo.Metadata(index: "notexistingindex", source: "host", sourceType: "log", host: "customhostname");
+            var validMetaData = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var invalidMetaData = new HttpEventCollectorEventInfo.Metadata(index: "notexistingindex", source: "host", sourceType: "log", host: "customhostname");
 
-            var listenerWithWrongToken = new HttpInputTraceListener(
+            var listenerWithWrongToken = new HttpEventCollectorTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: "notexistingtoken",
                 metadata: validMetaData);
-            var listenerWithWrongUri = new HttpInputTraceListener(
+            var listenerWithWrongUri = new HttpEventCollectorTraceListener(
                 uri: new Uri("https://127.0.0.1:8087"),
                 token: token,
                 metadata: validMetaData);
-            var listenerWithWrongMetadata = new HttpInputTraceListener(
+            var listenerWithWrongMetadata = new HttpEventCollectorTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
                 metadata: invalidMetaData);
 
             bool wrongTokenWasRaised = false;
-            listenerWithWrongToken.AddLoggingFailureHandler((object sender, HttpInputException e) =>
+            listenerWithWrongToken.AddLoggingFailureHandler((object sender, HttpEventCollectorException e) =>
             {
                 wrongTokenWasRaised = true;
             });
             bool wrongUriWasRaised = false;
-            listenerWithWrongUri.AddLoggingFailureHandler((object sender, HttpInputException e) =>
+            listenerWithWrongUri.AddLoggingFailureHandler((object sender, HttpEventCollectorException e) =>
             {
                 wrongUriWasRaised = true;
             });
             bool wrongMetaDataWasRaised = false;
-            listenerWithWrongMetadata.AddLoggingFailureHandler((object sender, HttpInputException e) =>
+            listenerWithWrongMetadata.AddLoggingFailureHandler((object sender, HttpEventCollectorException e) =>
             {
                 wrongMetaDataWasRaised = true;
             });
@@ -525,10 +525,10 @@ namespace Splunk.Logging
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
             splunk.StopServer();
 
-            var trace = new TraceSource("HttpInputLogger");
+            var trace = new TraceSource("HttpEventCollectorLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var listener = new HttpInputTraceListener(
+            var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var listener = new HttpEventCollectorTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
                 retriesOnError: int.MaxValue,
@@ -561,10 +561,10 @@ namespace Splunk.Logging
             splunk.StopServer();
             Thread.Sleep(5 * 1000);
 
-            var trace = new TraceSource("HttpInputLogger");
+            var trace = new TraceSource("HttpEventCollectorLogger");
             trace.Switch.Level = SourceLevels.All;
-            var meta = new HttpInputEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var listener = new HttpInputTraceListener(
+            var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var listener = new HttpEventCollectorTraceListener(
                 uri: new Uri("https://127.0.0.1:8089"),
                 token: token,
                 retriesOnError: int.MaxValue,

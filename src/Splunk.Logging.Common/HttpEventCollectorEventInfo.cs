@@ -23,16 +23,16 @@ using System.Collections.Generic;
 namespace Splunk.Logging
 {
     /// <summary>
-    /// HttpInputEventInfo is a wrapper container for .NET events information.
-    /// An instance of HttpInputEventInfo can be easily serialized into json
+    /// HttpEventCollectorEventInfo is a wrapper container for .NET events information.
+    /// An instance of HttpEventCollectorEventInfo can be easily serialized into json
     /// format using JsonConvert.SerializeObject. 
     /// </summary>
-    public class HttpInputEventInfo
+    public class HttpEventCollectorEventInfo
     {
         #region metadata
 
         /// <summary>
-        /// Common metadata tags that can be specified by HTTP input logger.
+        /// Common metadata tags that can be specified by HTTP event collector logger.
         /// </summary>
         public const string MetadataTimeTag       = "time";
         public const string MetadataIndexTag      = "index";
@@ -149,14 +149,14 @@ namespace Splunk.Logging
         public LoggerEvent Event { get; private set; }
 
         /// <summary>
-        /// HttpInputEventInfo c-or.
+        /// HttpEventCollectorEventInfo c-or.
         /// </summary>
         /// <param name="id">Event id.</param>
         /// <param name="severity">Event severity info.</param>
         /// <param name="message">Event message text.</param>
         /// <param name="data">Event auxiliary data.</param>
         /// <param name="metadata">Logger metadata.</param>
-        public HttpInputEventInfo(
+        public HttpEventCollectorEventInfo(
             string id, string severity, string message, object data, 
             Metadata metadata)
         {

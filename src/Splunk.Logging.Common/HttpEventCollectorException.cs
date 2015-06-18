@@ -24,10 +24,10 @@ using System.Net.Http;
 namespace Splunk.Logging
 {
     /// <summary>
-    /// HTTP input exception. This class is used when an HTTP input client is 
+    /// HTTP event collector exception. This class is used when an HTTP event collector client is 
     /// unable to send events to the server;
     /// </summary>
-    public class HttpInputException : Exception 
+    public class HttpEventCollectorException : Exception 
     {
         /// <summary>
         /// HTTP status code.
@@ -51,24 +51,24 @@ namespace Splunk.Logging
         public HttpResponseMessage Response { get; private set; }
 
         /// <summary>
-        /// List of events that caused the problem. This value is set by HttpInputSender.
+        /// List of events that caused the problem. This value is set by HttpEventCollectorSender.
         /// </summary>
-        public List<HttpInputEventInfo> Events { get; set; }
+        public List<HttpEventCollectorEventInfo> Events { get; set; }
 
         /// <summary>
-        /// HTTP input exception container.
+        /// HTTP event collector exception container.
         /// </summary>
         /// <param name="code">HTTP status code.</param>
         /// <param name="webException">Exception thrown by HTTP client when sending the data.</param>
         /// <param name="reply">Splunk server reply.</param>
         /// <param name="response">HTTP response.</param>
         /// <param name="events">List of events that caused the problem.</param>
-        public HttpInputException(
+        public HttpEventCollectorException(
             HttpStatusCode code, 
             Exception webException = null, 
             string reply = null, 
             HttpResponseMessage response = null,
-            List<HttpInputEventInfo> events = null)
+            List<HttpEventCollectorEventInfo> events = null)
         {
             this.StatusCode = code;
             this.WebException = webException;
