@@ -313,8 +313,7 @@ namespace Splunk.Logging
                     Assert.True(events[3].Event.Message == "info 4");
                     return new Response();
                 },
-                batchInterval: 1000,
-                batchSizeBytes: int.MaxValue, batchSizeCount: int.MaxValue
+                batchInterval: 1000
             );
             trace.TraceInformation("info 1");
             trace.TraceInformation("info 2");
