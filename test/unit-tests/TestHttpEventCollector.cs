@@ -16,7 +16,7 @@ using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
 
 namespace Splunk.Logging
 {
-    public class TestHttpInput
+    public class TestHttpEventCollector
     {
         private readonly Uri uri = new Uri("http://localhost:8089"); // a dummy uri
         private const string token = "TOKEN-GUID"; 
@@ -34,16 +34,16 @@ namespace Splunk.Logging
             }
         }
 
-        private delegate Response RequestHandler(string token, List<HttpInputEventInfo> events);
+        private delegate Response RequestHandler(string token, List<HttpEventCollectorEventInfo> events);
 
-        // we inject this method into HTTP input middleware chain to mimic a Splunk  
+        // we inject this method into HTTP event collector middleware chain to mimic a Splunk  
         // server
-        private HttpInputSender.HttpInputMiddleware MiddlewareInterceptor(
+        private HttpEventCollectorSender.HttpEventCollectorMiddleware MiddlewareInterceptor(
             RequestHandler handler,
-            HttpInputSender.HttpInputMiddleware middleware)
+            HttpEventCollectorSender.HttpEventCollectorMiddleware middleware)
         {
-            HttpInputSender.HttpInputMiddleware interceptor = 
-            (string token, List<HttpInputEventInfo> events, HttpInputSender.HttpInputHandler next) =>
+            HttpEventCollectorSender.HttpEventCollectorMiddleware interceptor = 
+            (string token, List<HttpEventCollectorEventInfo> events, HttpEventCollectorSender.HttpEventCollectorHandler next) =>
             {
                 Response response = handler(token, events);
                 HttpResponseMessage httpResponseMessage = new HttpResponseMessage();
@@ -74,16 +74,16 @@ namespace Splunk.Logging
         // Input trace listener
         private TraceSource Trace(
             RequestHandler handler, 
-            HttpInputEventInfo.Metadata metadata = null,
+            HttpEventCollectorEventInfo.Metadata metadata = null,
             int batchInterval = 0, 
             int batchSizeBytes = 0, 
             int batchSizeCount = 0,
-            HttpInputSender.HttpInputMiddleware middleware = null)
+            HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null)
         {
-            var trace = new TraceSource("HttpInputLogger");
+            var trace = new TraceSource("HttpEventCollectorLogger");
             trace.Switch.Level = SourceLevels.All;
             trace.Listeners.Add(
-                new HttpInputTraceListener(
+                new HttpEventCollectorTraceListener(
                     uri: uri,
                     token: token,
                     metadata: metadata,
@@ -99,7 +99,7 @@ namespace Splunk.Logging
         private struct SinkTrace : IDisposable
         {
             public TestEventSource Source { set; get; }
-            public HttpInputEventSink Sink { set; get; }
+            public HttpEventCollectorSink Sink { set; get; }
             public ObservableEventListener Listener { get; set; }
             public void Dispose()
             {
@@ -110,14 +110,14 @@ namespace Splunk.Logging
 
         private SinkTrace TraceSource(
             RequestHandler handler,
-            HttpInputEventInfo.Metadata metadata = null,
+            HttpEventCollectorEventInfo.Metadata metadata = null,
             int batchInterval = 0,
             int batchSizeBytes = 0,
             int batchSizeCount = 0,
-            HttpInputSender.HttpInputMiddleware middleware = null)
+            HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null)
         {
             var listener = new ObservableEventListener();
-            var sink = new HttpInputEventSink(
+            var sink = new HttpEventCollectorSink(
                  uri: uri,
                  token: token,
                  formatter: new TestEventFormatter(),
@@ -139,9 +139,9 @@ namespace Splunk.Logging
 
         #endregion
 
-        [Trait("integration-tests", "Splunk.Logging.HttpInputCoreTest")]
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorCoreTest")]
         [Fact]
-        public void HttpInputCoreTest()
+        public void HttpEventCollectorCoreTest()
         {
             // authorization
             var trace = Trace((token, input) =>
@@ -154,7 +154,7 @@ namespace Splunk.Logging
 
             // metadata
             ulong now = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            var metadata = new HttpInputEventInfo.Metadata(
+            var metadata = new HttpEventCollectorEventInfo.Metadata(
                 index: "main",
                 source: "localhost",
                 sourceType: "log",
@@ -237,9 +237,9 @@ namespace Splunk.Logging
             trace.Close();
         }
 
-        [Trait("integration-tests", "Splunk.Logging.HttpInputBatchingCountTest")]
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorBatchingCountTest")]
         [Fact]
-        public void HttpInputBatchingCountTest()
+        public void HttpEventCollectorBatchingCountTest()
         {
             var trace = Trace(
                 handler: (token, events) =>
@@ -264,14 +264,14 @@ namespace Splunk.Logging
             trace.Close();
         }
 
-        [Trait("integration-tests", "Splunk.Logging.HttpInputBatchingSizeTest")]
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorBatchingSizeTest")]
         [Fact]
-        public void HttpInputBatchingSizeTest()
+        public void HttpEventCollectorBatchingSizeTest()
         {
             // estimate serialized event size
-            HttpInputEventInfo ei = 
-                new HttpInputEventInfo(null, TraceEventType.Information.ToString(), "info ?", null, null);
-            int size = HttpInputSender.SerializeEventInfo(ei).Length;
+            HttpEventCollectorEventInfo ei = 
+                new HttpEventCollectorEventInfo(null, TraceEventType.Information.ToString(), "info ?", null, null);
+            int size = HttpEventCollectorSender.SerializeEventInfo(ei).Length;
 
             var trace = Trace(
                 handler: (token, events) =>
@@ -299,9 +299,9 @@ namespace Splunk.Logging
             trace.Close();
         }
 
-        [Trait("integration-tests", "Splunk.Logging.HttpInputBatchingIntervalTest")]
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorBatchingIntervalTest")]
         [Fact]
-        public void HttpInputBatchingIntervalTest()
+        public void HttpEventCollectorBatchingIntervalTest()
         {
             var trace = Trace(
                 handler: (token, events) =>
@@ -323,12 +323,12 @@ namespace Splunk.Logging
             trace.Close();
         }
 
-        [Trait("integration-tests", "Splunk.Logging.HttpInputResendTest")]
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorResendTest")]
         [Fact]
-        public void HttpInputResendTest()
+        public void HttpEventCollectorResendTest()
         {
             int resendCount = 0;
-            HttpInputResendMiddleware resend = new HttpInputResendMiddleware(3);
+            HttpEventCollectorResendMiddleware resend = new HttpEventCollectorResendMiddleware(3);
             var trace = Trace(
                 handler: (auth, input) =>
                 {
@@ -337,9 +337,9 @@ namespace Splunk.Logging
                     // by resend middleware
                     return new Response(HttpStatusCode.InternalServerError, "{\"text\":\"Error\"}");
                 }, 
-                middleware: (new HttpInputResendMiddleware(3)).Plugin // repeat 3 times
+                middleware: (new HttpEventCollectorResendMiddleware(3)).Plugin // repeat 3 times
             );
-            (trace.Listeners[trace.Listeners.Count-1] as HttpInputTraceListener).AddLoggingFailureHandler(
+            (trace.Listeners[trace.Listeners.Count-1] as HttpEventCollectorTraceListener).AddLoggingFailureHandler(
                 (sender, exception) =>
                 {
                     // error handler should be called after a single "normal post" and 3 "retries"
@@ -353,9 +353,9 @@ namespace Splunk.Logging
             trace.Close();
         }
 
-        [Trait("integration-tests", "Splunk.Logging.HttpInputSinkCoreTest")]
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSinkCoreTest")]
         [Fact]
-        public void HttpInputSinkCoreTest()
+        public void HttpEventCollectorSinkCoreTest()
         {
             // authorization
             var trace = TraceSource((token, events) =>
@@ -367,7 +367,7 @@ namespace Splunk.Logging
             trace.Dispose();
 
             // metadata
-            var metadata = new HttpInputEventInfo.Metadata(
+            var metadata = new HttpEventCollectorEventInfo.Metadata(
                 index: "main",
                 source: "localhost",
                 sourceType: "log",
@@ -405,9 +405,9 @@ namespace Splunk.Logging
             trace.Dispose();
         }
 
-        [Trait("integration-tests", "Splunk.Logging.HttpInputSinkBatchingTest")]
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSinkBatchingTest")]
         [Fact]
-        public void HttpInputSinkBatchingTest()
+        public void HttpEventCollectorSinkBatchingTest()
         {
             var trace = TraceSource((token, events) =>
             {

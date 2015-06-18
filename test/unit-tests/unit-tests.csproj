@@ -55,7 +55,7 @@
     <Compile Include="TestTcp.cs" />
     <Compile Include="TestTcpSocketWriter.cs" />
     <Compile Include="TestUdp.cs" />
-    <Compile Include="TestHttpInput.cs" />
+    <Compile Include="TestHttpEventCollector.cs" />
     <Compile Include="TestWithSplunk.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>

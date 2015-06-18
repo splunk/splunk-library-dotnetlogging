@@ -25,11 +25,11 @@ using System.Net.Http;
 namespace Splunk.Logging
 {
     /// <summary>
-    /// Trace listener implementation for Splunk HTTP input. 
+    /// Trace listener implementation for Splunk HTTP event collector. 
     /// Usage example:
     /// <code>
     /// var trace = new TraceSource("logger");
-    /// trace.listeners.Add(new HttpInputTraceListener(
+    /// trace.listeners.Add(new HttpEventCollectorTraceListener(
     ///     uri: new Uri("https://localhost:8089"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918"));
     /// trace.TraceEvent(TraceEventType.Information, 1, "hello world");
@@ -44,7 +44,7 @@ namespace Splunk.Logging
     /// regardless of its size.
     /// <code>
     /// var trace = new TraceSource("logger");
-    /// trace.listeners.Add(new HttpInputTraceListener(
+    /// trace.listeners.Add(new HttpEventCollectorTraceListener(
     ///     uri: new Uri("https://localhost:8089"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
     ///     batchInterval: 1000, // send events at least every second
@@ -58,7 +58,7 @@ namespace Splunk.Logging
     /// after posting data.
     /// For example:
     /// <code>
-    /// new HttpInputTraceListener(
+    /// new HttpEventCollectorTraceListener(
     ///     uri: new Uri("https://localhost:8089"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918,
     ///     middleware: (request, next) => {
@@ -71,34 +71,34 @@ namespace Splunk.Logging
     /// )
     /// </code>
     /// Middleware components can apply additional logic before and after posting
-    /// the data to Splunk server. See HttpInputResendMiddleware.
+    /// the data to Splunk server. See HttpEventCollectorResendMiddleware.
     /// </remarks>
     /// 
     /// A user application code can register an error handler that is invoked 
-    /// when HTTP input isn't able to send data. 
+    /// when HTTP event collector isn't able to send data. 
     /// <code>
-    /// var listener = new HttpInputTraceListener(
+    /// var listener = new HttpEventCollectorTraceListener(
     ///     uri: new Uri("https://localhost:8089"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918")
     /// );
-    /// listener.AddLoggingFailureHandler((sender, HttpInputException e) =>
+    /// listener.AddLoggingFailureHandler((sender, HttpEventCollectorException e) =>
     /// {
     ///     // do something             
     /// });
     /// trace.listeners.Add(listener);
     /// </code>
-    /// HttpInputException contains information about the error and the list of 
+    /// HttpEventCollectorException contains information about the error and the list of 
     /// events caused the problem.
     /// </summary>
-    public class HttpInputTraceListener : TraceListener
+    public class HttpEventCollectorTraceListener : TraceListener
     {
-        private HttpInputSender sender;
+        private HttpEventCollectorSender sender;
 
         /// <summary>
-        /// HttpInputTraceListener c-or.
+        /// HttpEventCollectorTraceListener c-or.
         /// </summary>
         /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
-        /// <param name="token">HTTP input authorization token.</param>
+        /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="metadata">Logger metadata.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
@@ -107,46 +107,46 @@ namespace Splunk.Logging
         /// HTTP client middleware. This allows to plug an HttpClient handler that 
         /// intercepts logging HTTP traffic.
         /// </param>
-        public HttpInputTraceListener(
+        public HttpEventCollectorTraceListener(
             Uri uri, string token,
-            HttpInputEventInfo.Metadata metadata = null,
+            HttpEventCollectorEventInfo.Metadata metadata = null,
             int batchInterval = 0, int batchSizeBytes = 0, int batchSizeCount = 0,
-            HttpInputSender.HttpInputMiddleware middleware = null)
+            HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null)
         {
-            sender = new HttpInputSender(
+            sender = new HttpEventCollectorSender(
                 uri, token, metadata,
                 batchInterval, batchSizeBytes, batchSizeCount, 
                 middleware);
         }
 
         /// <summary>
-        /// HttpInputTraceListener c-or. Instantiates HttpInputTraceListener 
+        /// HttpEventCollectorTraceListener c-or. Instantiates HttpEventCollectorTraceListener 
         /// when retriesOnError parameter is specified.
         /// </summary>
         /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
-        /// <param name="token">HTTP input authorization token.</param>
+        /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="retriesOnError">Number of retries when network problem is detected</param> 
         /// <param name="metadata">Logger metadata.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>        
-        public HttpInputTraceListener(
+        public HttpEventCollectorTraceListener(
             Uri uri, string token,
             int retriesOnError,
-            HttpInputEventInfo.Metadata metadata = null,
+            HttpEventCollectorEventInfo.Metadata metadata = null,
             int batchInterval = 0, int batchSizeBytes = 0, int batchSizeCount = 0)
             : this(uri, token, metadata, 
                    batchInterval, batchSizeBytes, batchSizeCount,
-                   (new HttpInputResendMiddleware(retriesOnError)).Plugin)
+                   (new HttpEventCollectorResendMiddleware(retriesOnError)).Plugin)
         {
         }
 
         /// <summary>
         /// Add a handler to be invoked when some problem is detected during the 
-        /// operation of HTTP input and it cannot be fixed by resending the data.
+        /// operation of HTTP event collector and it cannot be fixed by resending the data.
         /// </summary>
         /// <param name="handler">A function to handle the exception.</param>
-        public void AddLoggingFailureHandler(EventHandler<HttpInputException> handler)
+        public void AddLoggingFailureHandler(EventHandler<HttpEventCollectorException> handler)
         {
             sender.OnError += handler;
         }
@@ -245,7 +245,7 @@ namespace Splunk.Logging
             Close();
         }
 
-        ~HttpInputTraceListener()
+        ~HttpEventCollectorTraceListener()
         {
             Dispose(false);
         }

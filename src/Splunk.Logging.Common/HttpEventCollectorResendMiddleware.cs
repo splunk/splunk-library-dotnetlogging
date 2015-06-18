@@ -26,23 +26,23 @@ using System.Collections.Generic;
 namespace Splunk.Logging
 {
     /// <summary>
-    /// HTTP input middleware plug in that implements a simple resend policy. 
+    /// HTTP event collector middleware plug in that implements a simple resend policy. 
     /// When HTTP post reply isn't an application error we try to resend the data.
     /// Usage:
     /// <code>
-    /// trace.listeners.Add(new HttpInputTraceListener(
+    /// trace.listeners.Add(new HttpEventCollectorTraceListener(
     ///     uri: new Uri("https://localhost:8089"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
-    ///     new HttpInputResendMiddleware(10).Plugin // retry 10 times
+    ///     new HttpEventCollectorResendMiddleware(10).Plugin // retry 10 times
     /// );
     /// </code>
     /// </summary>
-    public class HttpInputResendMiddleware
+    public class HttpEventCollectorResendMiddleware
     {
-        // List of HTTP input server application error statuses. These statuses 
+        // List of HTTP event collector server application error statuses. These statuses 
         // indicate non-transient problems that cannot be fixed by resending the 
         // data.
-        private static readonly HttpStatusCode[] HttpInputApplicationErrors = 
+        private static readonly HttpStatusCode[] HttpEventCollectorApplicationErrors = 
         {
             HttpStatusCode.Forbidden,
             HttpStatusCode.MethodNotAllowed,
@@ -55,21 +55,21 @@ namespace Splunk.Logging
         /// <param name="retriesOnError">
         /// Max number of retries before reporting an error.
         /// </param>
-        public HttpInputResendMiddleware(int retriesOnError)
+        public HttpEventCollectorResendMiddleware(int retriesOnError)
         {
             this.retriesOnError = retriesOnError;
         }
 
         /// <summary>
-        /// Callback that should be used as middleware in HttpInputSender
+        /// Callback that should be used as middleware in HttpEventCollectorSender
         /// </summary>
         /// <param name="request"></param>
         /// <param name="next"></param>
         /// <returns></returns>
         public async Task<HttpResponseMessage> Plugin(
             string token, 
-            List<HttpInputEventInfo> events, 
-            HttpInputSender.HttpInputHandler next)
+            List<HttpEventCollectorEventInfo> events, 
+            HttpEventCollectorSender.HttpEventCollectorHandler next)
         {          
             HttpResponseMessage response = null;
             HttpStatusCode statusCode = HttpStatusCode.OK;
@@ -89,9 +89,9 @@ namespace Splunk.Logging
                         webException = null;
                         break;
                     }
-                    else if (Array.IndexOf(HttpInputApplicationErrors, statusCode) >= 0)
+                    else if (Array.IndexOf(HttpEventCollectorApplicationErrors, statusCode) >= 0)
                     {
-                        // HTTP input application error detected - resend wouldn't help
+                        // HTTP event collector application error detected - resend wouldn't help
                         // in this case. Record server reply and break.
                         if (response.Content != null)
                         {
@@ -116,7 +116,7 @@ namespace Splunk.Logging
             }
             if (statusCode != HttpStatusCode.OK || webException != null)
             {
-                throw new HttpInputException(
+                throw new HttpEventCollectorException(
                     code: statusCode,
                     webException: webException,
                     reply: serverReply,

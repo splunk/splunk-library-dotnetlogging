@@ -29,20 +29,20 @@ using System.Threading.Tasks;
 namespace Splunk.Logging
 {
     /// <summary>
-    /// HTTP input client side implementation that collects, serializes and send 
-    /// events to Splunk HTTP input endpoint. This class shouldn't be used directly
+    /// HTTP event collector client side implementation that collects, serializes and send 
+    /// events to Splunk HTTP event collector endpoint. This class shouldn't be used directly
     /// by user applications.
     /// </summary>
     /// <remarks>
-    /// * HttpInputSender is thread safe and Send(...) method may be called from
+    /// * HttpEventCollectorSender is thread safe and Send(...) method may be called from
     /// different threads.
     /// * Events are are sending asynchronously and Send(...) method doesn't 
     /// block the caller code.
-    /// * HttpInputSender has an ability to plug middleware components that act 
+    /// * HttpEventCollectorSender has an ability to plug middleware components that act 
     /// before posting data.
     /// For example:
     /// <code>
-    /// new HttpInputSender(uri: ..., token: ..., 
+    /// new HttpEventCollectorSender(uri: ..., token: ..., 
     ///     middleware: (request, next) => {
     ///         // preprocess request
     ///         var response = next(request); // post data
@@ -53,54 +53,54 @@ namespace Splunk.Logging
     /// )
     /// </code>
     /// Middleware components can apply additional logic before and after posting
-    /// the data to Splunk server. See HttpInputResendMiddleware.
+    /// the data to Splunk server. See HttpEventCollectorResendMiddleware.
     /// </remarks>
-    public class HttpInputSender : IDisposable
+    public class HttpEventCollectorSender : IDisposable
     {
         /// <summary>
         /// Post request delegate. 
         /// </summary>
         /// <param name="request">HTTP request.</param>
         /// <returns>Server HTTP response.</returns>
-        public delegate Task<HttpResponseMessage> HttpInputHandler(
-            string token, List<HttpInputEventInfo> events);
+        public delegate Task<HttpResponseMessage> HttpEventCollectorHandler(
+            string token, List<HttpEventCollectorEventInfo> events);
 
         /// <summary>
-        /// HTTP input middleware plugin.
+        /// HTTP event collector middleware plugin.
         /// </summary>
         /// <param name="request">HTTP request.</param>
         /// <param name="next">A handler that posts data to the server.</param>
         /// <returns>Server HTTP response.</returns>
-        public delegate Task<HttpResponseMessage> HttpInputMiddleware(
-            string token, List<HttpInputEventInfo> events, HttpInputHandler next);
+        public delegate Task<HttpResponseMessage> HttpEventCollectorMiddleware(
+            string token, List<HttpEventCollectorEventInfo> events, HttpEventCollectorHandler next);
 
         private const string HttpContentTypeMedia = "application/json";
-        private const string HttpInputPath = "/services/receivers/token/event/1.0";
+        private const string HttpEventCollectorPath = "/services/collector/event/1.0";
         private const string AuthorizationHeaderScheme = "Splunk";
-        private Uri httpInputEndpointUri; // HTTP input endpoint full uri
-        private HttpInputEventInfo.Metadata metadata; // logger metadata
+        private Uri httpEventCollectorEndpointUri; // HTTP event collector endpoint full uri
+        private HttpEventCollectorEventInfo.Metadata metadata; // logger metadata
         private string token; // authorization token
 
         // events batching properties and collection 
         private int batchInterval = 0;
         private int batchSizeBytes = 0;
         private int batchSizeCount = 0;
-        private List<HttpInputEventInfo> eventsBatch = new List<HttpInputEventInfo>();
+        private List<HttpEventCollectorEventInfo> eventsBatch = new List<HttpEventCollectorEventInfo>();
         private StringBuilder serializedEventsBatch = new StringBuilder();
         private Timer timer;
 
         private HttpClient httpClient = null;
-        private HttpInputMiddleware middleware = null;
+        private HttpEventCollectorMiddleware middleware = null;
         // counter for bookkeeping the async tasks 
         private long activeAsyncTasksCount = 0;
 
         /// <summary>
         /// On error callbacks.
         /// </summary>
-        public event EventHandler<HttpInputException> OnError = (s, e) => { };
+        public event EventHandler<HttpEventCollectorException> OnError = (s, e) => { };
 
         /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
-        /// <param name="token">HTTP input authorization token.</param>
+        /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="metadata">Logger metadata.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
@@ -112,12 +112,12 @@ namespace Splunk.Logging
         /// <remarks>
         /// Zero values for the batching params mean that batching is off. 
         /// </remarks>
-        public HttpInputSender(
-            Uri uri, string token, HttpInputEventInfo.Metadata metadata,
+        public HttpEventCollectorSender(
+            Uri uri, string token, HttpEventCollectorEventInfo.Metadata metadata,
             int batchInterval, int batchSizeBytes, int batchSizeCount,
-            HttpInputMiddleware middleware)
+            HttpEventCollectorMiddleware middleware)
         {
-            this.httpInputEndpointUri = new Uri(uri, HttpInputPath);
+            this.httpEventCollectorEndpointUri = new Uri(uri, HttpEventCollectorPath);
             this.batchInterval = batchInterval;
             this.batchSizeBytes = batchSizeBytes;
             this.batchSizeCount = batchSizeCount;
@@ -162,8 +162,8 @@ namespace Splunk.Logging
             string message = null,
             object data = null)
         {
-            HttpInputEventInfo ei =
-                new HttpInputEventInfo(id, severity, message, data, metadata);
+            HttpEventCollectorEventInfo ei =
+                new HttpEventCollectorEventInfo(id, severity, message, data, metadata);
             // we use lock serializedEventsBatch to synchronize both 
             // serializedEventsBatch and serializedEvents
             string serializedEventInfo = SerializeEventInfo(ei);
@@ -212,7 +212,7 @@ namespace Splunk.Logging
         /// </summary>
         /// <param name="eventInfo"></param>
         /// <returns></returns>
-        public static string SerializeEventInfo(HttpInputEventInfo eventInfo)
+        public static string SerializeEventInfo(HttpEventCollectorEventInfo eventInfo)
         {
             return JsonConvert.SerializeObject(eventInfo);
         }
@@ -232,13 +232,13 @@ namespace Splunk.Logging
                 // the old ones because Flush works in async mode
                 // and can use use "previous" containers
                 serializedEventsBatch = new StringBuilder();
-                eventsBatch = new List<HttpInputEventInfo>();
+                eventsBatch = new List<HttpEventCollectorEventInfo>();
             }
     
         }
 
         private async Task<HttpStatusCode> PostEvents(
-            List<HttpInputEventInfo> events,
+            List<HttpEventCollectorEventInfo> events,
             String serializedEvents)
         {
             // encode data
@@ -248,12 +248,12 @@ namespace Splunk.Logging
             try
             {
                 // post data
-                HttpInputHandler next = (t, e) =>
+                HttpEventCollectorHandler next = (t, e) =>
                 {
                     HttpContent content = new StringContent(serializedEvents, Encoding.UTF8, HttpContentTypeMedia);
-                    return httpClient.PostAsync(httpInputEndpointUri, content);
+                    return httpClient.PostAsync(httpEventCollectorEndpointUri, content);
                 };
-                HttpInputHandler postEvents = (t, e) =>
+                HttpEventCollectorHandler postEvents = (t, e) =>
                 {
                     return middleware == null ?
                         next(t, e) : middleware(t, e, next);
@@ -264,7 +264,7 @@ namespace Splunk.Logging
                 {
                     // record server reply
                     serverReply = await response.Content.ReadAsStringAsync();
-                    OnError(this, new HttpInputException(
+                    OnError(this, new HttpEventCollectorException(
                         code: responseCode,
                         webException: null,
                         reply: serverReply,
@@ -273,14 +273,14 @@ namespace Splunk.Logging
                     ));
                 }
             }
-            catch (HttpInputException e)
+            catch (HttpEventCollectorException e)
             {
                 e.Events = events;
                 OnError(this, e);
             }
             catch (Exception e)
             {                
-                OnError(this, new HttpInputException(
+                OnError(this, new HttpEventCollectorException(
                     code: responseCode,
                     webException: e,
                     reply: serverReply,
@@ -320,7 +320,7 @@ namespace Splunk.Logging
             disposed = true;
         }
 
-        ~HttpInputSender()
+        ~HttpEventCollectorSender()
         {
             Dispose(false);
         }

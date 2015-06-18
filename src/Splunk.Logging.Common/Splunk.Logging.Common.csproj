@@ -51,10 +51,10 @@
     <Compile Include="TcpReconnectionPolicy.cs" />
     <Compile Include="TcpSocketWriter.cs" />
     <Compile Include="Util.cs" />
-    <Compile Include="HttpInputSender.cs" />
-    <Compile Include="HttpInputEventInfo.cs" />
-    <Compile Include="HttpInputException.cs" />
-    <Compile Include="HttpInputResendMiddleware.cs" />
+    <Compile Include="HttpEventCollectorSender.cs" />
+    <Compile Include="HttpEventCollectorEventInfo.cs" />
+    <Compile Include="HttpEventCollectorException.cs" />
+    <Compile Include="HttpEventCollectorResendMiddleware.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
