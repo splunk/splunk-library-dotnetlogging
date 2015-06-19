@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Splunk.Logging
 {
@@ -234,6 +235,14 @@ namespace Splunk.Logging
         }
 
         #endregion
+
+        /// <summary>
+        /// Flush all events.
+        /// </summary>
+        public Task FlushAsync()
+        {
+            return sender.FlushAsync();
+        }
 
         public override void Close()
         {

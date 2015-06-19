@@ -188,22 +188,12 @@ namespace Splunk.Logging
         }
 
         /// <summary>
-        /// Flush all batched events immediately. 
-        /// </summary>
-        public void Flush()
-        {
-            lock (serializedEventsBatch)
-            {
-                FlushUnlocked();                
-            }
-        }
-
-        /// <summary>
         /// Flush all events synchronously, i.e., flush and wait until all events
         /// are sent.
         /// </summary>
         public void FlushSync()
         {
+            Console.WriteLine("-->> {0}", this.eventsBatch.Count);
             Flush();
             // wait until all pending tasks are done
             while(Interlocked.CompareExchange(ref activeAsyncTasksCount, 0, 0) != 0)
@@ -215,6 +205,17 @@ namespace Splunk.Logging
         }
 
         /// <summary>
+        /// Flush all event.
+        /// </summary>
+        public Task FlushAsync()
+        {            
+            return new Task(() => 
+            {
+                FlushSync();
+            });
+        }
+
+        /// <summary>
         /// Serialize event info into a json string
         /// </summary>
         /// <param name="eventInfo"></param>
@@ -222,6 +223,17 @@ namespace Splunk.Logging
         public static string SerializeEventInfo(HttpEventCollectorEventInfo eventInfo)
         {
             return JsonConvert.SerializeObject(eventInfo);
+        }
+
+        /// <summary>
+        /// Flush all batched events immediately. 
+        /// </summary>
+        private void Flush()
+        {
+            lock (serializedEventsBatch)
+            {
+                FlushUnlocked();
+            }
         }
 
         private void FlushUnlocked()

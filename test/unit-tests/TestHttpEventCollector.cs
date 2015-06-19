@@ -431,5 +431,29 @@ namespace Splunk.Logging
 
             trace.Dispose();
         }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorAsyncFlushTest")]
+        [Fact]
+        public void HttpEventCollectorAsyncFlushTest()
+        {
+            var trace = Trace(
+                handler: (token, events) =>
+                {
+                    Assert.True(events.Count == 4);
+                    Assert.True(events[0].Event.Message == "info 1");
+                    Assert.True(events[1].Event.Message == "info 2");
+                    Assert.True(events[2].Event.Message == "info 3");
+                    Assert.True(events[3].Event.Message == "info 4");
+                    return new Response();
+                },
+                batchInterval: 10000
+            );
+            trace.TraceInformation("info 1");
+            trace.TraceInformation("info 2");
+            trace.TraceInformation("info 3");
+            trace.TraceInformation("info 4");
+            HttpEventCollectorTraceListener listener = trace.Listeners[1] as HttpEventCollectorTraceListener;
+            listener.FlushAsync().RunSynchronously();
+        }
     }
 }
