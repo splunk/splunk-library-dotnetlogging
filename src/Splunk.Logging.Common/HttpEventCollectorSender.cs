@@ -193,7 +193,6 @@ namespace Splunk.Logging
         /// </summary>
         public void FlushSync()
         {
-            Console.WriteLine("-->> {0}", this.eventsBatch.Count);
             Flush();
             // wait until all pending tasks are done
             while(Interlocked.CompareExchange(ref activeAsyncTasksCount, 0, 0) != 0)
