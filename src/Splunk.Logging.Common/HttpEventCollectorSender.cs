@@ -97,7 +97,7 @@ namespace Splunk.Logging
         /// <summary>
         /// On error callbacks.
         /// </summary>
-        public event EventHandler<HttpEventCollectorException> OnError = (s, e) => { };
+        public event Action<HttpEventCollectorException> OnError = (e) => { };
 
         /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
         /// <param name="token">HTTP event collector authorization token.</param>
@@ -271,7 +271,7 @@ namespace Splunk.Logging
                 {
                     // record server reply
                     serverReply = await response.Content.ReadAsStringAsync();
-                    OnError(this, new HttpEventCollectorException(
+                    OnError(new HttpEventCollectorException(
                         code: responseCode,
                         webException: null,
                         reply: serverReply,
@@ -283,11 +283,11 @@ namespace Splunk.Logging
             catch (HttpEventCollectorException e)
             {
                 e.Events = events;
-                OnError(this, e);
+                OnError(e);
             }
             catch (Exception e)
             {                
-                OnError(this, new HttpEventCollectorException(
+                OnError(new HttpEventCollectorException(
                     code: responseCode,
                     webException: e,
                     reply: serverReply,

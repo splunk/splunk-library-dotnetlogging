@@ -339,7 +339,7 @@ namespace Splunk.Logging
                 middleware: (new HttpEventCollectorResendMiddleware(3)).Plugin // repeat 3 times
             );
             (trace.Listeners[trace.Listeners.Count-1] as HttpEventCollectorTraceListener).AddLoggingFailureHandler(
-                (sender, exception) =>
+                (exception) =>
                 {
                     // error handler should be called after a single "normal post" and 3 "retries"
                     Assert.True(resendCount == 4);
