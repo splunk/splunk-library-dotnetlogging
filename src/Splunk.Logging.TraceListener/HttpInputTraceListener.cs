@@ -146,7 +146,7 @@ namespace Splunk.Logging
         /// operation of HTTP event collector and it cannot be fixed by resending the data.
         /// </summary>
         /// <param name="handler">A function to handle the exception.</param>
-        public void AddLoggingFailureHandler(EventHandler<HttpEventCollectorException> handler)
+        public void AddLoggingFailureHandler(Action<HttpEventCollectorException> handler)
         {
             sender.OnError += handler;
         }

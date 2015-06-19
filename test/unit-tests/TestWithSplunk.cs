@@ -486,17 +486,17 @@ namespace Splunk.Logging
                 metadata: invalidMetaData);
 
             bool wrongTokenWasRaised = false;
-            listenerWithWrongToken.AddLoggingFailureHandler((object sender, HttpEventCollectorException e) =>
+            listenerWithWrongToken.AddLoggingFailureHandler((HttpEventCollectorException e) =>
             {
                 wrongTokenWasRaised = true;
             });
             bool wrongUriWasRaised = false;
-            listenerWithWrongUri.AddLoggingFailureHandler((object sender, HttpEventCollectorException e) =>
+            listenerWithWrongUri.AddLoggingFailureHandler((HttpEventCollectorException e) =>
             {
                 wrongUriWasRaised = true;
             });
             bool wrongMetaDataWasRaised = false;
-            listenerWithWrongMetadata.AddLoggingFailureHandler((object sender, HttpEventCollectorException e) =>
+            listenerWithWrongMetadata.AddLoggingFailureHandler((HttpEventCollectorException e) =>
             {
                 wrongMetaDataWasRaised = true;
             });
