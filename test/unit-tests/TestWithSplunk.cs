@@ -377,7 +377,6 @@ namespace Splunk.Logging
                 uri: new Uri("https://127.0.0.1:8088"),
                 token: token,
                 metadata: meta,
-                batchSizeBytes: 100000,
                 batchInterval: 1000);
             trace.Listeners.Add(listener);
 
