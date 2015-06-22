@@ -97,7 +97,7 @@ namespace Splunk.Logging
         /// <summary>
         /// On error callbacks.
         /// </summary>
-        public event EventHandler<HttpEventCollectorException> OnError = (s, e) => { };
+        public event Action<HttpEventCollectorException> OnError = (e) => { };
 
         /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
         /// <param name="token">HTTP event collector authorization token.</param>
@@ -124,6 +124,13 @@ namespace Splunk.Logging
             this.metadata = metadata;
             this.token = token;
             this.middleware = middleware;
+
+            // special case - if batch interval is specified without size and count
+            // they are set to "infinity", i.e., batch may have any size 
+            if (this.batchInterval > 0 && this.batchSizeBytes == 0 && this.batchSizeCount == 0)
+            {
+                this.batchSizeBytes = this.batchSizeCount = int.MaxValue;
+            }
 
             // when size configuration setting is missing it's treated as "infinity",
             // i.e., any value is accepted.
@@ -181,17 +188,6 @@ namespace Splunk.Logging
         }
 
         /// <summary>
-        /// Flush all batched events immediately. 
-        /// </summary>
-        public void Flush()
-        {
-            lock (serializedEventsBatch)
-            {
-                FlushUnlocked();                
-            }
-        }
-
-        /// <summary>
         /// Flush all events synchronously, i.e., flush and wait until all events
         /// are sent.
         /// </summary>
@@ -208,6 +204,17 @@ namespace Splunk.Logging
         }
 
         /// <summary>
+        /// Flush all event.
+        /// </summary>
+        public Task FlushAsync()
+        {            
+            return new Task(() => 
+            {
+                FlushSync();
+            });
+        }
+
+        /// <summary>
         /// Serialize event info into a json string
         /// </summary>
         /// <param name="eventInfo"></param>
@@ -215,6 +222,17 @@ namespace Splunk.Logging
         public static string SerializeEventInfo(HttpEventCollectorEventInfo eventInfo)
         {
             return JsonConvert.SerializeObject(eventInfo);
+        }
+
+        /// <summary>
+        /// Flush all batched events immediately. 
+        /// </summary>
+        private void Flush()
+        {
+            lock (serializedEventsBatch)
+            {
+                FlushUnlocked();
+            }
         }
 
         private void FlushUnlocked()
@@ -264,7 +282,7 @@ namespace Splunk.Logging
                 {
                     // record server reply
                     serverReply = await response.Content.ReadAsStringAsync();
-                    OnError(this, new HttpEventCollectorException(
+                    OnError(new HttpEventCollectorException(
                         code: responseCode,
                         webException: null,
                         reply: serverReply,
@@ -276,11 +294,11 @@ namespace Splunk.Logging
             catch (HttpEventCollectorException e)
             {
                 e.Events = events;
-                OnError(this, e);
+                OnError(e);
             }
             catch (Exception e)
             {                
-                OnError(this, new HttpEventCollectorException(
+                OnError(new HttpEventCollectorException(
                     code: responseCode,
                     webException: e,
                     reply: serverReply,

@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Splunk.Logging
 {
@@ -146,7 +147,7 @@ namespace Splunk.Logging
         /// operation of HTTP event collector and it cannot be fixed by resending the data.
         /// </summary>
         /// <param name="handler">A function to handle the exception.</param>
-        public void AddLoggingFailureHandler(EventHandler<HttpEventCollectorException> handler)
+        public void AddLoggingFailureHandler(Action<HttpEventCollectorException> handler)
         {
             sender.OnError += handler;
         }
@@ -234,6 +235,14 @@ namespace Splunk.Logging
         }
 
         #endregion
+
+        /// <summary>
+        /// Flush all events.
+        /// </summary>
+        public Task FlushAsync()
+        {
+            return sender.FlushAsync();
+        }
 
         public override void Close()
         {

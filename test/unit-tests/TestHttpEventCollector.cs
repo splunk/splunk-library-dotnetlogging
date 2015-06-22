@@ -313,8 +313,7 @@ namespace Splunk.Logging
                     Assert.True(events[3].Event.Message == "info 4");
                     return new Response();
                 },
-                batchInterval: 1000,
-                batchSizeBytes: int.MaxValue, batchSizeCount: int.MaxValue
+                batchInterval: 1000
             );
             trace.TraceInformation("info 1");
             trace.TraceInformation("info 2");
@@ -340,7 +339,7 @@ namespace Splunk.Logging
                 middleware: (new HttpEventCollectorResendMiddleware(3)).Plugin // repeat 3 times
             );
             (trace.Listeners[trace.Listeners.Count-1] as HttpEventCollectorTraceListener).AddLoggingFailureHandler(
-                (sender, exception) =>
+                (exception) =>
                 {
                     // error handler should be called after a single "normal post" and 3 "retries"
                     Assert.True(resendCount == 4);
@@ -431,6 +430,30 @@ namespace Splunk.Logging
             trace.Source.Message("3", "three");
 
             trace.Dispose();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorAsyncFlushTest")]
+        [Fact]
+        public void HttpEventCollectorAsyncFlushTest()
+        {
+            var trace = Trace(
+                handler: (token, events) =>
+                {
+                    Assert.True(events.Count == 4);
+                    Assert.True(events[0].Event.Message == "info 1");
+                    Assert.True(events[1].Event.Message == "info 2");
+                    Assert.True(events[2].Event.Message == "info 3");
+                    Assert.True(events[3].Event.Message == "info 4");
+                    return new Response();
+                },
+                batchInterval: 10000
+            );
+            trace.TraceInformation("info 1");
+            trace.TraceInformation("info 2");
+            trace.TraceInformation("info 3");
+            trace.TraceInformation("info 4");
+            HttpEventCollectorTraceListener listener = trace.Listeners[1] as HttpEventCollectorTraceListener;
+            listener.FlushAsync().RunSynchronously();
         }
     }
 }
