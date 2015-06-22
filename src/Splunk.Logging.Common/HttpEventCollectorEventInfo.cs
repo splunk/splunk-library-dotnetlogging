@@ -77,11 +77,18 @@ namespace Splunk.Logging
             /// </summary>
             [JsonProperty(PropertyName = "id", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public string Id { get; private set; }
-           
+
+            /// <summary>
+            /// Logging event sequence id. This id helps finding the right order of 
+            /// events with the same timestamp.
+            /// </summary>
+            [JsonProperty(PropertyName = "sequenceId")]
+            public int SequenceId { get; private set; }
+
             /// <summary>
             /// Logging event severity info.
             /// </summary>
-           [JsonProperty(PropertyName = "severity", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            [JsonProperty(PropertyName = "severity", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public string Severity { get; private set; }
 
             /// <summary>
@@ -103,9 +110,10 @@ namespace Splunk.Logging
             /// <param name="severity">Event severity info.</param>
             /// <param name="message">Event message.</param>
             /// <param name="data">Event data.</param>
-            internal LoggerEvent(string id, string severity, string message, object data) : this()
+            internal LoggerEvent(string id, int sequenceId, string severity, string message, object data) : this()
             {
                 this.Id = id;
+                this.SequenceId = sequenceId;
                 this.Severity = severity;
                 this.Message = message;
                 this.Data = data;
@@ -160,12 +168,33 @@ namespace Splunk.Logging
             string id, string severity, string message, object data, 
             Metadata metadata)
         {
-            Event = new LoggerEvent(id, severity, message, data);
-            // set timestamp to the current UTC epoch time 
             double epochTime =
                 (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            Timestamp = epochTime.ToString();
+            Timestamp = epochTime.ToString("#.000"); // truncate to 3 digits after floating point
+            // set timestamp to the current UTC epoch time 
             this.metadata = metadata ?? new Metadata();
+            lock (previousTimestamp)
+            {
+                if (previousTimestamp == Timestamp)
+                {
+                    // sane timestamp - add sequence id
+                    eventSequenceId++;
+                }
+                else
+                {                    
+                    previousTimestamp = Timestamp;
+                    eventSequenceId = 0;
+                }
+            }
+            Event = new LoggerEvent(id, eventSequenceId, severity, message, data);
         }
+
+        #region Event sequence id
+        // Events are sent asynchronously and events with the same timestamp may 
+        // be indexed  out of order. In order to prevent ambiguity in order an 
+        // additional sequence number is added.
+        private static string previousTimestamp = "";
+        private static int eventSequenceId = 0;
+        #endregion
     }
 }
