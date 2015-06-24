@@ -455,36 +455,5 @@ namespace Splunk.Logging
             HttpEventCollectorTraceListener listener = trace.Listeners[1] as HttpEventCollectorTraceListener;
             listener.FlushAsync().RunSynchronously();
         }
-
-        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSeqId")]
-        [Fact]
-        public void HttpEventCollectorSeqId()
-        {
-            const int eventsN = 10;
-            var trace = Trace(
-                handler: (token, events) =>
-                {
-                    Assert.True(events.Count == 2 * eventsN);
-                    for (int i = 0; i < 2 * eventsN - 1; i++)
-                    {
-                        Assert.True(
-                            events[i + 1].Event.SequenceId >= events[i].Event.SequenceId || 
-                            events[i + 1].Event.SequenceId == 0);
-                    }
-                    return new Response();
-                },
-                batchSizeCount: int.MaxValue 
-            );
-            for (int i = 0; i < eventsN; i++)
-            {
-                trace.TraceInformation("info before sleep");
-            }
-            Thread.Sleep(1);
-            for (int i = 0; i < eventsN; i++)
-            {
-                trace.TraceInformation("info after sleep");
-            }
-            trace.Close();
-        }
     }
 }

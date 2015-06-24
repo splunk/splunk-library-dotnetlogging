@@ -36,7 +36,7 @@ namespace Splunk.Logging
     /// <remarks>
     /// * HttpEventCollectorSender is thread safe and Send(...) method may be called from
     /// different threads.
-    /// * Events are are sending asynchronously and Send(...) method doesn't 
+    /// * Events are sending asynchronously and Send(...) method doesn't 
     /// block the caller code.
     /// * HttpEventCollectorSender has an ability to plug middleware components that act 
     /// before posting data.
@@ -248,7 +248,7 @@ namespace Splunk.Logging
                     });
                 // we explicitly create new objects instead to clear and reuse 
                 // the old ones because Flush works in async mode
-                // and can use use "previous" containers
+                // and can use "previous" containers
                 serializedEventsBatch = new StringBuilder();
                 eventsBatch = new List<HttpEventCollectorEventInfo>();
             }

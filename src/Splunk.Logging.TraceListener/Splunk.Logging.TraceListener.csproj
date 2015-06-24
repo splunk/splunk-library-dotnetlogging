@@ -43,7 +43,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TcpTraceListener.cs" />
     <Compile Include="UdpTraceListener.cs" />
-    <Compile Include="HttpInputTraceListener.cs" />
+    <Compile Include="HttpEventCollectorTraceListener.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Splunk.Logging.Common\Splunk.Logging.Common.csproj">
