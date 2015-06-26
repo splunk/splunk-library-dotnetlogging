@@ -85,6 +85,9 @@ namespace Splunk.Logging
         private int batchInterval = 0;
         private int batchSizeBytes = 0;
         private int batchSizeCount = 0;
+        private bool sequentialMode = false;
+        private Task activePostTask = null;
+        private object eventsBatchLock = new object();
         private List<HttpEventCollectorEventInfo> eventsBatch = new List<HttpEventCollectorEventInfo>();
         private StringBuilder serializedEventsBatch = new StringBuilder();
         private Timer timer;
@@ -102,6 +105,7 @@ namespace Splunk.Logging
         /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
         /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="metadata">Logger metadata.</param>
+        /// <param name="sequentialMode">Guarantee sequential order of the events.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
@@ -114,10 +118,12 @@ namespace Splunk.Logging
         /// </remarks>
         public HttpEventCollectorSender(
             Uri uri, string token, HttpEventCollectorEventInfo.Metadata metadata,
+            bool sequentialMode,
             int batchInterval, int batchSizeBytes, int batchSizeCount,
             HttpEventCollectorMiddleware middleware)
         {
             this.httpEventCollectorEndpointUri = new Uri(uri, HttpEventCollectorPath);
+            this.sequentialMode = sequentialMode;
             this.batchInterval = batchInterval;
             this.batchSizeBytes = batchSizeBytes;
             this.batchSizeCount = batchSizeCount;
@@ -174,7 +180,7 @@ namespace Splunk.Logging
             // we use lock serializedEventsBatch to synchronize both 
             // serializedEventsBatch and serializedEvents
             string serializedEventInfo = SerializeEventInfo(ei);
-            lock (serializedEventsBatch)
+            lock (eventsBatchLock)
             {
                 eventsBatch.Add(ei);
                 serializedEventsBatch.Append(serializedEventInfo);
@@ -182,7 +188,7 @@ namespace Splunk.Logging
                     serializedEventsBatch.Length >= batchSizeBytes)
                 {
                     // there are enough events in the batch
-                    FlushUnlocked();
+                    FlushInternal();
                 }
             }
         }
@@ -229,30 +235,66 @@ namespace Splunk.Logging
         /// </summary>
         private void Flush()
         {
-            lock (serializedEventsBatch)
+            lock (eventsBatchLock)
             {
-                FlushUnlocked();
+                FlushInternal();
+            }
+        }        
+
+        private void FlushInternal()
+        {
+            // FlushInternal method is called only in contexts locked on eventsBatchLock  
+            // therefore it's thread safe and doesn't need additional synchronization.
+
+            if (serializedEventsBatch.Length == 0)
+                return; // there is nothing to send
+
+            // flush events according to the system operation mode
+            if (this.sequentialMode)
+                FlushInternalSequentialMode(this.eventsBatch, this.serializedEventsBatch.ToString());
+            else
+                FlushInternalSingleBatch(this.eventsBatch, this.serializedEventsBatch.ToString());
+
+            // we explicitly create new objects instead to clear and reuse 
+            // the old ones because Flush works in async mode
+            // and can use "previous" containers
+            this.serializedEventsBatch = new StringBuilder();
+            this.eventsBatch = new List<HttpEventCollectorEventInfo>();
+        }
+
+        private void FlushInternalSequentialMode(
+            List<HttpEventCollectorEventInfo> events,
+            String serializedEvents)
+        {
+            // post events only after the current post task is done
+            if (this.activePostTask == null)
+            {
+                this.activePostTask = Task.Factory.StartNew(() =>
+                {
+                    FlushInternalSingleBatch(events, serializedEvents).Wait();
+                });
+            }
+            else
+            {
+                this.activePostTask = this.activePostTask.ContinueWith((_) =>
+                {
+                    FlushInternalSingleBatch(events, serializedEvents).Wait();
+                });
             }
         }
 
-        private void FlushUnlocked()
+        private Task<HttpStatusCode> FlushInternalSingleBatch(
+            List<HttpEventCollectorEventInfo> events,
+            String serializedEvents)
         {
-            if (serializedEventsBatch.Length > 0)
+            // post data and update tasks counter
+            Interlocked.Increment(ref activeAsyncTasksCount);
+            Task<HttpStatusCode> task = PostEvents(events, serializedEvents);
+            task.ContinueWith((_) =>
             {
-                // post data and update tasks counter
-                Interlocked.Increment(ref activeAsyncTasksCount);
-                PostEvents(eventsBatch, serializedEventsBatch.ToString())
-                    .ContinueWith((_) =>
-                    {
-                        Interlocked.Decrement(ref activeAsyncTasksCount);
-                    });
-                // we explicitly create new objects instead to clear and reuse 
-                // the old ones because Flush works in async mode
-                // and can use "previous" containers
-                serializedEventsBatch = new StringBuilder();
-                eventsBatch = new List<HttpEventCollectorEventInfo>();
-            }
-    
+                Interlocked.Decrement(ref activeAsyncTasksCount);            
+            });
+            return task;
         }
 
         private async Task<HttpStatusCode> PostEvents(

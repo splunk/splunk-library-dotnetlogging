@@ -72,6 +72,12 @@ namespace Splunk.Logging
     /// eventSource.Message("Hello batching 3");
     /// </code> 
     /// 
+    /// To improve system performance tracing events are sent asynchronously and
+    /// events with the same timestamp (that has 1 millisecond resolution)  may 
+    /// be indexed out of order by Splunk. sequentialMode parameter triggers
+    /// "sequential mode" that guarantees preserving events order. In 
+    /// "sequential mode" performance of sending events to the server is lower.
+    /// 
     /// There is an ability to plug middleware components that act before and 
     /// after posting data.
     /// For example:
@@ -121,6 +127,7 @@ namespace Splunk.Logging
         /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="formatter">Event formatter converting EventEntry instance into a string.</param>
         /// <param name="metadata">Logger metadata.</param>
+        /// <param name="sequentialMode">Guarantee sequential order of the events.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
@@ -132,12 +139,14 @@ namespace Splunk.Logging
             Uri uri, string token,
             IEventTextFormatter formatter,
             HttpEventCollectorEventInfo.Metadata metadata = null,
+            bool sequentialMode = true,
             int batchInterval = 0, int batchSizeBytes = 0, int batchSizeCount = 0,
             HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null)
         {
             this.formatter = formatter;
             sender = new HttpEventCollectorSender(
                 uri, token, metadata,
+                sequentialMode,
                 batchInterval, batchSizeBytes, batchSizeCount, 
                 middleware);
         }
@@ -151,6 +160,7 @@ namespace Splunk.Logging
         /// <param name="formatter">Event formatter converting EventEntry instance into a string.</param>
         /// <param name="retriesOnError">Number of retries when network problem is detected</param> 
         /// <param name="metadata">Logger metadata.</param>
+        /// <param name="sequentialMode">Guarantee sequential order of the events.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>        
@@ -159,8 +169,10 @@ namespace Splunk.Logging
             IEventTextFormatter formatter,
             int retriesOnError,
             HttpEventCollectorEventInfo.Metadata metadata = null,
+            bool sequentialMode = true,
             int batchInterval = 0, int batchSizeBytes = 0, int batchSizeCount = 0)
             : this(uri, token, formatter, metadata, 
+                   sequentialMode,
                    batchInterval, batchSizeBytes, batchSizeCount,
                    (new HttpEventCollectorResendMiddleware(retriesOnError)).Plugin)
         {

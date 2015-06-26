@@ -78,6 +78,7 @@ namespace Splunk.Logging
             int batchInterval = 0, 
             int batchSizeBytes = 0, 
             int batchSizeCount = 0,
+            bool sequentialMode = false,
             HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null)
         {
             var trace = new TraceSource("HttpEventCollectorLogger");
@@ -87,6 +88,7 @@ namespace Splunk.Logging
                     uri: uri,
                     token: token,
                     metadata: metadata,
+                    sequentialMode: sequentialMode,
                     batchInterval: batchInterval, 
                     batchSizeBytes: batchSizeBytes, 
                     batchSizeCount: batchSizeCount,
@@ -111,6 +113,7 @@ namespace Splunk.Logging
         private SinkTrace TraceSource(
             RequestHandler handler,
             HttpEventCollectorEventInfo.Metadata metadata = null,
+            bool sequentialMode = false,
             int batchInterval = 0,
             int batchSizeBytes = 0,
             int batchSizeCount = 0,
@@ -122,6 +125,7 @@ namespace Splunk.Logging
                  token: token,
                  formatter: new TestEventFormatter(),
                  metadata: metadata,
+                 sequentialMode: sequentialMode,
                  batchInterval: batchInterval,
                  batchSizeBytes: batchSizeBytes,
                  batchSizeCount: batchSizeCount,
@@ -138,7 +142,7 @@ namespace Splunk.Logging
         }
 
         #endregion
-
+        
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorCoreTest")]
         [Fact]
         public void HttpEventCollectorCoreTest()
@@ -153,7 +157,7 @@ namespace Splunk.Logging
             trace.Close();
 
             // metadata
-            ulong now = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            double now = (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             var metadata = new HttpEventCollectorEventInfo.Metadata(
                 index: "main",
                 source: "localhost",
@@ -169,8 +173,8 @@ namespace Splunk.Logging
                     Assert.True(events[0].SourceType == "log");
                     Assert.True(events[0].Host == "demohost");
                     // check that timestamp is correct
-                    ulong time = ulong.Parse(events[0].Timestamp);
-                    Assert.True(time - now < 10); // it cannot be more than 10s after sending event
+                    double time = double.Parse(events[0].Timestamp);
+                    Assert.True(time - now < 10.0); // it cannot be more than 10s after sending event
                     return new Response();
                 }
             );
@@ -263,7 +267,7 @@ namespace Splunk.Logging
 
             trace.Close();
         }
-
+        
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorBatchingSizeTest")]
         [Fact]
         public void HttpEventCollectorBatchingSizeTest()
@@ -298,7 +302,7 @@ namespace Splunk.Logging
 
             trace.Close();
         }
-
+        
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorBatchingIntervalTest")]
         [Fact]
         public void HttpEventCollectorBatchingIntervalTest()
@@ -390,13 +394,13 @@ namespace Splunk.Logging
 
             // timestamp
             // metadata
-            ulong now = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            double now = (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;            
             trace = TraceSource(
                 handler: (token, events) =>
                 {
                     // check that timestamp is correct
-                    ulong time = ulong.Parse(events[0].Timestamp);
-                    Assert.True(time - now < 10); // it cannot be more than 10s after sending event
+                    double time = double.Parse(events[0].Timestamp);
+                    Assert.True(time - now < 10.0); // it cannot be more than 10s after sending event
                     return new Response();
                 }
             );
@@ -454,6 +458,48 @@ namespace Splunk.Logging
             trace.TraceInformation("info 4");
             HttpEventCollectorTraceListener listener = trace.Listeners[1] as HttpEventCollectorTraceListener;
             listener.FlushAsync().RunSynchronously();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSeqModeTest")]
+        [Fact]
+        public void HttpEventCollectorSeqModeTest()
+        {
+            int expected = 0;
+            var trace = Trace(
+                handler: (token, events) =>
+                {
+                    Assert.True(events.Count == 1);
+                    Assert.True(int.Parse(events[0].Event.Message) == expected);
+                    expected++;
+                    return new Response();
+                },
+                sequentialMode: true
+            );
+            for (int n = 0; n < 100; n++)
+            trace.TraceInformation(n.ToString());
+            trace.Close();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSeqModeWithBatchTest")]
+        [Fact]
+        public void HttpEventCollectorSeqModeWithBatchTest()
+        {
+            int expected = 0;
+            var trace = Trace(
+                handler: (token, events) =>
+                {
+                    Assert.True(events.Count == 2);
+                    Assert.True(int.Parse(events[0].Event.Message) == expected);
+                    Assert.True(int.Parse(events[1].Event.Message) == expected + 1);
+                    expected += 2;
+                    return new Response();
+                },
+                sequentialMode: true,
+                batchSizeCount: 2
+            );
+            for (int n = 0; n < 100; n++)
+                trace.TraceInformation(n.ToString());
+            trace.Close();
         }
     }
 }
