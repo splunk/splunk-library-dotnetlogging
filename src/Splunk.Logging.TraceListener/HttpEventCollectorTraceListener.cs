@@ -56,7 +56,7 @@ namespace Splunk.Logging
     /// </code> 
     ///
     /// To improve system performance tracing events are sent asynchronously and
-    /// events with the same timestamp (that has 1 millisecond resolution)  may 
+    /// events with the same timestamp (that has 1 millisecond resolution) may 
     /// be indexed out of order by Splunk. sendMode parameter triggers
     /// "sequential mode" that guarantees preserving events order. In 
     /// "sequential mode" performance of sending events to the server is lower.

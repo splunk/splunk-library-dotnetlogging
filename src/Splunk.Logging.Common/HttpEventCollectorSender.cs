@@ -75,7 +75,7 @@ namespace Splunk.Logging
             string token, List<HttpEventCollectorEventInfo> events, HttpEventCollectorHandler next);
 
         /// <summary>
-        /// Sender operation mode. Parallel means that all http requests are 
+        /// Sender operation mode. Parallel means that all HTTP requests are 
         /// asynchronous and may be indexed out of order. Sequential mode guarantees
         /// sequential order of the indexed events. 
         /// </summary>

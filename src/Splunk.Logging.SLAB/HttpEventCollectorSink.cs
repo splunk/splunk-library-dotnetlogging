@@ -127,7 +127,7 @@ namespace Splunk.Logging
         /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="formatter">Event formatter converting EventEntry instance into a string.</param>
         /// <param name="metadata">Logger metadata.</param>
-        /// <param name="sequentialMode">Send mode of the events.</param>
+        /// <param name="sendMode">Send mode of the events.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
