@@ -74,6 +74,17 @@ namespace Splunk.Logging
         public delegate Task<HttpResponseMessage> HttpEventCollectorMiddleware(
             string token, List<HttpEventCollectorEventInfo> events, HttpEventCollectorHandler next);
 
+        /// <summary>
+        /// Sender operation mode. Parallel means that all http requests are 
+        /// asynchronous and may be indexed out of order. Sequential mode guarantees
+        /// sequential order of the indexed events. 
+        /// </summary>
+        public enum SendMode
+        {
+            Parallel,
+            Sequential
+        };
+
         private const string HttpContentTypeMedia = "application/json";
         private const string HttpEventCollectorPath = "/services/collector/event/1.0";
         private const string AuthorizationHeaderScheme = "Splunk";
@@ -85,7 +96,7 @@ namespace Splunk.Logging
         private int batchInterval = 0;
         private int batchSizeBytes = 0;
         private int batchSizeCount = 0;
-        private bool sequentialMode = false;
+        private SendMode sendMode = SendMode.Parallel;
         private Task activePostTask = null;
         private object eventsBatchLock = new object();
         private List<HttpEventCollectorEventInfo> eventsBatch = new List<HttpEventCollectorEventInfo>();
@@ -105,7 +116,7 @@ namespace Splunk.Logging
         /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
         /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="metadata">Logger metadata.</param>
-        /// <param name="sequentialMode">Guarantee sequential order of the events.</param>
+        /// <param name="sendMode">Send mode of the events.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
@@ -118,12 +129,12 @@ namespace Splunk.Logging
         /// </remarks>
         public HttpEventCollectorSender(
             Uri uri, string token, HttpEventCollectorEventInfo.Metadata metadata,
-            bool sequentialMode,
+            SendMode sendMode,
             int batchInterval, int batchSizeBytes, int batchSizeCount,
             HttpEventCollectorMiddleware middleware)
         {
             this.httpEventCollectorEndpointUri = new Uri(uri, HttpEventCollectorPath);
-            this.sequentialMode = sequentialMode;
+            this.sendMode = sendMode;
             this.batchInterval = batchInterval;
             this.batchSizeBytes = batchSizeBytes;
             this.batchSizeCount = batchSizeCount;
@@ -250,7 +261,7 @@ namespace Splunk.Logging
                 return; // there is nothing to send
 
             // flush events according to the system operation mode
-            if (this.sequentialMode)
+            if (this.sendMode == SendMode.Sequential)
                 FlushInternalSequentialMode(this.eventsBatch, this.serializedEventsBatch.ToString());
             else
                 FlushInternalSingleBatch(this.eventsBatch, this.serializedEventsBatch.ToString());

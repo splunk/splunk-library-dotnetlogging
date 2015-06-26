@@ -78,7 +78,7 @@ namespace Splunk.Logging
             int batchInterval = 0, 
             int batchSizeBytes = 0, 
             int batchSizeCount = 0,
-            bool sequentialMode = false,
+            HttpEventCollectorSender.SendMode sendMode = HttpEventCollectorSender.SendMode.Parallel,
             HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null)
         {
             var trace = new TraceSource("HttpEventCollectorLogger");
@@ -88,7 +88,7 @@ namespace Splunk.Logging
                     uri: uri,
                     token: token,
                     metadata: metadata,
-                    sequentialMode: sequentialMode,
+                    sendMode: sendMode,
                     batchInterval: batchInterval, 
                     batchSizeBytes: batchSizeBytes, 
                     batchSizeCount: batchSizeCount,
@@ -113,7 +113,7 @@ namespace Splunk.Logging
         private SinkTrace TraceSource(
             RequestHandler handler,
             HttpEventCollectorEventInfo.Metadata metadata = null,
-            bool sequentialMode = false,
+            HttpEventCollectorSender.SendMode sendMode = HttpEventCollectorSender.SendMode.Parallel,
             int batchInterval = 0,
             int batchSizeBytes = 0,
             int batchSizeCount = 0,
@@ -125,7 +125,7 @@ namespace Splunk.Logging
                  token: token,
                  formatter: new TestEventFormatter(),
                  metadata: metadata,
-                 sequentialMode: sequentialMode,
+                 sendMode: sendMode,
                  batchInterval: batchInterval,
                  batchSizeBytes: batchSizeBytes,
                  batchSizeCount: batchSizeCount,
@@ -473,7 +473,7 @@ namespace Splunk.Logging
                     expected++;
                     return new Response();
                 },
-                sequentialMode: true
+                sendMode: HttpEventCollectorSender.SendMode.Sequential
             );
             for (int n = 0; n < 100; n++)
             trace.TraceInformation(n.ToString());
@@ -494,7 +494,7 @@ namespace Splunk.Logging
                     expected += 2;
                     return new Response();
                 },
-                sequentialMode: true,
+                sendMode: HttpEventCollectorSender.SendMode.Sequential,
                 batchSizeCount: 2
             );
             for (int n = 0; n < 100; n++)
