@@ -77,11 +77,11 @@ namespace Splunk.Logging
             /// </summary>
             [JsonProperty(PropertyName = "id", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public string Id { get; private set; }
-           
+
             /// <summary>
             /// Logging event severity info.
             /// </summary>
-           [JsonProperty(PropertyName = "severity", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            [JsonProperty(PropertyName = "severity", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public string Severity { get; private set; }
 
             /// <summary>
@@ -160,10 +160,11 @@ namespace Splunk.Logging
             string id, string severity, string message, object data, 
             Metadata metadata)
         {
-            Event = new LoggerEvent(id, severity, message, data);
             // set timestamp to the current UTC epoch time 
-            Timestamp = ((ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString();
+            double epochTime = (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            Timestamp = epochTime.ToString("#.000"); // truncate to 3 digits after floating point
             this.metadata = metadata ?? new Metadata();
+            Event = new LoggerEvent(id, severity, message, data);
         }
     }
 }
