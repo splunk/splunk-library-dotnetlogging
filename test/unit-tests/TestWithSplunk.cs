@@ -548,6 +548,54 @@ namespace Splunk.Logging
             int eventsFound = splunk.GetSearchCount("index=" + indexName);
             Assert.Equal(expectedCount, eventsFound);
         }
+
+        [Trait("functional-tests", "VerifyEventsAreInOrder")]
+        [Fact]
+        static void VerifyEventsAreInOrder()
+        {
+            string tokenName = "verifyeventsareinordertoken";
+            string indexName = "verifyeventsareinorderindex";
+            SplunkCliWrapper splunk = new SplunkCliWrapper();
+            double testStartTime = SplunkCliWrapper.GetEpochTime();
+            string token = CreateIndexAndToken(splunk, tokenName, indexName);
+
+            var trace = new TraceSource("HttpEventCollectorLogger");
+            trace.Switch.Level = SourceLevels.All;
+            var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var listener = new HttpEventCollectorTraceListener(
+                uri: new Uri("https://127.0.0.1:8088"),
+                token: token,
+                metadata: meta);
+            trace.Listeners.Add(listener);
+
+            // Generate data
+            int totalEvents = 1000;
+            string[] filer = new string[2];
+            filer[0] = new string('s', 1);
+            filer[1] = new string('l', 100000);
+            for (int i = 0; i < totalEvents; i++)
+            {
+                trace.TraceInformation(string.Format("TraceInformation. This is event {0}. {1}", i, filer[i%2]));
+            }
+
+            string searchQuery = "index=" + indexName;
+            Console.WriteLine("{0} events were created, waiting for indexing to complete.", totalEvents);
+            splunk.WaitForIndexingToComplete(indexName);
+            int eventsFound = splunk.GetSearchCount(searchQuery);
+            Console.WriteLine("Indexing completed, {0} events were found. Elapsed time {1:F2} seconds", eventsFound, SplunkCliWrapper.GetEpochTime() - testStartTime);
+            // Verify all events were indexed correctly and in order
+            Assert.Equal(totalEvents, eventsFound);
+            List<string> searchResults = splunk.GetSearchResults(searchQuery);
+            Assert.Equal(searchResults.Count, eventsFound);
+            for (int i = 0; i< totalEvents; i++)
+            {
+                int id = totalEvents - i - 1;
+                string expected = string.Format("TraceInformation. This is event {0}. {1}", id, filer[id % 2]);
+                Assert.True(searchResults[i].Contains(expected));
+            }
+            trace.Close();
+        }
+
         #endregion
     }
 }
