@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Splunk.Logging.SLAB</id>
-    <version>1.0.0</version>
+    <version>$version$</version>
     <title>Splunk Library for .NET Logging - SLAB</title>
     <authors>Splunk, Inc.</authors>
     <owners>Splunk, Inc.</owners>
