@@ -11,7 +11,7 @@
     <projectUrl>https://github.com/splunk/splunk-library-dotnetlogging</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>    
     <description>This package contains code to log to Splunk via TraceListeners.</description>
-    <copyright>Copyright 2014</copyright>
+    <copyright>Copyright 2015</copyright>
     <tags>Splunk</tags>
     <language>en-US</language>
     <dependencies>

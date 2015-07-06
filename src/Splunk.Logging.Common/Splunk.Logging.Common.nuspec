@@ -11,7 +11,7 @@
     <projectUrl>https://github.com/splunk/splunk-library-dotnetlogging</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>    
     <description>This package contains common code used by Splunk.Logging.SLAB and Splunk.Logging.TraceListener.</description>
-    <copyright>Copyright 2014</copyright>
+    <copyright>Copyright 2015</copyright>
     <tags>Splunk</tags>
     <language>en-US</language>
     <dependencies></dependencies>
