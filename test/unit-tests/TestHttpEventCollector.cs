@@ -97,6 +97,19 @@ namespace Splunk.Logging
             return trace;
         }
 
+        private TraceSource TraceDefault(RequestHandler handler)
+        {
+            var trace = new TraceSource("HttpEventCollectorLogger");
+            trace.Switch.Level = SourceLevels.All;
+            trace.Listeners.Add(
+                new HttpEventCollectorTraceListener(
+                    uri: uri,
+                    token: token,
+                    middleware: MiddlewareInterceptor(handler, null))
+            );
+            return trace;
+        }
+
         // Event sink
         private struct SinkTrace : IDisposable
         {
@@ -499,6 +512,44 @@ namespace Splunk.Logging
             );
             for (int n = 0; n < 100; n++)
                 trace.TraceInformation(n.ToString());
+            trace.Close();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorDefaultSettingsCountTest")]
+        [Fact]
+        public void HttpEventCollectorDefaultSettingsCountTest()
+        {
+            var trace = TraceDefault(
+                handler: (token, events) =>
+                {
+                    Assert.True(events.Count == HttpEventCollectorSender.DefaultBatchCount);
+                    return new Response();
+                }
+            );
+            for (int n = 0; n < HttpEventCollectorSender.DefaultBatchCount * 10; n++)
+                trace.TraceInformation(n.ToString());
+            trace.Close();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorDefaultSettingsSizeTest")]
+        [Fact]
+        public void HttpEventCollectorDefaultSettingsSizeTest()
+        {
+            const int expectedBatchCount = 3;
+                HttpEventCollectorSender.DefaultBatchSize / 2 / sizeof(char);
+            var trace = TraceDefault(
+                handler: (token, events) =>
+                {
+                    //Assert.True(events[0].Event < HttpEventCollectorSender.DefaultBatchCount);
+                    Assert.True(events.Count < HttpEventCollectorSender.DefaultBatchCount);
+                    return new Response();
+                }
+            );
+            for (int n = 0; n < 10; n++)
+            {
+                var data = new String('*', 3);
+                trace.TraceInformation(data);
+            }
             trace.Close();
         }
     }

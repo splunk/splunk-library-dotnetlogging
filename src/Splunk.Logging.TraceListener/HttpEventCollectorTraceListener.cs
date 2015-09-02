@@ -119,7 +119,9 @@ namespace Splunk.Logging
             Uri uri, string token,
             HttpEventCollectorEventInfo.Metadata metadata = null,
             HttpEventCollectorSender.SendMode sendMode = HttpEventCollectorSender.SendMode.Sequential,
-            int batchInterval = 0, int batchSizeBytes = 0, int batchSizeCount = 0,
+            int batchInterval = HttpEventCollectorSender.DefaultBatchInterval,
+            int batchSizeBytes = HttpEventCollectorSender.DefaultBatchSize,
+            int batchSizeCount = HttpEventCollectorSender.DefaultBatchCount,
             HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null)
         {
             sender = new HttpEventCollectorSender(
@@ -146,7 +148,9 @@ namespace Splunk.Logging
             int retriesOnError,
             HttpEventCollectorEventInfo.Metadata metadata = null,
             HttpEventCollectorSender.SendMode sendMode = HttpEventCollectorSender.SendMode.Sequential,
-            int batchInterval = 0, int batchSizeBytes = 0, int batchSizeCount = 0)
+            int batchInterval = HttpEventCollectorSender.DefaultBatchInterval,
+            int batchSizeBytes = HttpEventCollectorSender.DefaultBatchSize,
+            int batchSizeCount = HttpEventCollectorSender.DefaultBatchCount)
             : this(uri, token, metadata, 
                    sendMode,
                    batchInterval, batchSizeBytes, batchSizeCount,
