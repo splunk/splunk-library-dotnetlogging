@@ -535,22 +535,37 @@ namespace Splunk.Logging
         [Fact]
         public void HttpEventCollectorDefaultSettingsSizeTest()
         {
-            const int expectedBatchCount = 3;
-                HttpEventCollectorSender.DefaultBatchSize / 2 / sizeof(char);
             var trace = TraceDefault(
                 handler: (token, events) =>
                 {
-                    //Assert.True(events[0].Event < HttpEventCollectorSender.DefaultBatchCount);
-                    Assert.True(events.Count < HttpEventCollectorSender.DefaultBatchCount);
+                    Assert.True(events.Count == 1);
                     return new Response();
                 }
             );
             for (int n = 0; n < 10; n++)
             {
-                var data = new String('*', 3);
-                trace.TraceInformation(data);
+                trace.TraceInformation(new String('*', HttpEventCollectorSender.DefaultBatchSize));
             }
             trace.Close();
+        }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorDefaultSettingsIntervalTest")]
+        [Fact]
+        public void HttpEventCollectorDefaultSettingsIntervalTest()
+        {
+            bool eventReceived = false;
+            var trace = TraceDefault(
+                handler: (token, events) =>
+                {
+                    eventReceived = true;
+                    return new Response();
+                }
+            );            
+            trace.TraceInformation("=|:-)");
+            Thread.Sleep(HttpEventCollectorSender.DefaultBatchInterval / 2);
+            Assert.False(eventReceived);
+            Thread.Sleep(HttpEventCollectorSender.DefaultBatchInterval);
+            Assert.True(eventReceived);
         }
     }
 }
