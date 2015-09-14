@@ -140,7 +140,9 @@ namespace Splunk.Logging
             IEventTextFormatter formatter,
             HttpEventCollectorEventInfo.Metadata metadata = null,
             HttpEventCollectorSender.SendMode sendMode = HttpEventCollectorSender.SendMode.Sequential,
-            int batchInterval = 0, int batchSizeBytes = 0, int batchSizeCount = 0,
+            int batchInterval = HttpEventCollectorSender.DefaultBatchInterval, 
+            int batchSizeBytes = HttpEventCollectorSender.DefaultBatchSize, 
+            int batchSizeCount = HttpEventCollectorSender.DefaultBatchCount,
             HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null)
         {
             this.formatter = formatter;
@@ -170,7 +172,9 @@ namespace Splunk.Logging
             int retriesOnError,
             HttpEventCollectorEventInfo.Metadata metadata = null,
             HttpEventCollectorSender.SendMode sendMode = HttpEventCollectorSender.SendMode.Sequential,
-            int batchInterval = 0, int batchSizeBytes = 0, int batchSizeCount = 0)
+            int batchInterval = HttpEventCollectorSender.DefaultBatchInterval,
+            int batchSizeBytes = HttpEventCollectorSender.DefaultBatchSize,
+            int batchSizeCount = HttpEventCollectorSender.DefaultBatchCount)
             : this(uri, token, formatter, metadata, 
                    sendMode,
                    batchInterval, batchSizeBytes, batchSizeCount,

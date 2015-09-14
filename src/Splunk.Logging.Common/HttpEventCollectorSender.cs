@@ -75,6 +75,13 @@ namespace Splunk.Logging
             string token, List<HttpEventCollectorEventInfo> events, HttpEventCollectorHandler next);
 
         /// <summary>
+        /// Recommended default values for events batching
+        /// </summary>
+        public const int DefaultBatchInterval = 10 * 1000; // 10 seconds
+        public const int DefaultBatchSize = 10 * 1024; // 10KB
+        public const int DefaultBatchCount = 10;
+
+        /// <summary>
         /// Sender operation mode. Parallel means that all HTTP requests are 
         /// asynchronous and may be indexed out of order. Sequential mode guarantees
         /// sequential order of the indexed events. 
