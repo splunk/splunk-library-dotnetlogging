@@ -1,4 +1,4 @@
-# Splunk Logging Libraries for .NET 
+# Splunk Logging for .NET 
 #### Version 1.5
 
 The Splunk logging libraries for .NET enable you to configure UDP or TCP 

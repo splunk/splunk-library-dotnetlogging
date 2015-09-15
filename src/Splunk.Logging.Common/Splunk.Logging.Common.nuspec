@@ -3,7 +3,7 @@
   <metadata>
     <id>Splunk.Logging.Common</id>
     <version>$version$</version>
-    <title>Splunk Library for .NET Logging - Common Components</title>
+    <title>Splunk Logging for .NET - Common Components</title>
     <authors>Splunk, Inc.</authors>
     <owners>Splunk, Inc.</owners>
     <iconUrl>http://docs.splunk.com/skins/splunk/images/icon-default.png</iconUrl>
