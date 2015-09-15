@@ -250,6 +250,8 @@ listener.AddLoggingFailureHandler((ex) => {
 
 ### Sending events to HTTP Event Collector
 
+This feature requires Splunk 6.3+.
+ 
 After enabling HTTP Event Collector and creating an application token sending events is very simple:
 ```csharp
 // TraceListener
