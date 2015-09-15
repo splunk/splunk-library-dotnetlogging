@@ -251,7 +251,7 @@ listener.AddLoggingFailureHandler((ex) => {
 ### Sending events to HTTP Event Collector
 
 This feature requires Splunk 6.3+.
- 
+
 After enabling HTTP Event Collector and creating an application token sending events is very simple:
 ```csharp
 // TraceListener
@@ -264,7 +264,7 @@ trace.TraceEvent(TraceEventType.Information, 0, "hello world");
 // SLAB
 var listener = new ObservableEventListener();
 var sink = new HttpEventCollectorEventSink(
-    uri: new Uri("https://splunk-server-8088:8089"), 
+    uri: new Uri("https://splunk-server-8088"), 
     token: "token-guid",
     formatter: new AppEventFormatter());
 listener.Subscribe(sink);
