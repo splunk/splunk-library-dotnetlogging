@@ -248,6 +248,37 @@ listener.AddLoggingFailureHandler((ex) => {
 });
 ```
 
+### Sending events to HTTP Event Collector
+
+After enabling HTTP Event Collector and creating an application token sending events is very simple:
+```csharp
+// TraceListener
+var trace = new TraceSource("demo-logger");
+trace.Listeners.Add(new HttpEventCollectorTraceListener(
+    uri: new Uri("https::/splunk-server:8088"),
+    token: "<token-guid>"));
+trace.TraceEvent(TraceEventType.Information, 0, "hello world");
+
+// SLAB
+var listener = new ObservableEventListener();
+var sink = new HttpEventCollectorEventSink(
+    uri: new Uri("https://splunk-server-8088:8089"), 
+    token: "token-guid",
+    formatter: new AppEventFormatter());
+listener.Subscribe(sink);
+var eventSource = new AppEventSource();
+listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);
+eventSource.Message("hello world");
+```
+
+A user application code can register an error handler that is invoked when HTTP Event Collector isn't able to send data. 
+```csharp
+listener.AddLoggingFailureHandler((sender, HttpEventCollectorException e) =>
+{
+    // handle the error
+});
+```
+
 ### Changelog
 
 The **CHANGELOG.md** file in the root of the repository contains a description
