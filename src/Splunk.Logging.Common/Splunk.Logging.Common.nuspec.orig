@@ -1,21 +1,19 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>Splunk.Logging.SLAB</id>
+    <id>Splunk.Logging.Common</id>
     <version>$version$</version>
-    <title>Splunk Logging for .NET - SLAB</title>
+    <title>Splunk Logging for .NET - Common Components</title>
     <authors>Splunk, Inc.</authors>
     <owners>Splunk, Inc.</owners>
     <iconUrl>http://docs.splunk.com/skins/splunk/images/icon-default.png</iconUrl>
     <licenseUrl>https://github.com/splunk/splunk-library-dotnetlogging/blob/master/LICENSE</licenseUrl>
     <projectUrl>https://github.com/splunk/splunk-library-dotnetlogging</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>    
-    <description>This package contains EventSinks to log to Splunk from SLAB.</description>
+    <description>This package contains common code used by Splunk.Logging.SLAB and Splunk.Logging.TraceListener.</description>
     <copyright>Copyright 2015</copyright>
     <tags>Splunk</tags>
     <language>en-US</language>
-    <dependencies>
-          <dependency id="Splunk.Logging.Common" version="$version$" />
-    </dependencies>
+    <dependencies></dependencies>
   </metadata>
 </package>
