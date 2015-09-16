@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Splunk, Inc.")]
 [assembly: AssemblyProduct("Splunk.Logging.Common")]
-[assembly: AssemblyCopyright("Copyright © Splunk, Inc. 2014")]
+[assembly: AssemblyCopyright("Copyright © Splunk, Inc. 2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
