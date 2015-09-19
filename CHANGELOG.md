@@ -1,6 +1,7 @@
 # Splunk Library for .NET Logging Changelog
 
 ## Version 1.5
+
 * Add support for HTTP Event Collector.
 
 ## Version 1.1
