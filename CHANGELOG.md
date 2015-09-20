@@ -1,10 +1,14 @@
 # Splunk Library for .NET Logging Changelog
 
+## Version 1.5
+
+* Add support for HTTP Event Collector.
+
 ## Version 1.1
 
 ### Performance improvements
 
-* `TcpSocketWriter` now uses a `BlockingCollection` instead of a `ConcurrentQueue` internally, resulting in signficantly less CPU utilization.
+* `TcpSocketWriter` now uses a `BlockingCollection` instead of a `ConcurrentQueue` internally, resulting in significantly less CPU utilization.
 
 ### Minor changes
 

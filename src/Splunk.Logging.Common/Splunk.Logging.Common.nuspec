@@ -2,8 +2,8 @@
 <package >
   <metadata>
     <id>Splunk.Logging.Common</id>
-    <version>1.1.0</version>
-    <title>Splunk Library for .NET Logging - Common Components</title>
+    <version>$version$</version>
+    <title>Splunk Logging for .NET - Common Components</title>
     <authors>Splunk, Inc.</authors>
     <owners>Splunk, Inc.</owners>
     <iconUrl>http://docs.splunk.com/skins/splunk/images/icon-default.png</iconUrl>
@@ -11,7 +11,7 @@
     <projectUrl>https://github.com/splunk/splunk-library-dotnetlogging</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>    
     <description>This package contains common code used by Splunk.Logging.SLAB and Splunk.Logging.TraceListener.</description>
-    <copyright>Copyright 2014</copyright>
+    <copyright>Copyright 2015</copyright>
     <tags>Splunk</tags>
     <language>en-US</language>
     <dependencies></dependencies>
