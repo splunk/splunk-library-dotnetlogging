@@ -357,7 +357,7 @@ This product is currently in development and officially unsupported. We will be 
 
 ### Contact us
 
-You can reach the Dev Platform team at _devinfo@splunk.com_.
+You can reach the Dev Platform team at [devinfo@splunk.com](mailto:devinfo@splunk.com).
 
 ## License
 
