@@ -35,7 +35,7 @@ namespace Splunk.Logging
     /// <code>
     /// var listener = new ObservableEventListener();
     /// var sink = new HttpEventCollectorEventSink(
-    ///     uri: new Uri("https://localhost:8089"), 
+    ///     uri: new Uri("https://localhost:8088"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
     ///     formatter: new AppEventFormatter()
     /// );
@@ -57,7 +57,7 @@ namespace Splunk.Logging
     /// <code>
     /// var listener = new ObservableEventListener();
     /// var sink = new HttpEventCollectorEventSink(
-    ///     uri: new Uri("https://localhost:8089"), 
+    ///     uri: new Uri("https://localhost:8088"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
     ///     formatter: new AppEventFormatter(),
     ///     batchInterval: 1000, // send events at least every second
@@ -83,7 +83,7 @@ namespace Splunk.Logging
     /// For example:
     /// <code>
     /// var sink = new HttpEventCollectorEventSink(
-    ///     uri: new Uri("https://localhost:8089"), 
+    ///     uri: new Uri("https://localhost:8088"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
     ///     formatter: new AppEventFormatter(),
     ///     middleware: (request, next) => {
@@ -103,7 +103,7 @@ namespace Splunk.Logging
     /// when HTTP event collector isn't able to send data. 
     /// <code>
     /// var sink = new HttpEventCollectorEventSink(
-    ///     uri: new Uri("https://localhost:8089"), 
+    ///     uri: new Uri("https://localhost:8088"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
     ///     formatter: new AppEventFormatter(),
     /// );
@@ -123,7 +123,7 @@ namespace Splunk.Logging
         /// <summary>
         /// HttpEventCollectorEventSink c-or with middleware parameter.
         /// </summary>
-        /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
+        /// <param name="uri">Splunk server uri, for example https://localhost:8088.</param>
         /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="formatter">Event formatter converting EventEntry instance into a string.</param>
         /// <param name="metadata">Logger metadata.</param>
@@ -157,7 +157,7 @@ namespace Splunk.Logging
         /// HttpEventCollectorEventSink c-or. Instantiates HttpEventCollectorEventSink 
         /// when retriesOnError parameter is specified.
         /// </summary>
-        /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
+        /// <param name="uri">Splunk server uri, for example https://localhost:8088.</param>
         /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="formatter">Event formatter converting EventEntry instance into a string.</param>
         /// <param name="retriesOnError">Number of retries when network problem is detected</param> 

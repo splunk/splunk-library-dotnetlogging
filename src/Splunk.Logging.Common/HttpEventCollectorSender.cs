@@ -120,13 +120,13 @@ namespace Splunk.Logging
         /// </summary>
         public event Action<HttpEventCollectorException> OnError = (e) => { };
 
-        /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
+        /// <param name="uri">Splunk server uri, for example https://localhost:8088.</param>
         /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="metadata">Logger metadata.</param>
         /// <param name="sendMode">Send mode of the events.</param>
         /// <param name="batchInterval">Batch interval in milliseconds.</param>
         /// <param name="batchSizeBytes">Batch max size.</param>
-        /// <param name="batchSizeCount">MNax number of individual events in batch.</param>
+        /// <param name="batchSizeCount">Max number of individual events in batch.</param>
         /// <param name="middleware">
         /// HTTP client middleware. This allows to plug an HttpClient handler that 
         /// intercepts logging HTTP traffic.
