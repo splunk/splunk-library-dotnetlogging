@@ -195,6 +195,34 @@ namespace Splunk.Logging
         {
             HttpEventCollectorEventInfo ei =
                 new HttpEventCollectorEventInfo(id, severity, message, data, metadata);
+
+            DoSerialization(ei);
+        }
+
+        /// <summary>
+        /// Send an event to Splunk HTTP endpoint. Actual event send is done 
+        /// asynchronously and this method doesn't block client application.
+        /// </summary>
+        /// <param name="timestamp">Timestamp to use.</param>
+        /// <param name="id">Event id.</param>
+        /// <param name="severity">Event severity info.</param>
+        /// <param name="message">Event message text.</param>
+        /// <param name="data">Additional event data.</param>
+        public void Send(
+            DateTime timestamp,
+            string id = null,
+            string severity = null,
+            string message = null,
+            object data = null)
+        {
+            HttpEventCollectorEventInfo ei =
+                new HttpEventCollectorEventInfo(timestamp, id, severity, message, data, metadata);
+
+            DoSerialization(ei);
+        }
+
+        private void DoSerialization(HttpEventCollectorEventInfo ei)
+        {
             // we use lock serializedEventsBatch to synchronize both 
             // serializedEventsBatch and serializedEvents
             string serializedEventInfo = SerializeEventInfo(ei);

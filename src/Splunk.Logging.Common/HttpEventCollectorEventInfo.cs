@@ -157,11 +157,24 @@ namespace Splunk.Logging
         /// <param name="data">Event auxiliary data.</param>
         /// <param name="metadata">Logger metadata.</param>
         public HttpEventCollectorEventInfo(
-            string id, string severity, string message, object data, 
-            Metadata metadata)
+            string id, string severity, string message, object data, Metadata metadata) 
+            : this(DateTime.UtcNow, id, severity, message, data, metadata)
         {
-            // set timestamp to the current UTC epoch time 
-            double epochTime = (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+        }
+
+        /// <summary>
+        /// HttpEventCollectorEventInfo c-or.
+        /// </summary>
+        /// <param name="datetime">Time value to use.</param>
+        /// <param name="id">Event id.</param>
+        /// <param name="severity">Event severity info.</param>
+        /// <param name="message">Event message text.</param>
+        /// <param name="data">Event auxiliary data.</param>
+        /// <param name="metadata">Logger metadata.</param>
+        public HttpEventCollectorEventInfo(
+            DateTime datetime, string id, string severity, string message, object data, Metadata metadata)
+        {
+            double epochTime = (datetime - new DateTime(1970, 1, 1)).TotalSeconds;
             Timestamp = epochTime.ToString("#.000"); // truncate to 3 digits after floating point
             this.metadata = metadata ?? new Metadata();
             Event = new LoggerEvent(id, severity, message, data);
