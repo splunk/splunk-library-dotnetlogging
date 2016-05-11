@@ -146,7 +146,7 @@ namespace Splunk.Logging
         /// Logger event info.
         /// </summary>
         [JsonProperty(PropertyName = "event", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public LoggerEvent Event { get; private set; }
+        public dynamic Event { get; set; }
 
         /// <summary>
         /// HttpEventCollectorEventInfo c-or.
