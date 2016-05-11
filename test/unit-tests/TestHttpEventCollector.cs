@@ -19,8 +19,8 @@ namespace Splunk.Logging
     public class TestHttpEventCollector
     {
         private readonly Uri uri = new Uri("http://localhost:8089"); // a dummy uri
-        private const string token = "TOKEN-GUID"; 
- 
+        private const string token = "TOKEN-GUID";
+
         #region Trace listener interceptor that replaces a real Splunk server for testing. 
 
         private class Response
@@ -42,16 +42,16 @@ namespace Splunk.Logging
             RequestHandler handler,
             HttpEventCollectorSender.HttpEventCollectorMiddleware middleware)
         {
-            HttpEventCollectorSender.HttpEventCollectorMiddleware interceptor = 
+            HttpEventCollectorSender.HttpEventCollectorMiddleware interceptor =
             (string token, List<HttpEventCollectorEventInfo> events, HttpEventCollectorSender.HttpEventCollectorHandler next) =>
             {
                 Response response = handler(token, events);
                 HttpResponseMessage httpResponseMessage = new HttpResponseMessage();
                 httpResponseMessage.StatusCode = response.Code;
                 byte[] buf = Encoding.UTF8.GetBytes(response.Context);
-                httpResponseMessage.Content = new StringContent(response.Context);                
+                httpResponseMessage.Content = new StringContent(response.Context);
                 var task = new Task<HttpResponseMessage>(() => {
-                    return httpResponseMessage; 
+                    return httpResponseMessage;
                 });
                 task.RunSynchronously();
                 return task;
@@ -73,10 +73,10 @@ namespace Splunk.Logging
 
         // Input trace listener
         private TraceSource Trace(
-            RequestHandler handler, 
+            RequestHandler handler,
             HttpEventCollectorEventInfo.Metadata metadata = null,
-            int batchInterval = 0, 
-            int batchSizeBytes = 0, 
+            int batchInterval = 0,
+            int batchSizeBytes = 0,
             int batchSizeCount = 0,
             HttpEventCollectorSender.SendMode sendMode = HttpEventCollectorSender.SendMode.Parallel,
             HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null)
@@ -89,11 +89,11 @@ namespace Splunk.Logging
                     token: token,
                     metadata: metadata,
                     sendMode: sendMode,
-                    batchInterval: batchInterval, 
-                    batchSizeBytes: batchSizeBytes, 
+                    batchInterval: batchInterval,
+                    batchSizeBytes: batchSizeBytes,
                     batchSizeCount: batchSizeCount,
                     middleware: MiddlewareInterceptor(handler, middleware))
-            );            
+            );
             return trace;
         }
 
@@ -106,6 +106,24 @@ namespace Splunk.Logging
                     uri: uri,
                     token: token,
                     middleware: MiddlewareInterceptor(handler, null))
+            );
+            return trace;
+        }
+
+        private TraceSource TraceCustomFormatter(
+            RequestHandler handler,
+            Func<HttpEventCollectorEventInfo, dynamic> formatter,
+            HttpEventCollectorSender.HttpEventCollectorMiddleware middleware)
+        {
+            var trace = new TraceSource("HttpEventCollectorLogger");
+            trace.Switch.Level = SourceLevels.All;
+            trace.Listeners.Add(
+                new HttpEventCollectorTraceListener(
+                    uri: uri,
+                    token: token,
+                    middleware: middleware,
+                    formatter: formatter,
+                    sendMode: HttpEventCollectorSender.SendMode.Parallel)
             );
             return trace;
         }
@@ -146,8 +164,8 @@ namespace Splunk.Logging
             listener.Subscribe(sink);
 
             var eventSource = TestEventSource.GetInstance();
-            listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);           
-            return new SinkTrace() { 
+            listener.EnableEvents(eventSource, EventLevel.LogAlways, Keywords.All);
+            return new SinkTrace() {
                 Source = eventSource,
                 Sink = sink,
                 Listener = listener
@@ -155,7 +173,7 @@ namespace Splunk.Logging
         }
 
         #endregion
-        
+
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorCoreTest")]
         [Fact]
         public void HttpEventCollectorCoreTest()
@@ -243,7 +261,7 @@ namespace Splunk.Logging
             trace.TraceEvent(TraceEventType.Resume, 4, "hello {0}", "world");
             trace.Close();
 
-            Guid guid = new Guid("11111111-2222-3333-4444-555555555555");            
+            Guid guid = new Guid("11111111-2222-3333-4444-555555555555");
             trace = Trace((token, events) =>
             {
                 Assert.True(events[0].Event.Id == "5");
@@ -253,6 +271,97 @@ namespace Splunk.Logging
             trace.TraceTransfer(5, "transfer", guid);
             trace.Close();
         }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSerializationTest")]
+        [Fact]
+        public void HttpEventCollectorSerializationTest()
+        {
+            Func<String, List<HttpEventCollectorEventInfo>, Response> noopHandler = (token, events) =>
+            {
+                return new Response();
+            };
+
+            int numFormattedEvents = 0;
+            var middlewareEvents = new List<HttpEventCollectorEventInfo>();
+
+            var trace = TraceCustomFormatter(
+                handler: (token, events) => {
+                    Assert.Equal(events.Count, 2);
+                    Assert.Equal(events[0].Event.Mesage, "hello");
+                    return new Response();
+                },
+                formatter: (eventInfo) => {
+                    numFormattedEvents++;
+                    var ev = eventInfo.Event;
+                    switch (numFormattedEvents)
+                    {
+                        case 1:
+                            ev = ev.Message;
+                            break;
+                        case 2:
+                            ev = new {
+                                newProperty = "hello world!",
+                                Id = eventInfo.Event.Id,
+                                Message = eventInfo.Event.Message,
+                                Data = eventInfo.Event.Data,
+                                Severity = eventInfo.Event.Severity
+                            };
+                            break;
+                        case 3:
+                            string[] fieldArray = { "that", "I", "want" };
+                            ev = new {
+                                i = "can",
+                                use = "any",
+                                fields = fieldArray,
+                                seriously = true,
+                                num = 99.9
+                            };
+                            break;
+                    }
+                    return ev;
+                },
+                middleware: new HttpEventCollectorSender.HttpEventCollectorMiddleware((token, events, next) => {
+                    middlewareEvents = events;
+
+                    Response response = noopHandler(token, events);
+                    HttpResponseMessage httpResponseMessage = new HttpResponseMessage();
+                    httpResponseMessage.StatusCode = response.Code;
+                    byte[] buf = Encoding.UTF8.GetBytes(response.Context);
+                    httpResponseMessage.Content = new StringContent(response.Context);
+                    var task = new Task<HttpResponseMessage>(() => {
+                        return httpResponseMessage;
+                    });
+                    task.RunSynchronously();
+                    return task;
+                })
+            );
+
+            trace.TraceInformation("hello");
+            trace.TraceInformation("hello2");
+            trace.TraceInformation("hello3");
+
+            (trace.Listeners[trace.Listeners.Count - 1] as HttpEventCollectorTraceListener).FlushAsync().RunSynchronously();
+            trace.Close();
+
+            Assert.Equal(numFormattedEvents, 3);
+            Assert.Equal(middlewareEvents.Count, 3);
+
+            Assert.Equal(middlewareEvents[0].Event, "hello");
+
+            Assert.Equal(middlewareEvents[1].Event.Message, "hello2");
+            Assert.Equal(middlewareEvents[1].Event.Severity, "Information");
+            Assert.Equal(middlewareEvents[1].Event.Id, "0"); // Defaults to "0"
+            Assert.Equal(middlewareEvents[1].Event.newProperty, "hello world!");
+
+            Assert.Equal(middlewareEvents[2].Event.i, "can");
+            Assert.Equal(middlewareEvents[2].Event.use, "any");
+            Assert.Equal(middlewareEvents[2].Event.fields.Length, 3);
+            string[] expectedFields = { "that", "I", "want" };
+            Assert.Equal(middlewareEvents[2].Event.fields, expectedFields);
+            Assert.Equal(middlewareEvents[2].Event.seriously, true);
+            Assert.Equal(middlewareEvents[2].Event.num, 99.9);
+        }
+
 
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorBatchingCountTest")]
         [Fact]
