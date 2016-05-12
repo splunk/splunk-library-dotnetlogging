@@ -112,7 +112,7 @@ namespace Splunk.Logging
 
         private TraceSource TraceCustomFormatter(
             RequestHandler handler,
-            Func<HttpEventCollectorEventInfo, dynamic> formatter,
+            HttpEventCollectorSender.HttpEventCollectorFormatter formatter,
             HttpEventCollectorSender.HttpEventCollectorMiddleware middleware)
         {
             var trace = new TraceSource("HttpEventCollectorLogger");

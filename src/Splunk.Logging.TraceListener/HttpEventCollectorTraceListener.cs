@@ -100,7 +100,7 @@ namespace Splunk.Logging
     public class HttpEventCollectorTraceListener : TraceListener
     {
         private HttpEventCollectorSender sender;
-        public Func<HttpEventCollectorEventInfo, dynamic> formatter;
+        public HttpEventCollectorSender.HttpEventCollectorFormatter formatter;
 
         /// <summary>
         /// HttpEventCollectorTraceListener c-or.
@@ -124,7 +124,7 @@ namespace Splunk.Logging
             int batchSizeBytes = HttpEventCollectorSender.DefaultBatchSize,
             int batchSizeCount = HttpEventCollectorSender.DefaultBatchCount,
             HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null,
-            Func<HttpEventCollectorEventInfo, dynamic> formatter = null)
+            HttpEventCollectorSender.HttpEventCollectorFormatter formatter = null)
         {
             this.formatter = formatter; // TODO: update the similar section for SLAB
             sender = new HttpEventCollectorSender(

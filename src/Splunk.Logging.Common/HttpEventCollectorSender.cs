@@ -76,6 +76,12 @@ namespace Splunk.Logging
             string token, List<HttpEventCollectorEventInfo> events, HttpEventCollectorHandler next);
 
         /// <summary>
+        /// Override the default event format.
+        /// </summary>
+        /// <returns>A dynamic type to be serialized.</returns>
+        public delegate dynamic HttpEventCollectorFormatter(HttpEventCollectorEventInfo eventInfo);
+
+        /// <summary>
         /// Recommended default values for events batching
         /// </summary>
         public const int DefaultBatchInterval = 10 * 1000; // 10 seconds
@@ -114,7 +120,7 @@ namespace Splunk.Logging
 
         private HttpClient httpClient = null;
         private HttpEventCollectorMiddleware middleware = null;
-        private Func<HttpEventCollectorEventInfo, dynamic> formatter = null;
+        private HttpEventCollectorFormatter formatter = null;
         // counter for bookkeeping the async tasks 
         private long activeAsyncTasksCount = 0;
 
@@ -142,7 +148,7 @@ namespace Splunk.Logging
             SendMode sendMode,
             int batchInterval, int batchSizeBytes, int batchSizeCount,
             HttpEventCollectorMiddleware middleware,
-            Func<HttpEventCollectorEventInfo, dynamic> formatter = null)
+            HttpEventCollectorFormatter formatter = null)
         {
             this.serializer = new JsonSerializer();
             serializer.NullValueHandling = NullValueHandling.Ignore;
