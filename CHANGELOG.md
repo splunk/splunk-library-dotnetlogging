@@ -1,4 +1,4 @@
-# Splunk Library for .NET Logging Changelog
+# Splunk logging for .NET Changelog
 
 ## Version 1.6.0
 
