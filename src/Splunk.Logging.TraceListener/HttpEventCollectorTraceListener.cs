@@ -126,7 +126,7 @@ namespace Splunk.Logging
             HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null,
             HttpEventCollectorSender.HttpEventCollectorFormatter formatter = null)
         {
-            this.formatter = formatter; // TODO: update the similar section for SLAB
+            this.formatter = formatter;
             sender = new HttpEventCollectorSender(
                 uri, token, metadata,
                 sendMode, 
