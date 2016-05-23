@@ -27,7 +27,7 @@ more in-depth information be sure to visit [Splunk logging for
 Here's what you need to use Splunk logging for .NET:
 
 * **.NET Framework 4.0 or later**: Splunk logging for .NET 
-  require at least .NET 4.0.
+  requires the .NET Framework version 4.0 or later.
 * **Splunk Enterprise** or **Splunk Cloud**: If you haven't already installed Splunk Enterprise,
   download it at [http://www.splunk.com/download](http://www.splunk.com/download). Otherwise, you
   should have at least a trial subscription to [Splunk Cloud](http://www.splunkcloud.com).
