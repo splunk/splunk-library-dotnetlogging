@@ -17,6 +17,7 @@
  */
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -75,6 +76,12 @@ namespace Splunk.Logging
             string token, List<HttpEventCollectorEventInfo> events, HttpEventCollectorHandler next);
 
         /// <summary>
+        /// Override the default event format.
+        /// </summary>
+        /// <returns>A dynamic type to be serialized.</returns>
+        public delegate dynamic HttpEventCollectorFormatter(HttpEventCollectorEventInfo eventInfo);
+
+        /// <summary>
         /// Recommended default values for events batching
         /// </summary>
         public const int DefaultBatchInterval = 10 * 1000; // 10 seconds
@@ -98,6 +105,7 @@ namespace Splunk.Logging
         private Uri httpEventCollectorEndpointUri; // HTTP event collector endpoint full uri
         private HttpEventCollectorEventInfo.Metadata metadata; // logger metadata
         private string token; // authorization token
+        private JsonSerializer serializer;
 
         // events batching properties and collection 
         private int batchInterval = 0;
@@ -112,6 +120,7 @@ namespace Splunk.Logging
 
         private HttpClient httpClient = null;
         private HttpEventCollectorMiddleware middleware = null;
+        private HttpEventCollectorFormatter formatter = null;
         // counter for bookkeeping the async tasks 
         private long activeAsyncTasksCount = 0;
 
@@ -138,8 +147,13 @@ namespace Splunk.Logging
             Uri uri, string token, HttpEventCollectorEventInfo.Metadata metadata,
             SendMode sendMode,
             int batchInterval, int batchSizeBytes, int batchSizeCount,
-            HttpEventCollectorMiddleware middleware)
+            HttpEventCollectorMiddleware middleware,
+            HttpEventCollectorFormatter formatter = null)
         {
+            this.serializer = new JsonSerializer();
+            serializer.NullValueHandling = NullValueHandling.Ignore;
+            serializer.ContractResolver = new CamelCasePropertyNamesContractResolver();
+
             this.httpEventCollectorEndpointUri = new Uri(uri, HttpEventCollectorPath);
             this.sendMode = sendMode;
             this.batchInterval = batchInterval;
@@ -148,6 +162,7 @@ namespace Splunk.Logging
             this.metadata = metadata;
             this.token = token;
             this.middleware = middleware;
+            this.formatter = formatter;
 
             // special case - if batch interval is specified without size and count
             // they are set to "infinity", i.e., batch may have any size 
@@ -223,9 +238,21 @@ namespace Splunk.Logging
 
         private void DoSerialization(HttpEventCollectorEventInfo ei)
         {
+            
+            string serializedEventInfo;
+            if (formatter == null)
+            {
+                serializedEventInfo = SerializeEventInfo(ei);
+            }
+            else
+            {
+                var formattedEvent = formatter(ei);
+                ei.Event = formattedEvent;
+                serializedEventInfo = JsonConvert.SerializeObject(ei);
+            }
+
             // we use lock serializedEventsBatch to synchronize both 
             // serializedEventsBatch and serializedEvents
-            string serializedEventInfo = SerializeEventInfo(ei);
             lock (eventsBatchLock)
             {
                 eventsBatch.Add(ei);
