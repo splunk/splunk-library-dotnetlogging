@@ -31,7 +31,7 @@ namespace Splunk.Logging
     /// <code>
     /// var trace = new TraceSource("logger");
     /// trace.listeners.Add(new HttpEventCollectorTraceListener(
-    ///     uri: new Uri("https://localhost:8089"), 
+    ///     uri: new Uri("https://localhost:8088"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918"));
     /// trace.TraceEvent(TraceEventType.Information, 1, "hello world");
     /// </code>
@@ -46,7 +46,7 @@ namespace Splunk.Logging
     /// <code>
     /// var trace = new TraceSource("logger");
     /// trace.listeners.Add(new HttpEventCollectorTraceListener(
-    ///     uri: new Uri("https://localhost:8089"), 
+    ///     uri: new Uri("https://localhost:8088"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
     ///     batchInterval: 1000, // send events at least every second
     ///     batchSizeBytes: 1024, // 1KB
@@ -66,7 +66,7 @@ namespace Splunk.Logging
     /// For example:
     /// <code>
     /// new HttpEventCollectorTraceListener(
-    ///     uri: new Uri("https://localhost:8089"), 
+    ///     uri: new Uri("https://localhost:8088"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918,
     ///     middleware: (request, next) => {
     ///         // preprocess request
@@ -85,7 +85,7 @@ namespace Splunk.Logging
     /// when HTTP event collector isn't able to send data. 
     /// <code>
     /// var listener = new HttpEventCollectorTraceListener(
-    ///     uri: new Uri("https://localhost:8089"), 
+    ///     uri: new Uri("https://localhost:8088"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918")
     /// );
     /// listener.AddLoggingFailureHandler((sender, HttpEventCollectorException e) =>
@@ -100,11 +100,12 @@ namespace Splunk.Logging
     public class HttpEventCollectorTraceListener : TraceListener
     {
         private HttpEventCollectorSender sender;
+        public HttpEventCollectorSender.HttpEventCollectorFormatter formatter;
 
         /// <summary>
         /// HttpEventCollectorTraceListener c-or.
         /// </summary>
-        /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
+        /// <param name="uri">Splunk server uri, for example https://localhost:8088.</param>
         /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="metadata">Logger metadata.</param>
         /// <param name="sendMode">Send mode of the events.</param>
@@ -122,20 +123,23 @@ namespace Splunk.Logging
             int batchInterval = HttpEventCollectorSender.DefaultBatchInterval,
             int batchSizeBytes = HttpEventCollectorSender.DefaultBatchSize,
             int batchSizeCount = HttpEventCollectorSender.DefaultBatchCount,
-            HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null)
+            HttpEventCollectorSender.HttpEventCollectorMiddleware middleware = null,
+            HttpEventCollectorSender.HttpEventCollectorFormatter formatter = null)
         {
+            this.formatter = formatter;
             sender = new HttpEventCollectorSender(
                 uri, token, metadata,
                 sendMode, 
                 batchInterval, batchSizeBytes, batchSizeCount, 
-                middleware);
+                middleware,
+                formatter);
         }
 
         /// <summary>
         /// HttpEventCollectorTraceListener c-or. Instantiates HttpEventCollectorTraceListener 
         /// when retriesOnError parameter is specified.
         /// </summary>
-        /// <param name="uri">Splunk server uri, for example https://localhost:8089.</param>
+        /// <param name="uri">Splunk server uri, for example https://localhost:8088.</param>
         /// <param name="token">HTTP event collector authorization token.</param>
         /// <param name="retriesOnError">Number of retries when network problem is detected</param> 
         /// <param name="metadata">Logger metadata.</param>

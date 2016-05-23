@@ -31,7 +31,7 @@ namespace Splunk.Logging
     /// Usage:
     /// <code>
     /// trace.listeners.Add(new HttpEventCollectorTraceListener(
-    ///     uri: new Uri("https://localhost:8089"), 
+    ///     uri: new Uri("https://localhost:8088"), 
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
     ///     new HttpEventCollectorResendMiddleware(10).Plugin // retry 10 times
     /// );

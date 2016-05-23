@@ -1,6 +1,11 @@
 # Splunk Library for .NET Logging Changelog
 
-## Version 1.5
+## Version 1.6.0
+
+* Add support for custom Event Collector formatter function for TraceListener.
+* Add support for setting timestamp other than UtcNow (GitHub Pull request #15).
+
+## Version 1.5.0
 
 * Add support for HTTP Event Collector.
 
