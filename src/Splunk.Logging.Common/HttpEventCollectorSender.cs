@@ -202,14 +202,16 @@ namespace Splunk.Logging
         /// <param name="severity">Event severity info.</param>
         /// <param name="message">Event message text.</param>
         /// <param name="data">Additional event data.</param>
+        /// <param name="metadataOverride">Metadata to use for this send.</param>
         public void Send(
             string id = null,
             string severity = null,
             string message = null,
-            object data = null)
+            object data = null,
+            HttpEventCollectorEventInfo.Metadata metadataOverride = null)
         {
             HttpEventCollectorEventInfo ei =
-                new HttpEventCollectorEventInfo(id, severity, message, data, metadata);
+                new HttpEventCollectorEventInfo(id, severity, message, data, metadataOverride ?? metadata);
 
             DoSerialization(ei);
         }
@@ -223,15 +225,17 @@ namespace Splunk.Logging
         /// <param name="severity">Event severity info.</param>
         /// <param name="message">Event message text.</param>
         /// <param name="data">Additional event data.</param>
+        /// <param name="metadataOverride">Metadata to use for this send.</param>
         public void Send(
             DateTime timestamp,
             string id = null,
             string severity = null,
             string message = null,
-            object data = null)
+            object data = null,
+            HttpEventCollectorEventInfo.Metadata metadataOverride = null)
         {
             HttpEventCollectorEventInfo ei =
-                new HttpEventCollectorEventInfo(timestamp, id, severity, message, data, metadata);
+                new HttpEventCollectorEventInfo(timestamp, id, severity, message, data, metadataOverride ?? metadata);
 
             DoSerialization(ei);
         }
