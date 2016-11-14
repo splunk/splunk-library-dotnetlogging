@@ -1,5 +1,9 @@
 # Splunk logging for .NET Changelog
 
+## Version 1.6.1
+
+* Add support for overriding metadata with `HttpEventCollectorSender.Send()`.
+
 ## Version 1.6.0
 
 * Add support for custom HTTP Event Collector formatter function for TraceListener.

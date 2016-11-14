@@ -1,8 +1,8 @@
 # Splunk logging for .NET 
 
-#### Version 1.6.0
+#### Version 1.6.1
 
-Splunk logging for .NET enables you to configure [HTTP Event Collector] (http://dev.splunk.com/view/event-collector/SP-CAAAE6M), UDP or TCP 
+Splunk logging for .NET enables you to configure [HTTP Event Collector](http://dev.splunk.com/view/event-collector/SP-CAAAE6M), UDP or TCP 
 logging of events to a Splunk Enterprise instance from within your .NET 
 applications, via a .NET TraceListener or a Semantic Logging Application Block
 (SLAB) event sink.
