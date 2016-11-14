@@ -705,8 +705,6 @@ namespace Splunk.Logging
         [Fact]
         public void HttpEventCollectorSenderMetadataOverrideTest()
         {
-            var middlewareEvents = new List<HttpEventCollectorEventInfo>();
-
             Func<String, List<HttpEventCollectorEventInfo>, Response> noopHandler = (token, events) =>
             {
                 return new Response();
@@ -726,7 +724,29 @@ namespace Splunk.Logging
                         100000, 
                         3,
                         new HttpEventCollectorSender.HttpEventCollectorMiddleware((token, events, next) => {
-                            middlewareEvents = events;
+                            Assert.True(events.Count == 3);
+
+                            // Id = id1 should have the default meta data values.
+                            Assert.True(events[0].Event.Id == "id1");
+                            Assert.True(events[0].Index == defaultmetadata.Index);
+                            Assert.True(events[0].Source == defaultmetadata.Source);
+                            Assert.True(events[0].SourceType == defaultmetadata.SourceType);
+                            Assert.True(events[0].Host == defaultmetadata.Host);
+
+                            // Id = id2 should have the metadataOverride values.
+                            Assert.True(events[1].Event.Id == "id2");
+                            Assert.True(events[1].Index == overridemetadata.Index);
+                            Assert.True(events[1].Source == overridemetadata.Source);
+                            Assert.True(events[1].SourceType == overridemetadata.SourceType);
+                            Assert.True(events[1].Host == overridemetadata.Host);
+
+                            // Id = id3 should have the default meta data values.
+                            Assert.True(events[2].Event.Id == "id3");
+                            Assert.True(events[2].Index == defaultmetadata.Index);
+                            Assert.True(events[2].Source == defaultmetadata.Source);
+                            Assert.True(events[2].SourceType == defaultmetadata.SourceType);
+                            Assert.True(events[2].Host == defaultmetadata.Host);
+
                             Response response = noopHandler(token, events);
                             HttpResponseMessage httpResponseMessage = new HttpResponseMessage();
                             httpResponseMessage.StatusCode = response.Code;
@@ -746,29 +766,6 @@ namespace Splunk.Logging
 
             httpEventCollectorSender.FlushSync();
             httpEventCollectorSender.Dispose();
-
-            Assert.True(middlewareEvents.Count == 3);
-
-            // Id = id1 should have the default meta data values.
-            Assert.True(middlewareEvents[0].Event.Id == "id1");
-            Assert.True(middlewareEvents[0].Index == defaultmetadata.Index);
-            Assert.True(middlewareEvents[0].Source == defaultmetadata.Source);
-            Assert.True(middlewareEvents[0].SourceType == defaultmetadata.SourceType);
-            Assert.True(middlewareEvents[0].Host == defaultmetadata.Host);
-
-            // Id = id2 should have the metadataOverride values.
-            Assert.True(middlewareEvents[1].Event.Id == "id2");
-            Assert.True(middlewareEvents[1].Index == overridemetadata.Index);
-            Assert.True(middlewareEvents[1].Source == overridemetadata.Source);
-            Assert.True(middlewareEvents[1].SourceType == overridemetadata.SourceType);
-            Assert.True(middlewareEvents[1].Host == overridemetadata.Host);
-
-            // Id = id3 should have the default meta data values.
-            Assert.True(middlewareEvents[2].Event.Id == "id3");
-            Assert.True(middlewareEvents[2].Index == defaultmetadata.Index);
-            Assert.True(middlewareEvents[2].Source == defaultmetadata.Source);
-            Assert.True(middlewareEvents[2].SourceType == defaultmetadata.SourceType);
-            Assert.True(middlewareEvents[2].Host == defaultmetadata.Host);
         }
     }
 }
