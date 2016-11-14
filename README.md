@@ -1,8 +1,8 @@
-# Splunk Logging for .NET 
+# Splunk logging for .NET 
 
-#### Version 1.5
+#### Version 1.6.1
 
-Splunk Logging for .NET enables you to configure [HTTP Event Collector] (http://dev.splunk.com/view/event-collector/SP-CAAAE6M), UDP or TCP 
+Splunk logging for .NET enables you to configure [HTTP Event Collector](http://dev.splunk.com/view/event-collector/SP-CAAAE6M), UDP or TCP 
 logging of events to a Splunk Enterprise instance from within your .NET 
 applications, via a .NET TraceListener or a Semantic Logging Application Block
 (SLAB) event sink.
@@ -15,50 +15,22 @@ common library that is required by both main libraries:
 * `Splunk.Logging.SLAB` 
 * `Splunk.Logging.Common`
 
-## Advice
-
-### Splunk Universal Forwarder vs. Splunk UDP Inputs
-
-If you can, it is better to log to files and monitor them with a [Splunk 
-Universal Forwarder](http://www.splunk.com/download/universalforwarder). 
-This provides you with the features of the Universal 
-Forwarder, and added robustness from having persistent files. However, there 
-are situations where using a Universal Forwarder is not a possibility. In 
-these cases, writing directly to a UDP input is a reasonable approach.
-
-### Data cloning
-
-You can use [data cloning](http://docs.splunk.com/Splexicon:Datacloning) by 
-providing multiple instances of your UDP handler in your logging 
-configuration, each instance pointing to different indexers.
-
-### Load balancing
-
-Rather than trying to reinvent 
-[load balancing](http://docs.splunk.com/Splexicon:Loadbalancing) across your 
-indexers in your log configuration, set up a Splunk Universal Forwarder with a 
-UDP input. Have all your logging sources write to that UDP input, and use the 
-Universal Forwarder's load balancing features to distribute the data from 
-there to a set of indexers.
-
 ## Get started 
 
 The information in this Readme provides steps to get going quickly, but for
-more in-depth information be sure to visit [Splunk Logging for
+more in-depth information be sure to visit [Splunk logging for
 .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEX4) page on 
 [Splunk Developer Portal](http://dev.splunk.com).
 
 ### Requirements
 
-Here's what you need to use Splunk Logging for .NET:
+Here's what you need to use Splunk logging for .NET:
 
-* **.NET Framework 4.0 or later**: Splunk Logging for .NET 
-  require at least .NET 4.0.
-* **Splunk Enterprise**: If you haven't already installed Splunk Enterprise,
-  download it at [http://www.splunk.com/download](http://www.splunk.com/download).
-  For more information about installing and running  Splunk Enterprise and 
-  system requirements, see the 
-  [Splunk Installation Manual](http://docs.splunk.com/Documentation/Splunk/latest/Installation).
+* **.NET Framework 4.0 or later**: Splunk logging for .NET 
+  requires the .NET Framework version 4.0 or later.
+* **Splunk Enterprise** or **Splunk Cloud**: If you haven't already installed Splunk Enterprise,
+  download it at [http://www.splunk.com/download](http://www.splunk.com/download). Otherwise, you
+  should have at least a trial subscription to [Splunk Cloud](http://www.splunkcloud.com).
 
 If you want to build the libraries and run the test suite, you will also
 need:
@@ -66,17 +38,17 @@ need:
 * **xUnit runner**: If you use ReSharper, install its 
   [xUnit.net Test Support](https://resharper-plugins.jetbrains.com/packages/xunitcontrib/). 
   Otherwise, install the [xUnit.net runner for Visual Studio 2012 and 2013](http://visualstudiogallery.msdn.microsoft.com/463c5987-f82b-46c8-a97e-b1cde42b9099).
-* **Visual Studio**: Splunk Logging for .NET supports 
+* **Visual Studio**: Splunk logging for .NET supports 
   development in [Microsoft Visual Studio 2012 or later](http://www.microsoft.com/visualstudio/downloads).
 
 ### Install
 
-You have several options for installing Splunk Logging for .NET.
+You have several options for installing Splunk logging for .NET.
 The most common method is through NuGet. Add the package you want after 
 searching for "splunk" in the Manage NuGet Packages window in Visual Studio.
 
 For more information, and for information about other ways to install 
-Splunk Logging for .NET, see [Install Splunk Logging
+Splunk logging for .NET, see [Install Splunk logging
 for .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEYC)
 
 
@@ -84,9 +56,9 @@ for .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEYC)
 
 The solution is organized into `src` and `test` directories. The `src`
 directory contains three libraries: `Splunk.Logging.TraceListener` (which 
-contains [.NET trace listeners](http://msdn.microsoft.com/library/4y5y10s7.aspx)
+contains [.NET trace listeners](http://msdn.microsoft.com/library/4y5y10s7)
 that log events to Splunk Enterprise over UDP or TCP), `Splunk.Logging.SLAB`
-(which contains [Semantic Logging Application Block (SLAB) event sinks](http://msdn.microsoft.com/library/dn440729.aspx#sec29)
+(which contains [Semantic Logging Application Block (SLAB) event sinks](http://msdn.microsoft.com/library/dn440729#sec29)
 that log ETW events to Splunk Enterprise over UDP or TCP), and 
 `Splunk.Logging.Common` (a common library that contains resources required by
 both logging libraries). The `test` directory contains a single project,
@@ -94,7 +66,7 @@ both logging libraries). The `test` directory contains a single project,
 
 #### Examples and unit tests
 
-Splunk Logging for .NET include full unit tests which run 
+Splunk logging for .NET include full unit tests which run 
 using [xunit](https://github.com/xunit/xunit).
 
 ### Example code
@@ -251,9 +223,10 @@ listener.AddLoggingFailureHandler((ex) => {
 
 ### Sending events to HTTP Event Collector
 
-This feature requires Splunk 6.3+.
+This feature requires Splunk 6.3.0 and later.
 
-After enabling HTTP Event Collector and creating an application token sending events is very simple:
+After enabling [HTTP Event Collector](http://dev.splunk.com/view/event-collector/SP-CAAAE6M)
+and creating an application token sending events is very simple:
 
 ```csharp
 // TraceListener
@@ -277,7 +250,8 @@ eventSource.Message("hello world");
 
 #### Error Handling
 
-A user application code can register an error handler that is invoked when HTTP Event Collector isn't able to send data.
+A user application code can register an error handler that is invoked when 
+HTTP Event Collector isn't able to send data.
 
 ```csharp
 listener.AddLoggingFailureHandler((sender, HttpEventCollectorException e) =>
@@ -289,7 +263,7 @@ listener.AddLoggingFailureHandler((sender, HttpEventCollectorException e) =>
 ### Changelog
 
 The `CHANGELOG.md` file in the root of the repository contains a description
-of changes for each version of Splunk Logging for .NET. You can also
+of changes for each version of Splunk logging for .NET. You can also
 find it online at 
 
     https://github.com/splunk/splunk-library-dotnetlogging/blob/master/CHANGELOG.md
@@ -297,7 +271,7 @@ find it online at
 ### Branches
 
 The `master` branch always represents a stable and released version of the
-Splunk Library for .NET Logging. You can read more about our branching model
+Splunk logging for .NET. You can read more about our branching model
 on our Wiki at 
 
     https://github.com/splunk/splunk-sdk-python/wiki/Branching-Model
@@ -362,4 +336,4 @@ You can reach the Dev Platform team at [devinfo@splunk.com](mailto:devinfo@splun
 
 ## License
 
-Splunk Logging for .NET is licensed under the Apache License 2.0. Details can be found in the LICENSE file.
+Splunk logging for .NET is licensed under the Apache License 2.0. Details can be found in the LICENSE file.

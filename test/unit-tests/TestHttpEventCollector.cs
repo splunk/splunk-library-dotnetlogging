@@ -676,5 +676,96 @@ namespace Splunk.Logging
             Thread.Sleep(HttpEventCollectorSender.DefaultBatchInterval);
             Assert.True(eventReceived);
         }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorEventInfoTimestampsTest")]
+         [Fact]
+         public void HttpEventCollectorEventInfoTimestampsTest()
+         {
+             // test setting timestamp
+             DateTime utcNow = DateTime.UtcNow;
+             double nowEpoch = (utcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+ 
+             HttpEventCollectorEventInfo ei =
+             new HttpEventCollectorEventInfo(utcNow.AddHours(-1), null, null, null, null, null);
+ 
+             double epochTimestamp = double.Parse(ei.Timestamp);
+             double diff = Math.Ceiling(nowEpoch - epochTimestamp);
+             Assert.True(diff >= 3600.0);
+ 
+             // test default timestamp
+             ei = new HttpEventCollectorEventInfo(null, null, null, null, null);
+             utcNow = DateTime.UtcNow;
+             nowEpoch = (utcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+             epochTimestamp = double.Parse(ei.Timestamp);
+             diff = Math.Ceiling(nowEpoch - epochTimestamp);
+             Assert.True(diff< 10.0);
+         }
+
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSenderMetadataOverrideTest")]
+        [Fact]
+        public void HttpEventCollectorSenderMetadataOverrideTest()
+        {
+            Func<String, List<HttpEventCollectorEventInfo>, Response> noopHandler = (token, events) =>
+            {
+                return new Response();
+            };
+
+            HttpEventCollectorEventInfo.Metadata defaultmetadata = new HttpEventCollectorEventInfo.Metadata(index: "defaulttestindex", 
+                source: "defaulttestsource", sourceType: "defaulttestsourcetype", host: "defaulttesthost");
+
+            HttpEventCollectorEventInfo.Metadata overridemetadata = new HttpEventCollectorEventInfo.Metadata(index: "overridetestindex",
+                  source: "overridetestsource", sourceType: "overridetestsourcetype", host: "overridetesthost");
+
+            HttpEventCollectorSender httpEventCollectorSender =
+                new HttpEventCollectorSender(uri, token, 
+                        defaultmetadata, 
+                        HttpEventCollectorSender.SendMode.Sequential, 
+                        100000, 
+                        100000, 
+                        3,
+                        new HttpEventCollectorSender.HttpEventCollectorMiddleware((token, events, next) => {
+                            Assert.True(events.Count == 3);
+
+                            // Id = id1 should have the default meta data values.
+                            Assert.True(events[0].Event.Id == "id1");
+                            Assert.True(events[0].Index == defaultmetadata.Index);
+                            Assert.True(events[0].Source == defaultmetadata.Source);
+                            Assert.True(events[0].SourceType == defaultmetadata.SourceType);
+                            Assert.True(events[0].Host == defaultmetadata.Host);
+
+                            // Id = id2 should have the metadataOverride values.
+                            Assert.True(events[1].Event.Id == "id2");
+                            Assert.True(events[1].Index == overridemetadata.Index);
+                            Assert.True(events[1].Source == overridemetadata.Source);
+                            Assert.True(events[1].SourceType == overridemetadata.SourceType);
+                            Assert.True(events[1].Host == overridemetadata.Host);
+
+                            // Id = id3 should have the default meta data values.
+                            Assert.True(events[2].Event.Id == "id3");
+                            Assert.True(events[2].Index == defaultmetadata.Index);
+                            Assert.True(events[2].Source == defaultmetadata.Source);
+                            Assert.True(events[2].SourceType == defaultmetadata.SourceType);
+                            Assert.True(events[2].Host == defaultmetadata.Host);
+
+                            Response response = noopHandler(token, events);
+                            HttpResponseMessage httpResponseMessage = new HttpResponseMessage();
+                            httpResponseMessage.StatusCode = response.Code;
+                            byte[] buf = Encoding.UTF8.GetBytes(response.Context);
+                            httpResponseMessage.Content = new StringContent(response.Context);
+                            var task = new Task<HttpResponseMessage>(() => {
+                                return httpResponseMessage;
+                            });
+                            task.RunSynchronously();
+                            return task;
+                        })
+                    );
+
+            httpEventCollectorSender.Send(id: "id1");
+            httpEventCollectorSender.Send(id: "id2", metadataOverride: overridemetadata);
+            httpEventCollectorSender.Send(id: "id3");
+
+            httpEventCollectorSender.FlushSync();
+            httpEventCollectorSender.Dispose();
+        }
     }
 }

@@ -1,8 +1,12 @@
-# Splunk Library for .NET Logging Changelog
+# Splunk logging for .NET Changelog
+
+## Version 1.6.1
+
+* Add support for overriding metadata with `HttpEventCollectorSender.Send()`.
 
 ## Version 1.6.0
 
-* Add support for custom Event Collector formatter function for TraceListener.
+* Add support for custom HTTP Event Collector formatter function for TraceListener.
 * Add support for setting timestamp other than UtcNow (GitHub Pull request #15).
 
 ## Version 1.5.0
