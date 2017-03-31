@@ -333,8 +333,6 @@ The Splunk logging library for .NET is community-supported.
 1. You can find help through our community on [Splunk Answers](http://answers.splunk.com/) (use the `logging-library-dotnet` tag to identify your questions).
 2. File issues on [GitHub](https://github.com/splunk/splunk-library-dotnetlogging/issues).
 
-You can reach the Dev Platform team at [devinfo@splunk.com](mailto:devinfo@splunk.com).
-
 ### Contact us
 
 You can reach the Dev Platform team at [devinfo@splunk.com](mailto:devinfo@splunk.com).
