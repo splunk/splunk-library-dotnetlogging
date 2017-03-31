@@ -328,7 +328,10 @@ page for more information.
 
 ### Support
 
-This product is currently in development and officially unsupported. We will be triaging any issues filed by the community however and addressing them as appropriate. Please [file](https://github.com/splunk/splunk-library-dotnetlogging) issues for any problems that you encounter.
+The Splunk logging library for .NET is community-supported.
+
+1. You can find help through our community on [Splunk Answers](http://answers.splunk.com/) (use the `logging-library-dotnet` tag to identify your questions).
+2. File issues on [GitHub](https://github.com/splunk/splunk-library-dotnetlogging/issues).
 
 ### Contact us
 
