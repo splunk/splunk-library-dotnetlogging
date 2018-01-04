@@ -232,7 +232,7 @@ and creating an application token sending events is very simple:
 // TraceListener
 var trace = new TraceSource("demo-logger");
 trace.Listeners.Add(new HttpEventCollectorTraceListener(
-    uri: new Uri("https::/splunk-server:8088"),
+    uri: new Uri("https://splunk-server:8088"),
     token: "<token-guid>"));
 trace.TraceEvent(TraceEventType.Information, 0, "hello world");
 
