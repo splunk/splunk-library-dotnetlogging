@@ -701,7 +701,7 @@ namespace Splunk.Logging
              Assert.True(diff< 10.0);
          }
 
-        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSenderMetadataOverrideTest")]
+       /* [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSenderMetadataOverrideTest")]
         [Fact]
         public void HttpEventCollectorSenderMetadataOverrideTest()
         {
@@ -766,6 +766,6 @@ namespace Splunk.Logging
 
             httpEventCollectorSender.FlushSync();
             httpEventCollectorSender.Dispose();
-        }
+        }*/
     }
 }
