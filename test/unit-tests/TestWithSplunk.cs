@@ -41,7 +41,7 @@ namespace Splunk.Logging
 
         public void CreateIndex(string indexName)
         {
-            string stdOut, stdEfCrror;
+            string stdOut, stdError;
             if (!ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "add index {0}", indexName), out stdOut, out stdError))
             {
                 Console.WriteLine("Failed to create index. {0} {1}", stdOut, stdError);
