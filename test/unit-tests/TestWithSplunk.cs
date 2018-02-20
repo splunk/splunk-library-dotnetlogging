@@ -399,6 +399,16 @@ namespace Splunk.Logging
             string tokenName = "batchedbysizetoken";
             string indexName = "batchedbysizeindex";
             SplunkCliWrapper splunk = new SplunkCliWrapper();
+
+            try
+            {
+                throw new Exception("test");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("splunk data" + e + splunk.SplunkIsRunning().ToString());
+            }
+
             double testStartTime = SplunkCliWrapper.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
 
