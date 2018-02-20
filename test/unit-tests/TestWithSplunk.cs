@@ -230,7 +230,6 @@ namespace Splunk.Logging
         {
             this.userName = userName;
             this.password = password;
-            Console.WriteLine("here i am ");
             // Get splunkd location
             Process serviceQuery = new Process
             {
@@ -245,6 +244,7 @@ namespace Splunk.Logging
             };
             serviceQuery.Start();
             string output = serviceQuery.StandardOutput.ReadToEnd();
+            Assert.Equal(serviceQuery.ExitCode, 0);
             if (serviceQuery.ExitCode != 0)
             {
                 Console.WriteLine("Failed to execute query command, exit code {0}. Output is {1}", serviceQuery.ExitCode, output);
@@ -390,9 +390,7 @@ namespace Splunk.Logging
         {
             string tokenName = "batchedbysizetoken";
             string indexName = "batchedbysizeindex";
-            int k = 1;
             SplunkCliWrapper splunk = new SplunkCliWrapper();
-            Assert.Equal(k, 1);
             double testStartTime = SplunkCliWrapper.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
 
