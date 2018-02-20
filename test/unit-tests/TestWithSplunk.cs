@@ -276,7 +276,15 @@ namespace Splunk.Logging
             int eventsFound = splunk.GetSearchCount(searchQuery);
             Console.WriteLine("Indexing completed, {0} events were found. Elapsed time {1:F2} seconds", eventsFound, SplunkCliWrapper.GetEpochTime() - testStartTime);
             // Verify all events were indexed correctly
-            Assert.Equal(eventCounter, eventsFound);
+            try
+            {
+                Assert.Equal(eventCounter, eventsFound);
+                throw new Exception("test");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("events did not match" + eventCounter + eventsFound);
+            }
             List<string> searchResults = splunk.GetSearchResults(searchQuery);
             Assert.Equal(searchResults.Count, eventsFound);
             for (int eventId = 0; eventId < eventCounter; eventId++)
