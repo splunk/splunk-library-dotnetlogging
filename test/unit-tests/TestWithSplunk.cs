@@ -327,7 +327,7 @@ namespace Splunk.Logging
             return token;
         }
         #endregion
-
+        /*
         #region Tests implementation
         [Trait("functional-tests", "StallWrite")]
         [Fact]
@@ -359,7 +359,7 @@ namespace Splunk.Logging
                 streams.Add(dataStream);
                 dataStream.Write(byteArray, 0, byteArray.Length);
             }
-        }
+        } 
         [Trait("functional-tests", "SendEventsBatchedByTime")]
         [Fact]
         public static void SendEventsBatchedByTime()
@@ -432,7 +432,7 @@ namespace Splunk.Logging
             trace.Close();
         }
 
-        /*[Trait("functional-tests", "SendEventsUnBatched")]
+        [Trait("functional-tests", "SendEventsUnBatched")]
         [Fact]
         static void SendEventsUnBatched()
         {
@@ -453,7 +453,7 @@ namespace Splunk.Logging
 
             GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
             trace.Close();
-        }*/
+        }
 
         [Trait("functional-tests", "VerifyErrorsAreRaised")]
         [Fact]
@@ -596,6 +596,6 @@ namespace Splunk.Logging
             trace.Close();
         }
 
-        #endregion
+        #endregion*/
     }
 }
