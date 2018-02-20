@@ -41,7 +41,7 @@ namespace Splunk.Logging
 
         public void CreateIndex(string indexName)
         {
-            string stdOut, stdError;
+            string stdOut, stdEfCrror;
             if (!ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "add index {0}", indexName), out stdOut, out stdError))
             {
                 Console.WriteLine("Failed to create index. {0} {1}", stdOut, stdError);
@@ -230,7 +230,7 @@ namespace Splunk.Logging
         {
             this.userName = userName;
             this.password = password;
-
+            Console.WriteLine("here i am ");
             // Get splunkd location
             Process serviceQuery = new Process
             {
@@ -382,7 +382,7 @@ namespace Splunk.Logging
 
             GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
             trace.Close();
-        }
+        }*/
 
         [Trait("functional-tests", "SendEventsBatchedBySize")]
         [Fact]
@@ -391,6 +391,7 @@ namespace Splunk.Logging
             string tokenName = "batchedbysizetoken";
             string indexName = "batchedbysizeindex";
             SplunkCliWrapper splunk = new SplunkCliWrapper();
+            Console.Write("hi");
             double testStartTime = SplunkCliWrapper.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
 
@@ -407,7 +408,7 @@ namespace Splunk.Logging
             GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
             trace.Close();
         }
-
+        /*
         [Trait("functional-tests", "SendEventsBatchedBySizeAndTime")]
         [Fact]
         static void SendEventsBatchedBySizeAndTime()
