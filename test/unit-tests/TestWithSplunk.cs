@@ -283,7 +283,7 @@ namespace Splunk.Logging
             }
             catch (Exception e)
             {
-                Console.WriteLine("events did not match" + eventCounter + eventsFound);
+                Console.WriteLine("events did not match" + eventCounter + eventsFound + e);
             }
             List<string> searchResults = splunk.GetSearchResults(searchQuery);
             Assert.Equal(searchResults.Count, eventsFound);
