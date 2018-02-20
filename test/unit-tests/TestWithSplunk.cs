@@ -432,7 +432,7 @@ namespace Splunk.Logging
             trace.Close();
         }
 
-        [Trait("functional-tests", "SendEventsUnBatched")]
+        /*[Trait("functional-tests", "SendEventsUnBatched")]
         [Fact]
         static void SendEventsUnBatched()
         {
@@ -453,7 +453,7 @@ namespace Splunk.Logging
 
             GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
             trace.Close();
-        }
+        }*/
 
         [Trait("functional-tests", "VerifyErrorsAreRaised")]
         [Fact]
