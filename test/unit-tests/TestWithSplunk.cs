@@ -46,7 +46,7 @@ namespace Splunk.Logging
             {
                 Console.WriteLine("Failed to create index. {0} {1}", stdOut, stdError);
                 Console.WriteLine(indexName);
-                Assert.True(false);
+                //Assert.True(false);
                 //Environment.Exit(2);
             }
         }
