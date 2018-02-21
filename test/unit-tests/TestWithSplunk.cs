@@ -46,7 +46,7 @@ namespace Splunk.Logging
             {
                 Console.WriteLine("Failed to create index. {0} {1}", stdOut, stdError);
                 Console.WriteLine(indexName);
-                //Assert.True(false);
+                Assert.True(false);
                 //Environment.Exit(2);
             }
         }
@@ -331,9 +331,9 @@ namespace Splunk.Logging
             splunk.DeleteToken(tokenName);
             string token = splunk.CreateToken(tokenName, indexes: indexName, index: indexName);
             Console.WriteLine("Created token {0}.", tokenName);
-            //splunk.DeleteIndex(indexName);
-            splunk.CreateIndex(indexName);
-            Console.WriteLine("Created index {0}.", indexName);
+            splunk.DeleteIndex(indexName);
+            splunk.CreateIndex(indexName + "1");
+            Console.WriteLine("Created index {0}.", indexName + "1");
             return token;
         }
         #endregion
