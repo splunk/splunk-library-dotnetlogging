@@ -329,9 +329,10 @@ namespace Splunk.Logging
             splunk.DeleteToken(tokenName);
             string token = splunk.CreateToken(tokenName, indexes: indexName, index: indexName);
             Console.WriteLine("Created token {0}.", tokenName);
+            /*
             splunk.DeleteIndex(indexName);
             splunk.CreateIndex(indexName);
-            Console.WriteLine("Created index {0}.", indexName);
+            Console.WriteLine("Created index {0}.", indexName);*/
             return token;
         }
         #endregion
@@ -402,10 +403,10 @@ namespace Splunk.Logging
                 //string tokenName = "batchedbysizetoken";
                 //string indexName = "batchedbysizeindex";
                 SplunkCliWrapper splunk = new SplunkCliWrapper();
-                /*
+                
                 double testStartTime = SplunkCliWrapper.GetEpochTime();
                 string token = CreateIndexAndToken(splunk, tokenName, indexName);
-                
+                /*
                 var trace = new TraceSource("HttpEventCollectorLogger");
                 trace.Switch.Level = SourceLevels.All;
                 var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
