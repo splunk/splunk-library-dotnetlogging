@@ -400,8 +400,8 @@ namespace Splunk.Logging
             try
             {
 
-                //string tokenName = "batchedbysizetoken";
-                //string indexName = "batchedbysizeindex";
+                string tokenName = "batchedbysizetoken";
+                string indexName = "batchedbysizeindex";
                 SplunkCliWrapper splunk = new SplunkCliWrapper();
                 
                 double testStartTime = SplunkCliWrapper.GetEpochTime();
