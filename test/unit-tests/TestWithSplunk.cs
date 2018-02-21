@@ -326,14 +326,24 @@ namespace Splunk.Logging
 
         private static string CreateIndexAndToken(SplunkCliWrapper splunk, string tokenName, string indexName)
         {
-            splunk.EnableHttp();
-            Console.WriteLine("Enabled HTTP event collector.");
-            splunk.DeleteToken(tokenName);
-            string token = splunk.CreateToken(tokenName, indexes: indexName, index: indexName);
-            Console.WriteLine("Created token {0}.", tokenName);
-            //splunk.DeleteIndex(indexName);
-            //splunk.CreateIndex(indexName);
-            Console.WriteLine("Created index {0}.", indexName);
+            string token = null;
+            try
+            {
+                splunk.EnableHttp();
+                Console.WriteLine("Enabled HTTP event collector.");
+                splunk.DeleteToken(tokenName);
+                token = splunk.CreateToken(tokenName, indexes: indexName, index: indexName);
+                Console.WriteLine("Created token {0}.", tokenName);
+                //splunk.DeleteIndex(indexName);
+                //splunk.CreateIndex(indexName);
+                Console.WriteLine("Created index {0}.", indexName);
+                
+            }
+            catch(Exception er)
+            {
+                Console.WriteLine("err " + er.ToString());
+                Assert.True(false);
+            }
             return token;
         }
         #endregion
@@ -419,7 +429,7 @@ namespace Splunk.Logging
                     batchSizeCount: 50);
                 trace.Listeners.Add(listener);
 
-                GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+                //GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
                 trace.Close();
             }
             catch (Exception e)
