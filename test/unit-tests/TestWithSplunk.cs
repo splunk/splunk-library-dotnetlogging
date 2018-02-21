@@ -272,7 +272,16 @@ namespace Splunk.Logging
         private static void GenerateDataWaitForIndexingCompletion(SplunkCliWrapper splunk, string indexName, double testStartTime, TraceSource trace)
         {
             // Generate data
-            int eventCounter = GenerateData(trace);
+            try
+            {
+                int eventCounter = GenerateData(trace);
+            }
+            catch(Exception err)
+            {
+                Console.WriteLine("Err is " + err.ToString());
+                Assert.True(false);
+            }
+            /*
             string searchQuery = "index=" + indexName;
             Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
             splunk.WaitForIndexingToComplete(indexName);
@@ -287,7 +296,7 @@ namespace Splunk.Logging
             catch (Exception e)
             {
                 Console.WriteLine("events did not match" + eventCounter + eventsFound + e);
-            }/*
+            }
             List<string> searchResults = splunk.GetSearchResults(searchQuery);
             Assert.Equal(searchResults.Count, eventsFound);
             for (int eventId = 0; eventId < eventCounter; eventId++)
