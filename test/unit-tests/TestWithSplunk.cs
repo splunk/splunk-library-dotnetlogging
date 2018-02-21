@@ -404,7 +404,7 @@ namespace Splunk.Logging
 
                 double testStartTime = SplunkCliWrapper.GetEpochTime();
                 string token = CreateIndexAndToken(splunk, tokenName, indexName);
-
+                /*
                 var trace = new TraceSource("HttpEventCollectorLogger");
                 trace.Switch.Level = SourceLevels.All;
                 var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
@@ -416,11 +416,11 @@ namespace Splunk.Logging
                 trace.Listeners.Add(listener);
 
                 GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
-                trace.Close();
+                trace.Close();*/
             }
             catch (Exception e)
             {
-                bool fail = false;
+                bool fail = true;
                 Console.WriteLine("splunk data" + e.ToString());
                 Assert.False(fail);
             }
