@@ -420,7 +420,9 @@ namespace Splunk.Logging
             }
             catch (Exception e)
             {
+                bool fail = true;
                 Console.WriteLine("splunk data" + e.ToString());
+                Assert.False(fail);
             }
 
         }
