@@ -331,7 +331,7 @@ namespace Splunk.Logging
             splunk.DeleteToken(tokenName);
             string token = splunk.CreateToken(tokenName, indexes: indexName, index: indexName);
             Console.WriteLine("Created token {0}.", tokenName);
-            splunk.DeleteIndex(indexName);
+            //splunk.DeleteIndex(indexName);
             //splunk.CreateIndex(indexName);
             Console.WriteLine("Created index {0}.", indexName);
             return token;
@@ -424,9 +424,8 @@ namespace Splunk.Logging
             }
             catch (Exception e)
             {
-                bool fail = true;
                 Console.WriteLine("splunk data" + e.ToString());
-                Assert.False(fail);
+                Assert.True(false);
             }
 
         }
