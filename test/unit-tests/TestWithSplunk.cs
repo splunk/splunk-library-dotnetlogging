@@ -261,7 +261,6 @@ namespace Splunk.Logging
                 idx2--;
             this.splunkCmd = output.Substring(idx1, idx2 - idx1 + 1).Replace("splunkd.exe", "splunk.exe");
             this.StartServer();
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
             EnableSelfSignedCertificates();
         }
     }
