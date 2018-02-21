@@ -396,34 +396,33 @@ namespace Splunk.Logging
         [Fact]
         static void SendEventsBatchedBySize()
         {
-            string tokenName = "batchedbysizetoken";
-            string indexName = "batchedbysizeindex";
-            SplunkCliWrapper splunk = new SplunkCliWrapper();
-
             try
             {
-                throw new Exception("test");
+                string tokenName = "batchedbysizetoken";
+                string indexName = "batchedbysizeindex";
+                SplunkCliWrapper splunk = new SplunkCliWrapper();
+
+                double testStartTime = SplunkCliWrapper.GetEpochTime();
+                string token = CreateIndexAndToken(splunk, tokenName, indexName);
+
+                var trace = new TraceSource("HttpEventCollectorLogger");
+                trace.Switch.Level = SourceLevels.All;
+                var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+                var listener = new HttpEventCollectorTraceListener(
+                    uri: new Uri("https://127.0.0.1:8088"),
+                    token: token,
+                    metadata: meta,
+                    batchSizeCount: 50);
+                trace.Listeners.Add(listener);
+
+                GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+                trace.Close();
             }
             catch (Exception e)
             {
-                Console.WriteLine("splunk data" + e + splunk.SplunkIsRunning().ToString());
+                Console.WriteLine("splunk data" + e.ToString());
             }
 
-            double testStartTime = SplunkCliWrapper.GetEpochTime();
-            string token = CreateIndexAndToken(splunk, tokenName, indexName);
-
-            var trace = new TraceSource("HttpEventCollectorLogger");
-            trace.Switch.Level = SourceLevels.All;
-            var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var listener = new HttpEventCollectorTraceListener(
-                uri: new Uri("https://127.0.0.1:8088"),
-                token: token,
-                metadata: meta,
-                batchSizeCount: 50);
-            trace.Listeners.Add(listener);
-
-            GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
-            trace.Close();
         }
         /*
         [Trait("functional-tests", "SendEventsBatchedBySizeAndTime")]
