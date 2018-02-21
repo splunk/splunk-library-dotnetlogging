@@ -261,6 +261,7 @@ namespace Splunk.Logging
                 idx2--;
             this.splunkCmd = output.Substring(idx1, idx2 - idx1 + 1).Replace("splunkd.exe", "splunk.exe");
             this.StartServer();
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
             EnableSelfSignedCertificates();
         }
     }
@@ -408,7 +409,7 @@ namespace Splunk.Logging
                 double testStartTime = SplunkCliWrapper.GetEpochTime();
                 string token = CreateIndexAndToken(splunk, tokenName, indexName);
                 indexName = indexName + "1";
-                
+                /*
                 var trace = new TraceSource("HttpEventCollectorLogger");
                 trace.Switch.Level = SourceLevels.All;
                 var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
@@ -420,7 +421,7 @@ namespace Splunk.Logging
                 trace.Listeners.Add(listener);
 
                 GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
-                trace.Close();
+                trace.Close();*/
             }
             catch (Exception e)
             {
