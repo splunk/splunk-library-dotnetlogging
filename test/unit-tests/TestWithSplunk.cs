@@ -275,6 +275,9 @@ namespace Splunk.Logging
             try
             {
                 int eventCounter = GenerateData(trace);
+                string searchQuery = "index=" + indexName;
+                Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
+                splunk.WaitForIndexingToComplete(indexName);
             }
             catch(Exception err)
             {
