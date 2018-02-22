@@ -106,7 +106,7 @@ namespace Splunk.Logging
             if (!ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "search \"{0} | stats count\" -preview false", searchQuery), out stdOut, out stdError))
             {
                 Console.WriteLine("Failed to run search query '{0}'. {1} {2}", searchQuery, stdOut, stdError);
-                Environment.Exit(2);
+                //Environment.Exit(2);
             }
             return Convert.ToInt32(stdOut.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[2], CultureInfo.InvariantCulture);
         }
@@ -277,7 +277,7 @@ namespace Splunk.Logging
                 int eventCounter = GenerateData(trace);
                 string searchQuery = "index=" + indexName;
                 Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
-                //splunk.WaitForIndexingToComplete(indexName);
+                splunk.WaitForIndexingToComplete(indexName);
             }
             catch(Exception err)
             {
