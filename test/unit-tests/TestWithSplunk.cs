@@ -46,8 +46,8 @@ namespace Splunk.Logging
             {
                 Console.WriteLine("Failed to create index. {0} {1}", stdOut, stdError);
                 Console.WriteLine(indexName);
-                Assert.True(false);
-                //Environment.Exit(2);
+                //Assert.True(false);
+                Environment.Exit(2);
             }
         }
 
@@ -106,9 +106,10 @@ namespace Splunk.Logging
             if (!ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "search \"{0} | stats count\" -preview false", searchQuery), out stdOut, out stdError))
             {
                 Console.WriteLine("Failed to run search query '{0}'. {1} {2}", searchQuery, stdOut, stdError);
-                //Environment.Exit(2);
+                Environment.Exit(2);
             }
             return Convert.ToInt32(stdOut.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[2], CultureInfo.InvariantCulture);
+            //return 60;
         }
 
         public List<string> GetSearchResults(string searchQuery)
@@ -347,8 +348,8 @@ namespace Splunk.Logging
                 splunk.DeleteToken(tokenName);
                 token = splunk.CreateToken(tokenName, indexes: indexName, index: indexName);
                 Console.WriteLine("Created token {0}.", tokenName);
-                //splunk.DeleteIndex(indexName);
-                //splunk.CreateIndex(indexName);
+                splunk.DeleteIndex(indexName);
+                splunk.CreateIndex(indexName);
                 Console.WriteLine("Created index {0}.", indexName);
                 
             }
@@ -421,12 +422,12 @@ namespace Splunk.Logging
         [Fact]
         static void SendEventsBatchedBySize()
         {
-            try
-            {
+            //try
+            //{
 
                 string tokenName = "batchedbysizetoken";
-                string indexName = "main";
-                //string indexName = "batchedbysizeindex";
+                //string indexName = "main";
+                string indexName = "batchedbysizeindex";
                 SplunkCliWrapper splunk = new SplunkCliWrapper();
                 
                 double testStartTime = SplunkCliWrapper.GetEpochTime();
@@ -444,12 +445,12 @@ namespace Splunk.Logging
 
                 GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
                 trace.Close();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("splunk data" + e.ToString());
-                Assert.True(false);
-            }
+            //}
+            //catch (Exception e)
+            //{
+              //  Console.WriteLine("splunk data" + e.ToString());
+               // Assert.True(false);
+            //}
 
         }
         /*
