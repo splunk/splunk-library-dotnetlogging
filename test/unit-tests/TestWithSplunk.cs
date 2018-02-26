@@ -453,7 +453,7 @@ namespace Splunk.Logging
             //}
 
         }
-        /*
+        
         [Trait("functional-tests", "SendEventsBatchedBySizeAndTime")]
         [Fact]
         static void SendEventsBatchedBySizeAndTime()
@@ -641,7 +641,6 @@ namespace Splunk.Logging
             }
             trace.Close();
         }
-
-        #endregion*/
+        //#endregion
     }
 }
