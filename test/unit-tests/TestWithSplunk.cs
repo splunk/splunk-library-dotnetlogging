@@ -46,7 +46,6 @@ namespace Splunk.Logging
             {
                 Console.WriteLine("Failed to create index. {0} {1}", stdOut, stdError);
                 Console.WriteLine(indexName);
-                //Assert.True(false);
                 Environment.Exit(2);
             }
         }
@@ -109,7 +108,7 @@ namespace Splunk.Logging
                 Environment.Exit(2);
             }
             return Convert.ToInt32(stdOut.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[2], CultureInfo.InvariantCulture);
-            //return 60;
+     
         }
 
         public List<string> GetSearchResults(string searchQuery)
@@ -273,34 +272,18 @@ namespace Splunk.Logging
         private static void GenerateDataWaitForIndexingCompletion(SplunkCliWrapper splunk, string indexName, double testStartTime, TraceSource trace)
         {
             // Generate data
-            try
-            {
-                int eventCounter = GenerateData(trace);
-                string searchQuery = "index=" + indexName;
-                Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
-                splunk.WaitForIndexingToComplete(indexName);
-            }
-            catch(Exception err)
-            {
-                Console.WriteLine("Err is " + err.ToString());
-                Assert.True(false);
-            }
-            /*
+           
+            int eventCounter = GenerateData(trace);
             string searchQuery = "index=" + indexName;
+            Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
+            splunk.WaitForIndexingToComplete(indexName);
+
             Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
             splunk.WaitForIndexingToComplete(indexName);
             int eventsFound = splunk.GetSearchCount(searchQuery);
             Console.WriteLine("Indexing completed, {0} events were found. Elapsed time {1:F2} seconds", eventsFound, SplunkCliWrapper.GetEpochTime() - testStartTime);
             // Verify all events were indexed correctly
-            try
-            {
-                Assert.Equal(eventCounter, eventsFound);
-                throw new Exception("test");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("events did not match" + eventCounter + eventsFound + e);
-            }
+            Assert.Equal(eventCounter, eventsFound);
             List<string> searchResults = splunk.GetSearchResults(searchQuery);
             Assert.Equal(searchResults.Count, eventsFound);
             for (int eventId = 0; eventId < eventCounter; eventId++)
@@ -312,7 +295,7 @@ namespace Splunk.Logging
             List<string> metaData = splunk.GetMetadataResults(searchQuery);
             Assert.Equal(metaData[0], "customhostname");
             Assert.Equal(metaData[1], "log");
-            Assert.Equal(metaData[2], "host");*/
+            Assert.Equal(metaData[2], "host");
         }
         private static int GenerateData(TraceSource trace, int eventsPerLoop = 50)
         {
@@ -361,8 +344,9 @@ namespace Splunk.Logging
             return token;
         }
         #endregion
-        /*
+        
         #region Tests implementation
+        
         [Trait("functional-tests", "StallWrite")]
         [Fact]
         public static void StallWrite()
@@ -416,26 +400,22 @@ namespace Splunk.Logging
 
             GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
             trace.Close();
-        }*/
+        }
 
         [Trait("functional-tests", "SendEventsBatchedBySize")]
         [Fact]
         static void SendEventsBatchedBySize()
         {
-            //try
-            //{
-
-                string tokenName = "batchedbysizetoken";
-                //string indexName = "main";
-                string indexName = "batchedbysizeindex";
-                SplunkCliWrapper splunk = new SplunkCliWrapper();
+            string tokenName = "batchedbysizetoken";
+            string indexName = "batchedbysizeindex";
+            SplunkCliWrapper splunk = new SplunkCliWrapper();
                 
-                double testStartTime = SplunkCliWrapper.GetEpochTime();
-                string token = CreateIndexAndToken(splunk, tokenName, indexName);
+            double testStartTime = SplunkCliWrapper.GetEpochTime();
+            string token = CreateIndexAndToken(splunk, tokenName, indexName);
                 
-                var trace = new TraceSource("HttpEventCollectorLogger");
-                trace.Switch.Level = SourceLevels.All;
-                var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+            var trace = new TraceSource("HttpEventCollectorLogger");
+            trace.Switch.Level = SourceLevels.All;
+            var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
                 var listener = new HttpEventCollectorTraceListener(
                     uri: new Uri("https://127.0.0.1:8088"),
                     token: token,
@@ -443,15 +423,8 @@ namespace Splunk.Logging
                     batchSizeCount: 50);
                 trace.Listeners.Add(listener);
 
-                GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
-                trace.Close();
-            //}
-            //catch (Exception e)
-            //{
-              //  Console.WriteLine("splunk data" + e.ToString());
-               // Assert.True(false);
-            //}
-
+            GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
+            trace.Close();   
         }
         
         [Trait("functional-tests", "SendEventsBatchedBySizeAndTime")]
@@ -594,7 +567,7 @@ namespace Splunk.Logging
             int eventsFound = splunk.GetSearchCount("index=" + indexName);
             Assert.Equal(expectedCount, eventsFound);
         }
-
+           
         [Trait("functional-tests", "VerifyEventsAreInOrder")]
         [Fact]
         static void VerifyEventsAreInOrder()
@@ -636,11 +609,11 @@ namespace Splunk.Logging
             for (int i = 0; i< totalEvents; i++)
             {
                 int id = totalEvents - i - 1;
-                string expected = string.Format("TraceInformation. This is event {0}. {1}", id, filer[id % 2]);
+                string expected = string.Format("TraceInformation. This is event {0}. ", id);
                 Assert.True(searchResults[i].Contains(expected));
             }
             trace.Close();
         }
-        //#endregion
+        #endregion
     }
 }
