@@ -45,6 +45,7 @@ namespace Splunk.Logging
             if (!ExecuteSplunkCli(string.Format(CultureInfo.InvariantCulture, "add index {0}", indexName), out stdOut, out stdError))
             {
                 Console.WriteLine("Failed to create index. {0} {1}", stdOut, stdError);
+                Console.WriteLine(indexName);
                 Environment.Exit(2);
             }
         }
@@ -107,6 +108,7 @@ namespace Splunk.Logging
                 Environment.Exit(2);
             }
             return Convert.ToInt32(stdOut.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[2], CultureInfo.InvariantCulture);
+     
         }
 
         public List<string> GetSearchResults(string searchQuery)
@@ -230,7 +232,7 @@ namespace Splunk.Logging
         {
             this.userName = userName;
             this.password = password;
-
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
             // Get splunkd location
             Process serviceQuery = new Process
             {
@@ -245,6 +247,7 @@ namespace Splunk.Logging
             };
             serviceQuery.Start();
             string output = serviceQuery.StandardOutput.ReadToEnd();
+            Assert.Equal(serviceQuery.ExitCode, 0);
             if (serviceQuery.ExitCode != 0)
             {
                 Console.WriteLine("Failed to execute query command, exit code {0}. Output is {1}", serviceQuery.ExitCode, output);
@@ -269,8 +272,12 @@ namespace Splunk.Logging
         private static void GenerateDataWaitForIndexingCompletion(SplunkCliWrapper splunk, string indexName, double testStartTime, TraceSource trace)
         {
             // Generate data
+           
             int eventCounter = GenerateData(trace);
             string searchQuery = "index=" + indexName;
+            Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
+            splunk.WaitForIndexingToComplete(indexName);
+
             Console.WriteLine("{0} events were created, waiting for indexing to complete.", eventCounter);
             splunk.WaitForIndexingToComplete(indexName);
             int eventsFound = splunk.GetSearchCount(searchQuery);
@@ -316,19 +323,30 @@ namespace Splunk.Logging
 
         private static string CreateIndexAndToken(SplunkCliWrapper splunk, string tokenName, string indexName)
         {
-            splunk.EnableHttp();
-            Console.WriteLine("Enabled HTTP event collector.");
-            splunk.DeleteToken(tokenName);
-            string token = splunk.CreateToken(tokenName, indexes: indexName, index: indexName);
-            Console.WriteLine("Created token {0}.", tokenName);
-            splunk.DeleteIndex(indexName);
-            splunk.CreateIndex(indexName);
-            Console.WriteLine("Created index {0}.", indexName);
+            string token = null;
+            try
+            {
+                splunk.EnableHttp();
+                Console.WriteLine("Enabled HTTP event collector.");
+                splunk.DeleteToken(tokenName);
+                token = splunk.CreateToken(tokenName, indexes: indexName, index: indexName);
+                Console.WriteLine("Created token {0}.", tokenName);
+                splunk.DeleteIndex(indexName);
+                splunk.CreateIndex(indexName);
+                Console.WriteLine("Created index {0}.", indexName);
+                
+            }
+            catch(Exception er)
+            {
+                Console.WriteLine("err " + er.ToString());
+                Assert.True(false);
+            }
             return token;
         }
         #endregion
-
+        
         #region Tests implementation
+        
         [Trait("functional-tests", "StallWrite")]
         [Fact]
         public static void StallWrite()
@@ -359,7 +377,7 @@ namespace Splunk.Logging
                 streams.Add(dataStream);
                 dataStream.Write(byteArray, 0, byteArray.Length);
             }
-        }
+        } 
         [Trait("functional-tests", "SendEventsBatchedByTime")]
         [Fact]
         public static void SendEventsBatchedByTime()
@@ -391,23 +409,24 @@ namespace Splunk.Logging
             string tokenName = "batchedbysizetoken";
             string indexName = "batchedbysizeindex";
             SplunkCliWrapper splunk = new SplunkCliWrapper();
+                
             double testStartTime = SplunkCliWrapper.GetEpochTime();
             string token = CreateIndexAndToken(splunk, tokenName, indexName);
-
+                
             var trace = new TraceSource("HttpEventCollectorLogger");
             trace.Switch.Level = SourceLevels.All;
             var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var listener = new HttpEventCollectorTraceListener(
-                uri: new Uri("https://127.0.0.1:8088"),
-                token: token,
-                metadata: meta,
-                batchSizeCount: 50);
-            trace.Listeners.Add(listener);
+                var listener = new HttpEventCollectorTraceListener(
+                    uri: new Uri("https://127.0.0.1:8088"),
+                    token: token,
+                    metadata: meta,
+                    batchSizeCount: 50);
+                trace.Listeners.Add(listener);
 
             GenerateDataWaitForIndexingCompletion(splunk, indexName, testStartTime, trace);
-            trace.Close();
+            trace.Close();   
         }
-
+        
         [Trait("functional-tests", "SendEventsBatchedBySizeAndTime")]
         [Fact]
         static void SendEventsBatchedBySizeAndTime()
@@ -548,7 +567,7 @@ namespace Splunk.Logging
             int eventsFound = splunk.GetSearchCount("index=" + indexName);
             Assert.Equal(expectedCount, eventsFound);
         }
-
+           
         [Trait("functional-tests", "VerifyEventsAreInOrder")]
         [Fact]
         static void VerifyEventsAreInOrder()
@@ -590,12 +609,11 @@ namespace Splunk.Logging
             for (int i = 0; i< totalEvents; i++)
             {
                 int id = totalEvents - i - 1;
-                string expected = string.Format("TraceInformation. This is event {0}. {1}", id, filer[id % 2]);
+                string expected = string.Format("TraceInformation. This is event {0}. ", id);
                 Assert.True(searchResults[i].Contains(expected));
             }
             trace.Close();
         }
-
         #endregion
     }
 }
