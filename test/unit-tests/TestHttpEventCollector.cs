@@ -710,6 +710,8 @@ namespace Splunk.Logging
                 return new Response();
             };
 
+            string token1 = token;
+            
             HttpEventCollectorEventInfo.Metadata defaultmetadata = new HttpEventCollectorEventInfo.Metadata(index: "defaulttestindex", 
                 source: "defaulttestsource", sourceType: "defaulttestsourcetype", host: "defaulttesthost");
 
@@ -717,7 +719,7 @@ namespace Splunk.Logging
                   source: "overridetestsource", sourceType: "overridetestsourcetype", host: "overridetesthost");
 
             HttpEventCollectorSender httpEventCollectorSender =
-                new HttpEventCollectorSender(uri, token, 
+                new HttpEventCollectorSender(uri, token1, 
                         defaultmetadata, 
                         HttpEventCollectorSender.SendMode.Sequential, 
                         100000, 
@@ -747,7 +749,7 @@ namespace Splunk.Logging
                             Assert.True(events[2].SourceType == defaultmetadata.SourceType);
                             Assert.True(events[2].Host == defaultmetadata.Host);
 
-                            Response response = noopHandler(token, events);
+                            Response response = noopHandler(token1, events);
                             HttpResponseMessage httpResponseMessage = new HttpResponseMessage();
                             httpResponseMessage.StatusCode = response.Code;
                             byte[] buf = Encoding.UTF8.GetBytes(response.Context);
