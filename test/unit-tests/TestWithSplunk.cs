@@ -345,26 +345,19 @@ namespace Splunk.Logging
             List<HttpWebRequest> requests = new List<HttpWebRequest>();
             List<Stream> streams = new List<Stream>();
             byte[] byteArray = Encoding.UTF8.GetBytes(postData);
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 100; i++)
             {
-                try
-                {
-                    var request = WebRequest.Create(baseUrl + "/services/collector") as HttpWebRequest;
-                    requests.Add(request);
-                    request.Timeout = 60 * 1000;
-                    request.KeepAlive = true;
-                    request.Method = "POST";
-                    request.Headers.Add("Authorization", "Splunk " + token);
-                    request.ContentType = "application/x-www-form-urlencoded";
-                    request.ContentLength = byteArray.Length * 2;
-                    Stream dataStream = request.GetRequestStream();
-                    streams.Add(dataStream);
-                    dataStream.Write(byteArray, 0, byteArray.Length);
-                }
-                catch(Exception err)
-                {
-                    Console.WriteLine("error is " + err.ToString());
-                }
+                var request = WebRequest.Create(baseUrl + "/services/collector") as HttpWebRequest;
+                requests.Add(request);
+                request.Timeout = 60 * 1000;
+                request.KeepAlive = true;
+                request.Method = "POST";
+                request.Headers.Add("Authorization", "Splunk " + token);
+                request.ContentType = "application/x-www-form-urlencoded";
+                request.ContentLength = byteArray.Length * 2;
+                Stream dataStream = request.GetRequestStream();
+                streams.Add(dataStream);
+                dataStream.Write(byteArray, 0, byteArray.Length);
             }
         }
         [Trait("functional-tests", "SendEventsBatchedByTime")]
