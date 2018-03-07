@@ -345,7 +345,7 @@ namespace Splunk.Logging
             List<HttpWebRequest> requests = new List<HttpWebRequest>();
             List<Stream> streams = new List<Stream>();
             byte[] byteArray = Encoding.UTF8.GetBytes(postData);
-            for (int i = 0; i < 500; i++)
+            for (int i = 0; i < 200; i++)
             { 
                 var request = WebRequest.Create(baseUrl + "/services/collector") as HttpWebRequest;
                 requests.Add(request);
