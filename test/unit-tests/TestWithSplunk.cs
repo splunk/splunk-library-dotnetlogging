@@ -601,7 +601,6 @@ namespace Splunk.Logging
             for (int i = 0; i< totalEvents; i++)
             {
                 int id = totalEvents - i - 1;
-                //string expected = string.Format("TraceInformation. This is event {0}. {1}", id, filer[id % 2]);
                 string expected = string.Format("TraceInformation. This is event {0}", id);
                 Assert.True(searchResults[i].Contains(expected));
             }
