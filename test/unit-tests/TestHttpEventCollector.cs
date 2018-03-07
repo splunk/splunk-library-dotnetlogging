@@ -700,7 +700,7 @@ namespace Splunk.Logging
              diff = Math.Ceiling(nowEpoch - epochTimestamp);
              Assert.True(diff< 10.0);
          }
-
+        
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSenderMetadataOverrideTest")]
         [Fact]
         public void HttpEventCollectorSenderMetadataOverrideTest()
@@ -709,7 +709,7 @@ namespace Splunk.Logging
             {
                 return new Response();
             };
-
+ 
             HttpEventCollectorEventInfo.Metadata defaultmetadata = new HttpEventCollectorEventInfo.Metadata(index: "defaulttestindex", 
                 source: "defaulttestsource", sourceType: "defaulttestsourcetype", host: "defaulttesthost");
 
@@ -717,7 +717,7 @@ namespace Splunk.Logging
                   source: "overridetestsource", sourceType: "overridetestsourcetype", host: "overridetesthost");
 
             HttpEventCollectorSender httpEventCollectorSender =
-                new HttpEventCollectorSender(uri, token, 
+                new HttpEventCollectorSender(uri, "TOKEN-GUID", 
                         defaultmetadata, 
                         HttpEventCollectorSender.SendMode.Sequential, 
                         100000, 
