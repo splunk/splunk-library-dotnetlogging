@@ -355,9 +355,20 @@ namespace Splunk.Logging
                 request.Headers.Add("Authorization", "Splunk " + token);
                 request.ContentType = "application/x-www-form-urlencoded";
                 request.ContentLength = byteArray.Length * 2;
-                Stream dataStream = request.GetRequestStream();
-                streams.Add(dataStream);
-                dataStream.Write(byteArray, 0, byteArray.Length);
+                try
+                {
+                    Stream dataStream = request.GetRequestStream();
+                    streams.Add(dataStream);
+                    dataStream.Write(byteArray, 0, byteArray.Length);
+                }
+                catch(WebException webErr)
+                {
+                    //restart splunk
+                    Console.WriteLine("restart splunk due to " + webErr);
+                    splunk.StopServer();
+                    splunk.StartServer();
+
+                }
             }
         }
         [Trait("functional-tests", "SendEventsBatchedByTime")]
