@@ -345,7 +345,7 @@ namespace Splunk.Logging
             List<HttpWebRequest> requests = new List<HttpWebRequest>();
             List<Stream> streams = new List<Stream>();
             byte[] byteArray = Encoding.UTF8.GetBytes(postData);
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < 1000; i++)
             { 
                 var request = WebRequest.Create(baseUrl + "/services/collector") as HttpWebRequest;
                 requests.Add(request);
@@ -355,16 +355,9 @@ namespace Splunk.Logging
                 request.Headers.Add("Authorization", "Splunk " + token);
                 request.ContentType = "application/x-www-form-urlencoded";
                 request.ContentLength = byteArray.Length * 2;
-                try
-                {
-                    Stream dataStream = request.GetRequestStream();
+                Stream dataStream = request.GetRequestStream();
                     streams.Add(dataStream);
                     dataStream.Write(byteArray, 0, byteArray.Length);
-                }
-                catch (Exception err) 
-                {
-                    Console.WriteLine("error os " + err.ToString());
-                }
             }
         }
         [Trait("functional-tests", "SendEventsBatchedByTime")]
