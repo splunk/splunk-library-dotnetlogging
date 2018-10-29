@@ -19,6 +19,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Splunk.Logging
 {
@@ -176,7 +177,7 @@ namespace Splunk.Logging
         {
             double epochTime = (datetime - new DateTime(1970, 1, 1)).TotalSeconds;
             // truncate to 3 digits after floating point
-            Timestamp = epochTime.ToString("#.000", System.Globalization.CultureInfo.InvariantCulture);
+            Timestamp = epochTime.ToString("#.000", Thread.CurrentThread.CurrentCulture);
             this.metadata = metadata ?? new Metadata();
             Event = new LoggerEvent(id, severity, message, data);
         }
