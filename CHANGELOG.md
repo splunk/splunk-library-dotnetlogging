@@ -1,5 +1,9 @@
 # Splunk logging for .NET Changelog
 
+## Version 1.7.1
+
+* Bump version number.
+
 ## Version 1.7.0
 
 * Update version of Newtonsoft.JSON to 11.0.2 (GitHub pull request #34).
