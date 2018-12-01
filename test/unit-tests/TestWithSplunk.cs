@@ -345,8 +345,8 @@ namespace Splunk.Logging
             List<HttpWebRequest> requests = new List<HttpWebRequest>();
             List<Stream> streams = new List<Stream>();
             byte[] byteArray = Encoding.UTF8.GetBytes(postData);
-            for (int i = 0; i < 10000; i++)
-            {
+            for (int i = 0; i < 10; i++)
+            { 
                 var request = WebRequest.Create(baseUrl + "/services/collector") as HttpWebRequest;
                 requests.Add(request);
                 request.Timeout = 60 * 1000;
@@ -355,9 +355,20 @@ namespace Splunk.Logging
                 request.Headers.Add("Authorization", "Splunk " + token);
                 request.ContentType = "application/x-www-form-urlencoded";
                 request.ContentLength = byteArray.Length * 2;
-                Stream dataStream = request.GetRequestStream();
-                streams.Add(dataStream);
-                dataStream.Write(byteArray, 0, byteArray.Length);
+                try
+                {
+                    Stream dataStream = request.GetRequestStream();
+                    streams.Add(dataStream);
+                    dataStream.Write(byteArray, 0, byteArray.Length);
+                }
+                catch(WebException webErr)
+                {
+                    //restart splunk
+                    Console.WriteLine("restart splunk due to " + webErr);
+                    splunk.StopServer();
+                    splunk.StartServer();
+
+                }
             }
         }
         [Trait("functional-tests", "SendEventsBatchedByTime")]
@@ -590,7 +601,7 @@ namespace Splunk.Logging
             for (int i = 0; i< totalEvents; i++)
             {
                 int id = totalEvents - i - 1;
-                string expected = string.Format("TraceInformation. This is event {0}. {1}", id, filer[id % 2]);
+                string expected = string.Format("TraceInformation. This is event {0}", id);
                 Assert.True(searchResults[i].Contains(expected));
             }
             trace.Close();

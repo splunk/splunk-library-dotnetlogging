@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
+using System.Globalization;
 
 namespace Splunk.Logging
 {
@@ -678,29 +679,52 @@ namespace Splunk.Logging
         }
 
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorEventInfoTimestampsTest")]
-         [Fact]
-         public void HttpEventCollectorEventInfoTimestampsTest()
-         {
-             // test setting timestamp
-             DateTime utcNow = DateTime.UtcNow;
-             double nowEpoch = (utcNow - new DateTime(1970, 1, 1)).TotalSeconds;
- 
-             HttpEventCollectorEventInfo ei =
-             new HttpEventCollectorEventInfo(utcNow.AddHours(-1), null, null, null, null, null);
- 
-             double epochTimestamp = double.Parse(ei.Timestamp);
-             double diff = Math.Ceiling(nowEpoch - epochTimestamp);
-             Assert.True(diff >= 3600.0);
- 
-             // test default timestamp
-             ei = new HttpEventCollectorEventInfo(null, null, null, null, null);
-             utcNow = DateTime.UtcNow;
-             nowEpoch = (utcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-             epochTimestamp = double.Parse(ei.Timestamp);
-             diff = Math.Ceiling(nowEpoch - epochTimestamp);
-             Assert.True(diff< 10.0);
-         }
+        [Fact]
+        public void HttpEventCollectorEventInfoTimestampsTest()
+        {
+            // test setting timestamp
+            DateTime utcNow = DateTime.UtcNow;
+            double nowEpoch = (utcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            
+            HttpEventCollectorEventInfo ei =
+            new HttpEventCollectorEventInfo(utcNow.AddHours(-1), null, null, null, null, null);
+            
+            double epochTimestamp = double.Parse(ei.Timestamp);
+            double diff = Math.Ceiling(nowEpoch - epochTimestamp);
+            Assert.True(diff >= 3600.0);
+            
+            // test default timestamp
+            ei = new HttpEventCollectorEventInfo(null, null, null, null, null);
+            utcNow = DateTime.UtcNow;
+            nowEpoch = (utcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            epochTimestamp = double.Parse(ei.Timestamp);
+            diff = Math.Ceiling(nowEpoch - epochTimestamp);
+            Assert.True(diff< 10.0);
+        }
 
+        [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorEventInfoTimestampsInvariantTest")]
+        [Fact]
+        public void HttpEventCollectorEventInfoTimestampsInvariantTest()
+        {
+            // Change Culture temporarily for this test
+            var backupCulture = Thread.CurrentThread.CurrentCulture;
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
+
+            // test setting timestamp
+            DateTime utcNow = DateTime.UtcNow;
+            double nowEpoch = (utcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            
+            HttpEventCollectorEventInfo ei =
+                new HttpEventCollectorEventInfo(utcNow.AddHours(-1), null, null, null, null, null);
+
+            // Reset the culture before any assertions
+            Thread.CurrentThread.CurrentCulture = backupCulture;
+
+            // Ensure we have a comma when using a non-US culture
+            Assert.True(ei.Timestamp.Contains(","));
+        }
+
+        
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSenderMetadataOverrideTest")]
         [Fact]
         public void HttpEventCollectorSenderMetadataOverrideTest()
@@ -709,7 +733,7 @@ namespace Splunk.Logging
             {
                 return new Response();
             };
-
+ 
             HttpEventCollectorEventInfo.Metadata defaultmetadata = new HttpEventCollectorEventInfo.Metadata(index: "defaulttestindex", 
                 source: "defaulttestsource", sourceType: "defaulttestsourcetype", host: "defaulttesthost");
 
@@ -717,7 +741,7 @@ namespace Splunk.Logging
                   source: "overridetestsource", sourceType: "overridetestsourcetype", host: "overridetesthost");
 
             HttpEventCollectorSender httpEventCollectorSender =
-                new HttpEventCollectorSender(uri, token, 
+                new HttpEventCollectorSender(uri, "TOKEN-GUID", 
                         defaultmetadata, 
                         HttpEventCollectorSender.SendMode.Sequential, 
                         100000, 
