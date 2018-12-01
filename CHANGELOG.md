@@ -1,5 +1,14 @@
 # Splunk logging for .NET Changelog
 
+## Version 1.7.1
+
+* Bump version number.
+
+## Version 1.7.0
+
+* Update version of Newtonsoft.JSON to 11.0.2 (GitHub pull request #34).
+* Make HEC timestamp invariant to culture (GitHub pull request #20).
+
 ## Version 1.6.1
 
 * Add support for overriding metadata with `HttpEventCollectorSender.Send()`.
