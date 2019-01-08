@@ -45,6 +45,7 @@ before_build:
 - cmd: time /t
 - cmd: tzutil /s "Pacific Standard Time"
 - cmd: time /t
+- cmd: set PATH=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin;%PATH%
 
 build:
   verbosity: detailed
