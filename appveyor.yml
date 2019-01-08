@@ -12,9 +12,9 @@ environment:
   - SPLUNK_VERSION: 7.0.1
     SPLUNK_BUILD: 2b5b15c4ee89
     SDK_APP_VERSION: 1.0.0
-  - SPLUNK_VERSION: 7.2.0
-    SPLUNK_BUILD: 8c86330ac18
-    SDK_APP_VERSION: 1.0.0
+  # - SPLUNK_VERSION: 7.2.0
+  #   SPLUNK_BUILD: 8c86330ac18
+  #   SDK_APP_VERSION: 1.0.0
 
 
 install:
@@ -46,7 +46,7 @@ before_build:
 - cmd: tzutil /s "Pacific Standard Time"
 - cmd: time /t
 - cmd: set PATH=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin;%PATH%
-- cmd: cmd/C "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin" "C:\projects\splunk-library-dotnetlogging\Splunk.Logging.sln" /verbosity:detailed /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+# - cmd: cmd/C "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin" "C:\projects\splunk-library-dotnetlogging\Splunk.Logging.sln" /verbosity:detailed /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 build:
   verbosity: normal
