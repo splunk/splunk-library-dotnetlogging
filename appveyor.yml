@@ -46,9 +46,9 @@ before_build:
 - cmd: tzutil /s "Pacific Standard Time"
 - cmd: time /t
 - cmd: set PATH=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin;%PATH%
+- cmd: cmd/C "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin" "C:\projects\splunk-library-dotnetlogging\Splunk.Logging.sln" /verbosity:detailed /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 build:
-  -cmd: cmd/C "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin" "C:\projects\splunk-library-dotnetlogging\Splunk.Logging.sln" /verbosity:detailed /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
   verbosity: normal
 
 # Avoid test failures from debug assertions by building in release mode
