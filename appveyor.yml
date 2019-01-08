@@ -48,7 +48,7 @@ before_build:
 - cmd: set PATH=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin;%PATH%
 
 build:
-  -cmd: "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin" "C:\projects\splunk-library-dotnetlogging\Splunk.Logging.sln" /verbosity:detailed /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+  -cmd: cmd/C "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin" "C:\projects\splunk-library-dotnetlogging\Splunk.Logging.sln" /verbosity:detailed /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
   verbosity: normal
 
 # Avoid test failures from debug assertions by building in release mode
