@@ -1,4 +1,6 @@
 version: "{build}"
+image:
+- Visual Studio 2017
 
 # Make sure we always have RDP details
 init:
