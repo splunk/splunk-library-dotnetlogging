@@ -48,7 +48,7 @@ before_build:
 - cmd: set PATH=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin;%PATH%
 
 build:
-  verbosity: detailed
+  verbosity: normal
 
 # Avoid test failures from debug assertions by building in release mode
 configuration:
