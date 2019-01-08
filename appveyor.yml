@@ -24,7 +24,7 @@ install:
 - cmd: 7z x C:\sdkapp.zip -oc:\splunk\splunk\etc\apps > NUL
 # Unzip it, rename it, and make sure it's installed
 - cmd: rename c:\splunk\splunk\etc\apps\sdk-app-collection-%SDK_APP_VERSION% sdk-app-collection
-- cmd: dir c:\splunk\splunk\etc\apps
+#- cmd: dir c:\splunk\splunk\etc\apps
 
 # temp workaround to resolve tsl1.2 not supported by .net, downgrade splunk to use tsl1.0
 - cmd: type ci\server_ssl.conf >> C:\splunk\splunk\etc\system\local\server.conf
@@ -45,7 +45,7 @@ before_build:
 - cmd: time /t
 
 build:
-  verbosity: minimal
+  verbosity: detailed
 
 # Avoid test failures from debug assertions by building in release mode
 configuration:
