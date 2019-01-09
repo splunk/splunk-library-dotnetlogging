@@ -40,6 +40,7 @@ install:
 
 before_build:
 # Restore our nuget packages
+- cmd: where MSBuild
 - cmd: nuget restore
 # Set our timezone correctly
 - cmd: time /t
