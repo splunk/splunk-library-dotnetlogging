@@ -42,7 +42,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="System.Net.Http" Version="4.3.3" />
-    <PackageReference Include="xunit.runner.console" Version="1.9.2" />
+    <PackageReference Include="xunit.runner.console" Version="2.0.0" />
   </ItemGroup>
 
 </Project>
