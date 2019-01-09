@@ -1,8 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
-MinimumVisualStudioVersion = 10.0.40219.1
+Microsoft Visual Studio Solution File, Format Version 15.00
+# Visual Studio 2017
+VisualStudioVersion = 15.0
+MinimumVisualStudioVersion = 14.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5142E63D-CF4A-48EA-8527-F6B2DB4718C0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{2F34BC99-9753-46CC-A386-33B543EFF916}"
