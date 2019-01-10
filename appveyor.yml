@@ -8,7 +8,7 @@ image:
 init:
 - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
-# # Build 6.2 and 6.3
+# Build 6.2 and 6.3
 environment:
   matrix:
   - SPLUNK_VERSION: 7.0.1
