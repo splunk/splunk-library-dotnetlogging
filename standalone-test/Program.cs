@@ -1,6 +1,5 @@
 ﻿using Splunk.Logging;
 using System;
-using System.Diagnostics;
 using System.Net;
 
 namespace standalone_test
