@@ -1,18 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;net47;netstandard2.0;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>net45</TargetFrameworks>
     <Company>Splunk, Inc.</Company>
     <Copyright>Copyright © Splunk, Inc. 2015</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Splunk.Logging.Common\Splunk.Logging.Common.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Microsoft.Practices.EnterpriseLibrary.SemanticLogging">
-      <HintPath>..\..\packages\EnterpriseLibrary.SemanticLogging.2.0.1406.1\lib\net45\Microsoft.Practices.EnterpriseLibrary.SemanticLogging.dll</HintPath>
-    </Reference>
+    <PackageReference Include="EnterpriseLibrary.SemanticLogging" Version="2.0.1406.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Splunk.Logging.Common\Splunk.Logging.Common.csproj" />
+  </ItemGroup>
 </Project>
