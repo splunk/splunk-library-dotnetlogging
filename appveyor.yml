@@ -56,6 +56,6 @@ build:
 configuration:
 - Release
 
-test_script:
-# Run the unit tests and acceptance tests
-- ps: xunit.console.clr4.x86 test\unit-tests\bin\Debug\unit-tests.dll /appveyor
+# test_script:
+# # Run the unit tests and acceptance tests
+# - ps: xunit.console.clr4.x86 test\unit-tests\bin\Debug\unit-tests.dll /appveyor
