@@ -1,6 +1,6 @@
 # Splunk logging for .NET 
 
-#### Version 1.7.1
+#### Version 1.7.2
 
 Splunk logging for .NET enables you to configure [HTTP Event Collector](http://dev.splunk.com/view/event-collector/SP-CAAAE6M), UDP or TCP 
 logging of events to a Splunk Enterprise instance from within your .NET 
@@ -26,8 +26,8 @@ more in-depth information be sure to visit [Splunk logging for
 
 Here's what you need to use Splunk logging for .NET:
 
-* **.NET Framework 4.0 or later**: Splunk logging for .NET 
-  requires the .NET Framework version 4.0 or later.
+* **.NET Framework 4.5 or later**: Splunk logging for .NET 
+  requires the .NET Framework version 4.5 or later.
 * **Splunk Enterprise** or **Splunk Cloud**: If you haven't already installed Splunk Enterprise,
   download it at [http://www.splunk.com/download](http://www.splunk.com/download). Otherwise, you
   should have at least a trial subscription to [Splunk Cloud](http://www.splunkcloud.com).
@@ -39,7 +39,7 @@ need:
   [xUnit.net Test Support](https://resharper-plugins.jetbrains.com/packages/xunitcontrib/). 
   Otherwise, install the [xUnit.net runner for Visual Studio 2012 and 2013](http://visualstudiogallery.msdn.microsoft.com/463c5987-f82b-46c8-a97e-b1cde42b9099).
 * **Visual Studio**: Splunk logging for .NET supports 
-  development in [Microsoft Visual Studio 2012 or later](http://www.microsoft.com/visualstudio/downloads).
+  development in [Microsoft Visual Studio 2017 or later](http://www.microsoft.com/visualstudio/downloads).
 
 ### Install
 
