@@ -23,7 +23,6 @@
   <ProjectReference Include="..\..\src\Splunk.Logging.Common\Splunk.Logging.Common.csproj" />
   <ProjectReference Include="..\..\src\Splunk.Logging.SLAB\Splunk.Logging.SLAB.csproj" />
   <ProjectReference Include="..\..\src\Splunk.Logging.TraceListener\Splunk.Logging.TraceListener.csproj" />
-  <ProjectReference Include="..\..\standalone-test\standalone-test.csproj" />
 </ItemGroup>
 
 </Project>
