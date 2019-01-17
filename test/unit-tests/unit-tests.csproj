@@ -22,6 +22,10 @@
 </ItemGroup>
 
 <ItemGroup>
+  <PackageReference Include="xunit.runner.visualstudio" Version="2.0.0" />
+</ItemGroup>
+
+<ItemGroup>
   <ProjectReference Include="..\..\src\Splunk.Logging.Common\Splunk.Logging.Common.csproj" />
   <ProjectReference Include="..\..\src\Splunk.Logging.SLAB\Splunk.Logging.SLAB.csproj" />
   <ProjectReference Include="..\..\src\Splunk.Logging.TraceListener\Splunk.Logging.TraceListener.csproj" />
