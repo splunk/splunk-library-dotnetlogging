@@ -57,5 +57,6 @@ configuration:
 - Release
 
 # test_script:
+# test will be automatically discovered
 # # Run the unit tests and acceptance tests
 # - ps: xunit.console.clr4.x86 test\unit-tests\bin\Debug\unit-tests.dll /appveyor
