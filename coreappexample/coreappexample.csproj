@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Permissions" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\src\Splunk.Logging.SLAB\bin\Debug\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Splunk.Logging.Common">
+      <HintPath>..\src\Splunk.Logging.TraceListener\bin\Debug\netstandard2.0\Splunk.Logging.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Splunk.Logging.TraceListener">
+      <HintPath>..\src\Splunk.Logging.TraceListener\bin\Debug\netstandard2.0\Splunk.Logging.TraceListener.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
