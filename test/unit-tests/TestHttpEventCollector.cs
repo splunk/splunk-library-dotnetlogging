@@ -1,19 +1,15 @@
+using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.IO;
+using System.Globalization;
 using System.Net;
-using System.Net.Sockets;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Net.Http;
-using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
-using System.Globalization;
 
 namespace Splunk.Logging
 {

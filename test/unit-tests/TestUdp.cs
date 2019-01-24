@@ -1,10 +1,7 @@
 ﻿using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
 using Splunk.Logging;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;

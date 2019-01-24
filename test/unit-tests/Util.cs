@@ -1,6 +1,4 @@
-﻿using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
-using Microsoft.Practices.EnterpriseLibrary.SemanticLogging.Formatters;
-/*
+﻿/*
  * Copyright 2014 Splunk, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -15,15 +13,10 @@ using Microsoft.Practices.EnterpriseLibrary.SemanticLogging.Formatters;
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
+using Microsoft.Practices.EnterpriseLibrary.SemanticLogging.Formatters;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.Tracing;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Splunk.Logging
