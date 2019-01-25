@@ -1,5 +1,9 @@
 # Splunk logging for .NET Changelog
 
+## Version 1.7.2
+* Updated all packages to use the new version of the csproj file that allows multi-targetting of .NET versions.
+* Add new examples of using `TraceListener`  
+
 ## Version 1.7.1
 
 * Bump version number.
