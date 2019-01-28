@@ -7,8 +7,6 @@
     <AssemblyVersion>1.7.2.0</AssemblyVersion>
     <FileVersion>1.7.2.0</FileVersion>
     <Version>1.7.2</Version>
-    <ResolveNuGetPackages>true</ResolveNuGetPackages>
-    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
    </PropertyGroup>
 
   <ItemGroup>
