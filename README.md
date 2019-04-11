@@ -20,7 +20,7 @@ common library that is required by both main libraries:
 The information in this Readme provides steps to get going quickly, but for
 more in-depth information be sure to visit [Splunk logging for
 .NET](http://dev.splunk.com/view/splunk-loglib-dotnet/SP-CAAAEX4) page on 
-[Splunk Developer Portal](http://dev.splunk.com).
+[Splunk Developer Portal](http://dev.splunk.com). 
 
 ### Requirements
 
@@ -30,7 +30,7 @@ Here's what you need to use Splunk logging for .NET:
   requires the .NET Framework version 4.5 or later.
 * **Splunk Enterprise** or **Splunk Cloud**: If you haven't already installed Splunk Enterprise,
   download it at [http://www.splunk.com/download](http://www.splunk.com/download). Otherwise, you
-  should have at least a trial subscription to [Splunk Cloud](http://www.splunkcloud.com).
+  should have at least a trial subscription to [Splunk Cloud](http://www.splunkcloud.com). Splunk logging for .NET is tested with Splunk Enterprise 7.0 and 7.2. 
 
 If you want to build the libraries and run the test suite, you will also
 need:
