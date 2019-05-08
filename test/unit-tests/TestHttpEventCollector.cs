@@ -231,6 +231,17 @@ namespace Splunk.Logging
 
             trace = Trace((token, events) =>
             {
+                Assert.True(events[0].Event.Severity == "Information");
+                Assert.True(events[0].Event.Id == "1");
+                Assert.True(events[0].Event.Data.MyInfo == "one");
+                Assert.True(events[0].Event.Data.OtherInfo == "two");
+                return new Response();
+            });
+            trace.TraceData(TraceEventType.Information, 1, new { MyInfo = "one", OtherInfo = "two" });
+            trace.Close();
+
+            trace = Trace((token, events) =>
+            {
                 Assert.True(events[0].Event.Severity == "Critical");
                 Assert.True(events[0].Event.Id == "2");
                 return new Response();

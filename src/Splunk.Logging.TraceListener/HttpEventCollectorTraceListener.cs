@@ -185,6 +185,20 @@ namespace Splunk.Logging
         }
 
         public override void TraceData(
+            TraceEventCache eventCache,
+            string source,
+            TraceEventType eventType,
+            int id,
+            object data)
+        {
+            sender.Send(
+                id: id.ToString(),
+                severity: eventType.ToString(),
+                data: data
+            );
+        }
+
+        public override void TraceData(
             TraceEventCache eventCache, 
             string source, 
             TraceEventType eventType, 
