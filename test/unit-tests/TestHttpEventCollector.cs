@@ -728,7 +728,7 @@ namespace Splunk.Logging
             Thread.CurrentThread.CurrentCulture = backupCulture;
 
             // Ensure we have a comma when using a non-US culture
-            Assert.True(ei.Timestamp.Contains(","));
+            Assert.True(ei.Timestamp.Contains(","), "Timestamp did not contain a comma: " + ei.Timestamp);
         }
 
         
