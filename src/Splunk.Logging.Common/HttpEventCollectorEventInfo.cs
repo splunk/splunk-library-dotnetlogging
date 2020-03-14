@@ -175,8 +175,8 @@ namespace Splunk.Logging
             DateTime datetime, string id, string severity, string message, object data, Metadata metadata)
         {
             double epochTime = (datetime - new DateTime(1970, 1, 1)).TotalSeconds;
-            // truncate to 3 digits after floating point using "F3" format for InvariantCulture support
-            Timestamp = epochTime.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
+            // truncate to 3 digits after floating point
+            Timestamp = epochTime.ToString("#.000", System.Globalization.CultureInfo.InvariantCulture);
             this.metadata = metadata ?? new Metadata();
             Event = new LoggerEvent(id, severity, message, data);
         }

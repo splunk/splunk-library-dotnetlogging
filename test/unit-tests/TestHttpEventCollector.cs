@@ -718,23 +718,22 @@ namespace Splunk.Logging
             Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
 
             // test setting timestamp
-            DateTime utcTime = new DateTime(2020, 1, 1);
-            double epochTime = (utcTime - new DateTime(1970, 1, 1)).TotalSeconds;
+            DateTime fixedTime = new DateTime(2020, 1, 1);
 
             HttpEventCollectorEventInfo eiDE =
-                new HttpEventCollectorEventInfo(utcTime.AddHours(-1), null, null, null, null, null);
+                new HttpEventCollectorEventInfo(fixedTime.AddHours(-1), null, null, null, null, null);
 
-            // Make sure this format matches expected comma format with three decimal places
-            Assert.Equal(eiDE.Timestamp, "00,000");
+            // Make sure this format matches expected decimal format with three decimal places
+            Assert.Equal(eiDE.Timestamp, "1577833200.000");
 
             // Reset the culture before any assertions
             Thread.CurrentThread.CurrentCulture = backupCulture;
 
             HttpEventCollectorEventInfo eiUS =
-                new HttpEventCollectorEventInfo(utcTime.AddHours(-1), null, null, null, null, null);
+                new HttpEventCollectorEventInfo(fixedTime.AddHours(-1), null, null, null, null, null);
 
-            // Make sure this format matches expected decimal point format with three decimal places
-            Assert.Equal(eiUS.Timestamp, "00.000");
+            // Make sure this format matches expected decimal format with three decimal places
+            Assert.Equal(eiUS.Timestamp, "1577833200.000");
         }
 
         
