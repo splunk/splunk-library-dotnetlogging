@@ -718,17 +718,23 @@ namespace Splunk.Logging
             Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
 
             // test setting timestamp
-            DateTime utcNow = DateTime.UtcNow;
-            double nowEpoch = (utcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            
-            HttpEventCollectorEventInfo ei =
-                new HttpEventCollectorEventInfo(utcNow.AddHours(-1), null, null, null, null, null);
+            DateTime utcTime = new DateTime(2020, 1, 1);
+            double epochTime = (utcTime - new DateTime(1970, 1, 1)).TotalSeconds;
+
+            HttpEventCollectorEventInfo eiDE =
+                new HttpEventCollectorEventInfo(utcTime.AddHours(-1), null, null, null, null, null);
+
+            // Make sure this format matches expected comma format with three decimal places
+            Assert.Equal(eiDE.Timestamp, "00,000");
 
             // Reset the culture before any assertions
             Thread.CurrentThread.CurrentCulture = backupCulture;
 
-            // Ensure we have a comma when using a non-US culture
-            Assert.True(ei.Timestamp.Contains(","), "Timestamp did not contain a comma: " + ei.Timestamp);
+            HttpEventCollectorEventInfo eiUS =
+                new HttpEventCollectorEventInfo(utcTime.AddHours(-1), null, null, null, null, null);
+
+            // Make sure this format matches expected decimal point format with three decimal places
+            Assert.Equal(eiUS, "00.000");
         }
 
         
