@@ -734,7 +734,7 @@ namespace Splunk.Logging
                 new HttpEventCollectorEventInfo(utcTime.AddHours(-1), null, null, null, null, null);
 
             // Make sure this format matches expected decimal point format with three decimal places
-            Assert.Equal(eiUS, "00.000");
+            Assert.Equal(eiUS.Timestamp, "00.000");
         }
 
         
