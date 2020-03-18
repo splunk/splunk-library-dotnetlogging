@@ -8,14 +8,14 @@ image:
 init:
 - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
-# Build 6.2 and 6.3
+# Test against two most recent major versions, see: https://www.splunk.com/page/previous_releases#x86_64windows
 environment:
   matrix:
-  - SPLUNK_VERSION: 7.0.1
-    SPLUNK_BUILD: 2b5b15c4ee89
+  - SPLUNK_VERSION: 8.0.2
+    SPLUNK_BUILD: a7f645ddaf91
     SDK_APP_VERSION: 1.0.0
-  - SPLUNK_VERSION: 7.2.0
-    SPLUNK_BUILD: 8c86330ac18
+  - SPLUNK_VERSION: 7.3.4
+    SPLUNK_BUILD: 13e97039fb65
     SDK_APP_VERSION: 1.0.0
 
   VisualStudioVersion: 15.0
