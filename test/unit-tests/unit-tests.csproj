@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45</TargetFrameworks>
+    <TargetFrameworks>net48</TargetFrameworks>
   </PropertyGroup>
 
 <ItemGroup>
   <Reference Include="Microsoft.CSharp" />
+  <Reference Include="System.Web" />
 </ItemGroup>
 
 <ItemGroup>
@@ -13,10 +14,13 @@
 </ItemGroup>
 
 <ItemGroup>
-  <PackageReference Include="Newtonsoft.Json" version="11.0.2" />
+  <PackageReference Include="Newtonsoft.Json" version="13.0.1" />
   <PackageReference Include="EnterpriseLibrary.SemanticLogging" Version="2.0.1406.1" />
-  <PackageReference Include="xunit" Version="1.9.2" />
-  <PackageReference Include="xunit.runner.visualstudio" Version="2.0.0" />
+  <PackageReference Include="xunit" Version="2.4.1" />
+  <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+    <PrivateAssets>all</PrivateAssets>
+    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+  </PackageReference>
 </ItemGroup>
 
 <ItemGroup>
