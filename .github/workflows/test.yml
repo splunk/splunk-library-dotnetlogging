@@ -1,0 +1,22 @@
+name: .NET logging library test
+
+on:
+  [push, pull_request]
+
+jobs:
+  test-execution:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        splunk-version:
+          - "8.0"
+    services:
+      splunk:
+        image: splunk/splunk:${{matrix.splunk-version}}
+        env:
+          SPLUNK_START_ARGS: --accept-license
+          SPLUNK_PASSWORD: changed!
+        ports:
+          - 8000:8000
+          - 8088:8088
+          - 8089:8089
