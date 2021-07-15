@@ -182,13 +182,6 @@ namespace Splunk.Logging
             HttpResponseMessage response = Send(endpoint, HttpMethod.Delete);
         }
 
-        public void RestartSplunkServer()
-        {
-            string uri = "/services/server/control/restart";
-
-            HttpResponseMessage response = Send(uri, HttpMethod.Post, null);
-        }
-
         public static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         public static double GetEpochTime()
         {
