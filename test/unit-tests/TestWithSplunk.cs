@@ -78,45 +78,6 @@ namespace Splunk.Logging
         #endregion
 
         #region Tests implementation
-        [Trait("functional-tests", "StallWrite")]
-        [Fact]
-        public static void StallWrite()
-        {
-            string tokenName = "stallwritetoken";
-            string indexName = "stallwriteindex";
-            SplunkTestWrapper splunk = new SplunkTestWrapper();
-            double testStartTime = SplunkTestWrapper.GetEpochTime();
-            string token = CreateIndexAndToken(splunk, tokenName, indexName);
-
-            const string baseUrl = "https://127.0.0.1:8088";
-            List<HttpClient> clients = new List<HttpClient>();
-            const string endpoint = "services/collector";
-            string postData = "{ \"event\": { \"data\": \"test event\" } }";
-
-            for (int i = 0; i < 10; i++)
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    client.BaseAddress = new Uri(baseUrl);
-                    clients.Add(client);
-                    client.Timeout = TimeSpan.FromSeconds(60);
-                    client.DefaultRequestHeaders.Add("Authorization", "Splunk " + token);
-                    client.DefaultRequestHeaders.Add("Connection", "Keep-Alive");
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));
-                    try
-                    {
-                        var response = client.PostAsync(endpoint, new StringContent(postData, Encoding.UTF8, "application/json")).Result;
-                    }
-                    catch (WebException webErr)
-                    {
-                        //restart splunk
-                        Console.WriteLine("restart splunk due to " + webErr);
-                        splunk.RestartSplunkServer();
-                    }
-                }
-            }
-        }
-
         [Trait("functional-tests", "SendEventsBatchedByTime")]
         [Fact]
         public static void SendEventsBatchedByTime()
@@ -270,41 +231,42 @@ namespace Splunk.Logging
             Assert.True(wrongMetaDataWasRaised);
         }
 
-        [Trait("functional-tests", "VerifyFlushEvents")]
-        [Fact]
-        public void VerifyFlushEvents()
-        {
-            string tokenName = "flusheventtoken";
-            string indexName = "flusheventdindex";
-            SplunkTestWrapper splunk = new SplunkTestWrapper();
-            double testStartTime = SplunkTestWrapper.GetEpochTime();
+        // Stop and Start Server API is not exist so commented 'VerifyFlushEvents' test case
+        //[Trait("functional-tests", "VerifyFlushEvents")]
+        //[Fact]
+        //public void VerifyFlushEvents()
+        //{
+        //    string tokenName = "flusheventtoken";
+        //    string indexName = "flusheventdindex";
+        //    SplunkTestWrapper splunk = new SplunkTestWrapper();
+        //    double testStartTime = SplunkTestWrapper.GetEpochTime();
 
-            string token = CreateIndexAndToken(splunk, tokenName, indexName);
-            //splunk.StopServer();
-            Thread.Sleep(5 * 1000);
+        //    string token = CreateIndexAndToken(splunk, tokenName, indexName);
+        //    splunk.StopServer();
+        //    Thread.Sleep(5 * 1000);
 
-            var trace = new TraceSource("HttpEventCollectorLogger");
-            trace.Switch.Level = SourceLevels.All;
-            var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
-            var listener = new HttpEventCollectorTraceListener(
-                uri: new Uri("https://127.0.0.1:8088"),
-                token: token,
-                retriesOnError: int.MaxValue,
-                metadata: meta);
-            trace.Listeners.Add(listener);
+        //    var trace = new TraceSource("HttpEventCollectorLogger");
+        //    trace.Switch.Level = SourceLevels.All;
+        //    var meta = new HttpEventCollectorEventInfo.Metadata(index: indexName, source: "host", sourceType: "log", host: "customhostname");
+        //    var listener = new HttpEventCollectorTraceListener(
+        //        uri: new Uri("https://127.0.0.1:8088"),
+        //        token: token,
+        //        retriesOnError: int.MaxValue,
+        //        metadata: meta);
+        //    trace.Listeners.Add(listener);
 
-            // Generate data, wait a little bit so retries are happenning and start Splunk. Expecting to see all data make it
-            const int eventsToGeneratePerLoop = 250;
-            const int expectedCount = eventsToGeneratePerLoop * 7;
-            int eventCounter = GenerateData(trace, eventsPerLoop: eventsToGeneratePerLoop);
-            //splunk.StartServer();
-            trace.Close();
+        //    // Generate data, wait a little bit so retries are happenning and start Splunk. Expecting to see all data make it
+        //    const int eventsToGeneratePerLoop = 250;
+        //    const int expectedCount = eventsToGeneratePerLoop * 7;
+        //    int eventCounter = GenerateData(trace, eventsPerLoop: eventsToGeneratePerLoop);
+        //    splunk.StartServer();
+        //    trace.Close();
 
-            // Verify every event made to Splunk
-            splunk.WaitForIndexingToComplete(indexName, stabilityPeriod: 30);
-            int eventsFound = splunk.GetSearchCount("index=" + indexName);
-            Assert.Equal(expectedCount, eventsFound);
-        }
+        //    // Verify every event made to Splunk
+        //    splunk.WaitForIndexingToComplete(indexName, stabilityPeriod: 30);
+        //    int eventsFound = splunk.GetSearchCount("index=" + indexName);
+        //    Assert.Equal(expectedCount, eventsFound);
+        //}
 
         [Trait("functional-tests", "VerifyEventsAreInOrder")]
         [Fact]
