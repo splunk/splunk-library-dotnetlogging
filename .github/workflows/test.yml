@@ -26,4 +26,4 @@ jobs:
       run: dotnet test -t   
       
     - name: Run test cases
-      run: dotnet test --filter "FullyQualifiedName!~Splunk.Logging.TestWithSplunk" --verbosity Detailed
+      run: dotnet test --filter "FullyQualifiedName!~Splunk.Logging.TestWithSplunk" --no-restore --verbosity normal
