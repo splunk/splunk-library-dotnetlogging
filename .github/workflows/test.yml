@@ -22,9 +22,6 @@ jobs:
     - name: Build Solution
       run: msbuild.exe Splunk.Logging.sln
 
-    - name: dotnet version
-      run: dotnet --version
-
     - name: list of test cases
       run: dotnet test -t   
       
