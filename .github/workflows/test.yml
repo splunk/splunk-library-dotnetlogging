@@ -24,6 +24,9 @@ jobs:
 
     - name: dotnet version
       run: dotnet --version
-    
+
+    - name: list of test cases
+      run: dotnet test -t   
+      
     - name: Run test cases
       run: dotnet test --filter "FullyQualifiedName!~Splunk.Logging.TestWithSplunk"
