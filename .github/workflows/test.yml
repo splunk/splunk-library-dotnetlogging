@@ -6,11 +6,21 @@ on:
 jobs:
   test-execution:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        splunk-version:
-          - "8.0"
+
     steps:
     - uses: actions/checkout@v2
-    - name: Start splunk container
-      run: make up
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v1.0.2
+      
+    - name: Restore NuGet Packages
+      run: nuget restore Splunk.Logging.sln
+
+    - name: Build Solution
+      run: msbuild.exe Splunk.Logging.sln
+
+    - name: Run test cases
+      run: dotnet test --filter "FullyQualifiedName!~Splunk.Logging.TestWithSplunk"
