@@ -333,12 +333,6 @@ The Splunk logging library for .NET is community-supported.
 1. You can find help through our community on [Splunk Answers](http://answers.splunk.com/) (use the `logging-library-dotnet` tag to identify your questions).
 2. File issues on [GitHub](https://github.com/splunk/splunk-library-dotnetlogging/issues).
 
-### Contact us
-
-You can [contact support][contact] if you have Splunk related questions.
-
-You can reach the Dev Platform team at [devinfo@splunk.com](mailto:devinfo@splunk.com).
-
 ## License
 
 Splunk logging for .NET is licensed under the Apache License 2.0. Details can be found in the LICENSE file.
