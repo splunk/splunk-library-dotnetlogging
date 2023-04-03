@@ -108,8 +108,10 @@ namespace Splunk.Logging
         /// </summary>
         public enum BufferMode
         {
-            InMemory,
-            TempFiles
+            StringBuilderBuffer,
+            PushStreamInMemoryBuffer,
+            OriginalBuffer,
+            TempFilesBuffer
         };
 
         private const string HttpContentTypeMedia = "application/json";
@@ -162,7 +164,7 @@ namespace Splunk.Logging
             int batchInterval, int batchSizeBytes, int batchSizeCount,
             HttpEventCollectorMiddleware middleware,
             HttpEventCollectorFormatter formatter = null,
-            BufferMode bufferMode = BufferMode.InMemory)
+            BufferMode bufferMode = BufferMode.OriginalBuffer)
         {
             this.serializer = new JsonSerializer();
             serializer.NullValueHandling = NullValueHandling.Ignore;
@@ -306,7 +308,6 @@ namespace Splunk.Logging
             task.Start();
             return task;
         }
-        
 
         /// <summary>
         /// Flush all batched events immediately. 

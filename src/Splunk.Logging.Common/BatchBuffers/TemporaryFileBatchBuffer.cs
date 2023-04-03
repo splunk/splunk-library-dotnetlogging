@@ -2,23 +2,23 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using Newtonsoft.Json;
 
 namespace Splunk.Logging.BatchBuffers
 {
-    public class MemoryStreamBatchBuffer : IBuffer
+    public class TemporaryFileBatchBuffer : IBuffer
     {
+        private static readonly string tempDir = Path.GetTempPath();
         private readonly string filePath;
         private readonly JsonSerializer serializer;
         private readonly TextWriter writer;
         private readonly FileStream fileStream;
 
-        public MemoryStreamBatchBuffer()
+        public TemporaryFileBatchBuffer()
         {
-            filePath = Path.GetTempFileName();
+            filePath = Path.GetFileName(Path.GetTempFileName());
             serializer = JsonSerializer.Create();
-            fileStream = File.OpenWrite(filePath);
+            fileStream = File.OpenWrite($"{tempDir}{filePath}");
             writer = new StreamWriter(fileStream);
         }
 
@@ -34,7 +34,7 @@ namespace Splunk.Logging.BatchBuffers
         {
             writer.Flush();
             writer.Close();
-            return new StreamContent(File.OpenRead(filePath))
+            return new StreamContent(File.OpenRead($"{tempDir}{filePath}"))
             {
                 Headers =
                 {
@@ -43,13 +43,17 @@ namespace Splunk.Logging.BatchBuffers
             };
         }
 
+        public void SupportOriginalBehaviour()
+        {
+        }
+
         public void Dispose()
         {
             writer?.Dispose();
             fileStream?.Dispose();
             try
             {
-                File.Delete(filePath);
+                File.Delete($"{tempDir}{filePath}");
             }
             catch (Exception)
             {

@@ -5,14 +5,16 @@
     <projectFile>standalone-test/standalone-test.csproj</projectFile>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c10dd702-477e-4a55-ae4b-acc96cc975ed" name="Changes" comment="Added some more messages to I can benchmark">
-      <change afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/IBuffer.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/MemoryStreamBatchBuffer.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/StringBuilderBatchBuffer.cs" afterDir="false" />
+    <list default="true" id="c10dd702-477e-4a55-ae4b-acc96cc975ed" name="Changes" comment="Pulled out a FileBuffer as-well to avoid lots of allocations at the expense of slightly slower sends.">
+      <change afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/StringBuilderBuffer.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Splunk.Logging/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Splunk.Logging/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/IBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/IBuffer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/MemoryStreamBatchBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/TemporaryFileBatchBuffer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/StringBuilderBatchBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/StringBuilderOriginalBatchBuffer.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/Splunk.Logging.Common.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/Splunk.Logging.Common.csproj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/standalone-test/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/standalone-test/Program.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/standalone-test/standalone-test.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/standalone-test/standalone-test.csproj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test/unit-tests/TestHttpEventCollector.cs" beforeDir="false" afterPath="$PROJECT_DIR$/test/unit-tests/TestHttpEventCollector.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -22,20 +24,32 @@
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/16bc693bb84a493b8a40c4959d21832130b48/4a/3e41c411/StreamContent.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/16bc693bb84a493b8a40c4959d21832130b48/71/c41e1793/ByteArrayContent.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/16bc693bb84a493b8a40c4959d21832130b48/be/fa813f2b/StringContent.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/16bc693bb84a493b8a40c4959d21832130b48/d9/620d0f15/HttpContent.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/4b76c3e709534801a173f34a1d6b3dfc522790/6f/a89693fe/Task.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/0f/54e13eef/Monitor.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/4b76c3e709534801a173f34a1d6b3dfc522790/cb/2d7a2a92/StreamWriter.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/0f/54e13eef/Monitor.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/1d/abff115f/ThreadPoolWorkQueue.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/47/40d02364/WaitHandle.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/52/4ee8f124/ExecutionContext.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/52/4ee8f124/ExecutionContext.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/99/20427b79/ContinuationTaskFromTask.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/be/b201d88c/TaskAwaiter.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/bf/987139a6/Task.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/bf/987139a6/Task.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/25bd4cdc378ef3dbcfaa376bcc2a7aaa4146643db3c561171cac7aad42927/MemoryStream.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/28a33a5ee03cd147245077d67a69eb0379acc211fe725311340a48f8298a0/StreamContent.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/874bbdf2aa6d53d0b6c8136eb34dfdba6545f3b183035c4b2ce2aa1845941d/TextWriter.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/test/unit-tests/TestHttpEventCollector.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -127,7 +141,14 @@
       <option name="project" value="LOCAL" />
       <updated>1680507400298</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Pulled out a FileBuffer as-well to avoid lots of allocations at the expense of slightly slower sends.">
+      <created>1680513705888</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1680513705888</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -139,6 +160,26 @@
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="Addressed a race condition where calling await on FlushAsync finishes before the task-counter is updated (it updates on a background task)." />
     <MESSAGE value="Added some more messages to I can benchmark" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added some more messages to I can benchmark" />
+    <MESSAGE value="Pulled out a FileBuffer as-well to avoid lots of allocations at the expense of slightly slower sends." />
+    <option name="LAST_COMMIT_MESSAGE" value="Pulled out a FileBuffer as-well to avoid lots of allocations at the expense of slightly slower sends." />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/TemporaryFileBatchBuffer.cs</url>
+          <line>55</line>
+          <properties documentPath="C:\code\github\splunk\splunk-library-dotnetlogging\src\Splunk.Logging.Common\BatchBuffers\TemporaryFileBatchBuffer.cs" initialLine="55" containingFunctionPresentation="method 'Dispose'">
+            <startOffsets>
+              <option value="1591" />
+            </startOffsets>
+            <endOffsets>
+              <option value="1627" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="57" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

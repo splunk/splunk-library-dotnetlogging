@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace Splunk.Logging
@@ -394,7 +395,7 @@ namespace Splunk.Logging
             // estimate serialized event size
             HttpEventCollectorEventInfo ei = 
                 new HttpEventCollectorEventInfo(null, TraceEventType.Information.ToString(), "info ?", null, null);
-            int size = HttpEventCollectorSender.SerializeEventInfo(ei).Length;
+            int size = JsonConvert.SerializeObject(ei).Length;
 
             var trace = Trace(
                 handler: (token, events) =>

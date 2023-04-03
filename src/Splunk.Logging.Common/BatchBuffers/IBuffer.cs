@@ -1,6 +1,5 @@
 using System;
 using System.Net.Http;
-using Newtonsoft.Json;
 
 namespace Splunk.Logging.BatchBuffers
 {
@@ -9,5 +8,6 @@ namespace Splunk.Logging.BatchBuffers
         void Append(HttpEventCollectorEventInfo serializedEventInfo);
         long Length { get; }
         HttpContent BuildHttpContent(string mediaType);
+        void SupportOriginalBehaviour();
     }
 }
