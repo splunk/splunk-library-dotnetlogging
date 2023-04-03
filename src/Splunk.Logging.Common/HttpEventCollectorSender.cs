@@ -20,12 +20,14 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Splunk.Logging.BatchBuffers;
 
 namespace Splunk.Logging
 {
@@ -99,6 +101,17 @@ namespace Splunk.Logging
             Sequential
         };
 
+        /// <summary>
+        /// Where to buffer log messages before sending. Default is to use InMemory, but
+        /// to save memory use at the expense of slightly slower sends, TempFiles will write to the
+        /// file system, and delete the files on successful send.
+        /// </summary>
+        public enum BufferMode
+        {
+            InMemory,
+            TempFiles
+        };
+
         private const string HttpContentTypeMedia = "application/json";
         private const string HttpEventCollectorPath = "/services/collector/event/1.0";
         private const string AuthorizationHeaderScheme = "Splunk";
@@ -114,8 +127,8 @@ namespace Splunk.Logging
         private SendMode sendMode = SendMode.Parallel;
         private Task activePostTask = null;
         private object eventsBatchLock = new object();
-        private List<HttpEventCollectorEventInfo> eventsBatch = new List<HttpEventCollectorEventInfo>();
-        private StringBuilder serializedEventsBatch = new StringBuilder();
+        private List<HttpEventCollectorEventInfo> eventsBatch;
+        private IBuffer serializedEventsBatch;
         private Timer timer;
 
         private HttpClient httpClient = null;
@@ -148,7 +161,8 @@ namespace Splunk.Logging
             SendMode sendMode,
             int batchInterval, int batchSizeBytes, int batchSizeCount,
             HttpEventCollectorMiddleware middleware,
-            HttpEventCollectorFormatter formatter = null)
+            HttpEventCollectorFormatter formatter = null,
+            BufferMode bufferMode = BufferMode.InMemory)
         {
             this.serializer = new JsonSerializer();
             serializer.NullValueHandling = NullValueHandling.Ignore;
@@ -163,6 +177,9 @@ namespace Splunk.Logging
             this.token = token;
             this.middleware = middleware;
             this.formatter = formatter;
+            this.bufferMode = bufferMode;
+            
+            BuildBuffers();
 
             // special case - if batch interval is specified without size and count
             // they are set to "infinity", i.e., batch may have any size 
@@ -243,16 +260,10 @@ namespace Splunk.Logging
         private void DoSerialization(HttpEventCollectorEventInfo ei)
         {
             
-            string serializedEventInfo;
-            if (formatter == null)
-            {
-                serializedEventInfo = SerializeEventInfo(ei);
-            }
-            else
+            if (formatter != null)
             {
                 var formattedEvent = formatter(ei);
                 ei.Event = formattedEvent;
-                serializedEventInfo = JsonConvert.SerializeObject(ei);
             }
 
             // we use lock serializedEventsBatch to synchronize both 
@@ -260,7 +271,7 @@ namespace Splunk.Logging
             lock (eventsBatchLock)
             {
                 eventsBatch.Add(ei);
-                serializedEventsBatch.Append(serializedEventInfo);
+                serializedEventsBatch.Append(ei);
                 if (eventsBatch.Count >= batchSizeCount ||
                     serializedEventsBatch.Length >= batchSizeBytes)
                 {
@@ -295,16 +306,7 @@ namespace Splunk.Logging
             task.Start();
             return task;
         }
-
-        /// <summary>
-        /// Serialize event info into a json string
-        /// </summary>
-        /// <param name="eventInfo"></param>
-        /// <returns></returns>
-        public static string SerializeEventInfo(HttpEventCollectorEventInfo eventInfo)
-        {
-            return JsonConvert.SerializeObject(eventInfo);
-        }
+        
 
         /// <summary>
         /// Flush all batched events immediately. 
@@ -327,20 +329,25 @@ namespace Splunk.Logging
 
             // flush events according to the system operation mode
             if (this.sendMode == SendMode.Sequential)
-                FlushInternalSequentialMode(this.eventsBatch, this.serializedEventsBatch.ToString());
+                FlushInternalSequentialMode(this.eventsBatch, this.serializedEventsBatch);
             else
-                FlushInternalSingleBatch(this.eventsBatch, this.serializedEventsBatch.ToString());
+                FlushInternalSingleBatch(this.eventsBatch, this.serializedEventsBatch);
 
             // we explicitly create new objects instead to clear and reuse 
             // the old ones because Flush works in async mode
             // and can use "previous" containers
-            this.serializedEventsBatch = new StringBuilder();
+            BuildBuffers();
+        }
+
+        private void BuildBuffers()
+        {
+            this.serializedEventsBatch = bufferMode == BufferMode.InMemory ? (IBuffer)new StringBuilderBatchBuffer() : new MemoryStreamBatchBuffer();
             this.eventsBatch = new List<HttpEventCollectorEventInfo>();
         }
 
         private void FlushInternalSequentialMode(
             List<HttpEventCollectorEventInfo> events,
-            String serializedEvents)
+            IBuffer serializedEventsBuilder)
         {
             // post data and update tasks counter
             Interlocked.Increment(ref activeAsyncTasksCount);
@@ -350,23 +357,23 @@ namespace Splunk.Logging
             {
                 this.activePostTask = Task.Factory.StartNew(() =>
                 {
-                    FlushInternalSingleBatch(events, serializedEvents).Wait();
+                    FlushInternalSingleBatch(events, serializedEventsBuilder).Wait();
                 });
             }
             else
             {
                 this.activePostTask = this.activePostTask.ContinueWith((_) =>
                 {
-                    FlushInternalSingleBatch(events, serializedEvents).Wait();
+                    FlushInternalSingleBatch(events, serializedEventsBuilder).Wait();
                 });
             }
         }
 
         private Task<HttpStatusCode> FlushInternalSingleBatch(
             List<HttpEventCollectorEventInfo> events,
-            String serializedEvents)
+            IBuffer serializedEventsBuilder)
         {
-            Task<HttpStatusCode> task = PostEvents(events, serializedEvents);
+            Task<HttpStatusCode> task = PostEvents(events, serializedEventsBuilder);
             task.ContinueWith((_) =>
             {
                 Interlocked.Decrement(ref activeAsyncTasksCount);            
@@ -376,7 +383,7 @@ namespace Splunk.Logging
 
         private async Task<HttpStatusCode> PostEvents(
             List<HttpEventCollectorEventInfo> events,
-            String serializedEvents)
+            IBuffer serializedEventsBuilder)
         {
             // encode data
             HttpResponseMessage response = null;
@@ -385,18 +392,26 @@ namespace Splunk.Logging
             try
             {
                 // post data
-                HttpEventCollectorHandler next = (t, e) =>
+                HttpEventCollectorHandler next = async (t, e) =>
                 {
-                    HttpContent content = new StringContent(serializedEvents, Encoding.UTF8, HttpContentTypeMedia);
-                    return httpClient.PostAsync(httpEventCollectorEndpointUri, content);
+                    using (var content = serializedEventsBuilder.BuildHttpContent(HttpContentTypeMedia))
+                    {
+                        var postResult = await httpClient.PostAsync(httpEventCollectorEndpointUri, content);
+                        return postResult;
+                    }
                 };
                 HttpEventCollectorHandler postEvents = (t, e) =>
                 {
-                    return middleware == null ?
-                        next(t, e) : middleware(t, e, next);
+                    return middleware == null ? next(t, e) : middleware(t, e, next);
                 };
                 response = await postEvents(token, events);
                 responseCode = response.StatusCode;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    serializedEventsBuilder.Dispose();
+                }
+
                 if (responseCode != HttpStatusCode.OK && response.Content != null)
                 {
                     // record server reply
@@ -416,7 +431,7 @@ namespace Splunk.Logging
                 OnError(e);
             }
             catch (Exception e)
-            {                
+            {
                 OnError(new HttpEventCollectorException(
                     code: responseCode,
                     webException: e,
@@ -425,6 +440,7 @@ namespace Splunk.Logging
                     events: events
                 ));
             }
+
             return responseCode;
         }
 
@@ -436,6 +452,7 @@ namespace Splunk.Logging
         #region HttpClientHandler.IDispose
 
         private bool disposed = false;
+        private readonly BufferMode bufferMode;
 
         public void Dispose()
         {
