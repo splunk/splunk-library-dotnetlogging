@@ -7,8 +7,8 @@
   <component name="ChangeListManager">
     <list default="true" id="c10dd702-477e-4a55-ae4b-acc96cc975ed" name="Changes" comment="Added some alternative buffers each which has a sweet spot compared to the original.">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Splunk.Logging/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Splunk.Logging/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/unit-tests/TestHttpEventCollector.cs" beforeDir="false" afterPath="$PROJECT_DIR$/test/unit-tests/TestHttpEventCollector.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/standalone-test/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/standalone-test/Program.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

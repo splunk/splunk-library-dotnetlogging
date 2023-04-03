@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -13,6 +14,7 @@ namespace Splunk.Logging.BatchBuffers
     public class PushStreamInMemoryBuffer : IBuffer
     {
         private readonly List<HttpEventCollectorEventInfo> events;
+        private readonly List<byte[]> serializedItems = new List<byte[]>();
 
         public PushStreamInMemoryBuffer(List<HttpEventCollectorEventInfo> events)
         {
@@ -21,21 +23,20 @@ namespace Splunk.Logging.BatchBuffers
 
         public void Append(HttpEventCollectorEventInfo serializedEventInfo)
         {
+            serializedItems.Add( Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(serializedEventInfo)));
         }
 
-        public long Length =>
-            events.Count * 3 * 1024; //assume 3kb for a log entry. Not ideal, but we can get more finessed if we want.
+        public long Length => serializedItems.Sum(x => x.Length);
 
         public HttpContent BuildHttpContent(string mediaType)
         {
             return new PushStreamContent(async s =>
             {
-                foreach (var evt in this.events)
+                foreach (var entry in serializedItems)
                 {
-                    var entry = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(evt));
                     await s.WriteAsync(entry, 0, entry.Length);
                 }
-            }, mediaType);
+            }, mediaType, Length);
         }
 
         public void SupportOriginalBehaviour()
@@ -49,10 +50,12 @@ namespace Splunk.Logging.BatchBuffers
         private class PushStreamContent : HttpContent
         {
             private readonly Func<Stream, Task> writeContent;
+            private readonly long knownLength;
 
-            public PushStreamContent(Func<Stream, Task> writeContent, string mediaType)
+            public PushStreamContent(Func<Stream, Task> writeContent, string mediaType, long knownLength)
             {
                 this.writeContent = writeContent;
+                this.knownLength = knownLength;
                 Headers.ContentType = new MediaTypeHeaderValue(mediaType);
             }
 
@@ -64,8 +67,8 @@ namespace Splunk.Logging.BatchBuffers
 
             protected override bool TryComputeLength(out long length)
             {
-                length = -1;
-                return false;
+                length = this.knownLength;
+                return true;
             }
         }
     }
