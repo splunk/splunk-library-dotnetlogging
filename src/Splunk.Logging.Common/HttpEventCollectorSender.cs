@@ -342,6 +342,9 @@ namespace Splunk.Logging
             List<HttpEventCollectorEventInfo> events,
             String serializedEvents)
         {
+            // post data and update tasks counter
+            Interlocked.Increment(ref activeAsyncTasksCount);
+
             // post events only after the current post task is done
             if (this.activePostTask == null)
             {
@@ -363,8 +366,6 @@ namespace Splunk.Logging
             List<HttpEventCollectorEventInfo> events,
             String serializedEvents)
         {
-            // post data and update tasks counter
-            Interlocked.Increment(ref activeAsyncTasksCount);
             Task<HttpStatusCode> task = PostEvents(events, serializedEvents);
             task.ContinueWith((_) =>
             {
