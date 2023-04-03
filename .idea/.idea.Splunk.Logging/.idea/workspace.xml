@@ -5,7 +5,10 @@
     <projectFile>standalone-test/standalone-test.csproj</projectFile>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c10dd702-477e-4a55-ae4b-acc96cc975ed" name="Changes" comment="" />
+    <list default="true" id="c10dd702-477e-4a55-ae4b-acc96cc975ed" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Splunk.Logging/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Splunk.Logging/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/standalone-test/standalone-test.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/standalone-test/standalone-test.csproj" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -113,10 +116,10 @@
           <line>31</line>
           <properties documentPath="C:\code\github\splunk\splunk-library-dotnetlogging\standalone-test\Program.cs" initialLine="32" containingFunctionPresentation="method 'DoIt'">
             <startOffsets>
-              <option value="1923" />
+              <option value="-1" />
             </startOffsets>
             <endOffsets>
-              <option value="1951" />
+              <option value="-1" />
             </endOffsets>
           </properties>
           <option name="timeStamp" value="33" />

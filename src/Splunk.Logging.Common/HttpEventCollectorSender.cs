@@ -291,10 +291,9 @@ namespace Splunk.Logging
         /// </summary>
         public Task FlushAsync()
         {            
-            return new Task(() => 
-            {
-                FlushSync();
-            });
+            var task = new Task(FlushSync);
+            task.Start();
+            return task;
         }
 
         /// <summary>
