@@ -16,7 +16,7 @@ namespace Splunk.Logging
 {
     public class TestHttpEventCollector
     {
-        private readonly Uri uri = new Uri("http://localhost:8089"); // a dummy uri
+        private readonly Uri uri = new Uri("http://localhost:5678"); // a dummy uri
         private const string token = "TOKEN-GUID";
 
         #region Trace listener interceptor that replaces a real Splunk server for testing. 
@@ -272,7 +272,7 @@ namespace Splunk.Logging
 
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSerializationTest")]
         [Fact]
-        public void HttpEventCollectorSerializationTest()
+        public async Task HttpEventCollectorSerializationTest()
         {
             Func<String, List<HttpEventCollectorEventInfo>, Response> noopHandler = (token, events) =>
             {
@@ -338,7 +338,7 @@ namespace Splunk.Logging
             trace.TraceInformation("hello2");
             trace.TraceInformation("hello3");
 
-            (trace.Listeners[trace.Listeners.Count - 1] as HttpEventCollectorTraceListener).FlushAsync().RunSynchronously();
+            await (trace.Listeners[trace.Listeners.Count - 1] as HttpEventCollectorTraceListener).FlushAsync();
             trace.Close();
 
             Assert.Equal(numFormattedEvents, 3);
@@ -558,7 +558,7 @@ namespace Splunk.Logging
 
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorAsyncFlushTest")]
         [Fact]
-        public void HttpEventCollectorAsyncFlushTest()
+        public async Task HttpEventCollectorAsyncFlushTest()
         {
             var trace = Trace(
                 handler: (token, events) =>
@@ -577,7 +577,7 @@ namespace Splunk.Logging
             trace.TraceInformation("info 3");
             trace.TraceInformation("info 4");
             HttpEventCollectorTraceListener listener = trace.Listeners[1] as HttpEventCollectorTraceListener;
-            listener.FlushAsync().RunSynchronously();
+            await listener.FlushAsync();
         }
 
         [Trait("integration-tests", "Splunk.Logging.HttpEventCollectorSeqModeTest")]

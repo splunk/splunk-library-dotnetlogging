@@ -5,16 +5,9 @@
     <projectFile>standalone-test/standalone-test.csproj</projectFile>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c10dd702-477e-4a55-ae4b-acc96cc975ed" name="Changes" comment="Pulled out a FileBuffer as-well to avoid lots of allocations at the expense of slightly slower sends.">
-      <change afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/StringBuilderBuffer.cs" afterDir="false" />
+    <list default="true" id="c10dd702-477e-4a55-ae4b-acc96cc975ed" name="Changes" comment="Added some alternative buffers each which has a sweet spot compared to the original.">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Splunk.Logging/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Splunk.Logging/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/IBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/IBuffer.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/MemoryStreamBatchBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/TemporaryFileBatchBuffer.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/StringBuilderBatchBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/StringBuilderOriginalBatchBuffer.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/standalone-test/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/standalone-test/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/standalone-test/standalone-test.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/standalone-test/standalone-test.csproj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test/unit-tests/TestHttpEventCollector.cs" beforeDir="false" afterPath="$PROJECT_DIR$/test/unit-tests/TestHttpEventCollector.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -39,16 +32,20 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/25bd4cdc378ef3dbcfaa376bcc2a7aaa4146643db3c561171cac7aad42927/MemoryStream.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/28a33a5ee03cd147245077d67a69eb0379acc211fe725311340a48f8298a0/StreamContent.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/874bbdf2aa6d53d0b6c8136eb34dfdba6545f3b183035c4b2ce2aa1845941d/TextWriter.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/BatchBuffers/IBuffer.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/test/unit-tests/TestHttpEventCollector.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/test/unit-tests/TestHttpEventCollector.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MarkdownSettingsMigration">
@@ -148,7 +145,14 @@
       <option name="project" value="LOCAL" />
       <updated>1680513705888</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Added some alternative buffers each which has a sweet spot compared to the original.">
+      <created>1680523264561</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1680523264561</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -161,7 +165,8 @@
     <MESSAGE value="Addressed a race condition where calling await on FlushAsync finishes before the task-counter is updated (it updates on a background task)." />
     <MESSAGE value="Added some more messages to I can benchmark" />
     <MESSAGE value="Pulled out a FileBuffer as-well to avoid lots of allocations at the expense of slightly slower sends." />
-    <option name="LAST_COMMIT_MESSAGE" value="Pulled out a FileBuffer as-well to avoid lots of allocations at the expense of slightly slower sends." />
+    <MESSAGE value="Added some alternative buffers each which has a sweet spot compared to the original." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added some alternative buffers each which has a sweet spot compared to the original." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -178,6 +183,45 @@
             </endOffsets>
           </properties>
           <option name="timeStamp" value="57" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/test/unit-tests/TestHttpEventCollector.cs</url>
+          <line>534</line>
+          <properties documentPath="C:\code\github\splunk\splunk-library-dotnetlogging\test\unit-tests\TestHttpEventCollector.cs" initialLine="534" containingFunctionPresentation="method 'HttpEventCollectorSinkBatchingTest'">
+            <startOffsets>
+              <option value="21727" />
+            </startOffsets>
+            <endOffsets>
+              <option value="22476" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="66" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/test/unit-tests/TestHttpEventCollector.cs</url>
+          <line>136</line>
+          <properties documentPath="C:\code\github\splunk\splunk-library-dotnetlogging\test\unit-tests\TestHttpEventCollector.cs" initialLine="136" containingFunctionPresentation="method 'Dispose'">
+            <startOffsets>
+              <option value="5311" />
+            </startOffsets>
+            <endOffsets>
+              <option value="5330" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="67" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/test/unit-tests/TestHttpEventCollector.cs</url>
+          <line>64</line>
+          <properties documentPath="C:\code\github\splunk\splunk-library-dotnetlogging\test\unit-tests\TestHttpEventCollector.cs" initialLine="64" containingFunctionPresentation="lambda expression inside method 'MiddlewareInterceptor'">
+            <startOffsets>
+              <option value="2557" />
+            </startOffsets>
+            <endOffsets>
+              <option value="2581" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="68" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

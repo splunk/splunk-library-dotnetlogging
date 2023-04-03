@@ -329,6 +329,11 @@ namespace Splunk.Logging
                 return; // there is nothing to send
 
             // flush events according to the system operation mode
+            this.serializedEventsBatch.SupportOriginalBehaviour();
+
+            // post data and update tasks counter
+            Interlocked.Increment(ref activeAsyncTasksCount);
+
             if (this.sendMode == SendMode.Sequential)
                 FlushInternalSequentialMode(this.eventsBatch, this.serializedEventsBatch);
             else
@@ -342,17 +347,20 @@ namespace Splunk.Logging
 
         private void BuildBuffers()
         {
-            this.serializedEventsBatch = bufferMode == BufferMode.InMemory ? (IBuffer)new StringBuilderBatchBuffer() : new MemoryStreamBatchBuffer();
             this.eventsBatch = new List<HttpEventCollectorEventInfo>();
+            this.serializedEventsBatch = bufferMode == BufferMode.StringBuilderBuffer
+                ? new StringBuilderBuffer()
+                : bufferMode == BufferMode.OriginalBuffer
+                    ? new StringBuilderOriginalBatchBuffer()
+                    : bufferMode == BufferMode.PushStreamInMemoryBuffer
+                        ? (IBuffer)new PushStreamInMemoryBuffer(eventsBatch)
+                        : new TemporaryFileBatchBuffer();
         }
 
         private void FlushInternalSequentialMode(
             List<HttpEventCollectorEventInfo> events,
             IBuffer serializedEventsBuilder)
         {
-            // post data and update tasks counter
-            Interlocked.Increment(ref activeAsyncTasksCount);
-
             // post events only after the current post task is done
             if (this.activePostTask == null)
             {
