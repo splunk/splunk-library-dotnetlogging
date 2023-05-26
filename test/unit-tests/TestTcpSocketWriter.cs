@@ -83,15 +83,14 @@ namespace Splunk.Logging
         [Fact]
         public async Task TestEventsQueuedWhileWaitingForInitialConnection()
         {
-            var listener = new TcpListener(IPAddress.Loopback, 0);
-            listener.Start();
-            int port = ((IPEndPoint)listener.Server.LocalEndPoint).Port;
-
+            int port = GetAFreeTcpPort();
+           
             var writer = new TcpSocketWriter(IPAddress.Loopback, port, new ExponentialBackoffTcpReconnectionPolicy(), 100);
 
             writer.Enqueue("Event 1\r\n");
             writer.Enqueue("Event 2\r\n");
 
+            var listener = new TcpListener(IPAddress.Loopback, port);
             listener.Start();
             var listenerClient = listener.AcceptTcpClient();
             var receiverReader = new StreamReader(listenerClient.GetStream());
@@ -102,6 +101,15 @@ namespace Splunk.Logging
             listener.Stop();
             listenerClient.Close();
             writer.Dispose();
+        }
+
+        private static int GetAFreeTcpPort()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.Server.LocalEndPoint).Port;
+            listener.Stop();
+            return port;
         }
 
         public class TriggeredTcpReconnectionPolicy : ITcpReconnectionPolicy
