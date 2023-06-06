@@ -1,22 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45</TargetFrameworks>
+    <TargetFrameworks>net48</TargetFrameworks>
+    <UserSecretsId>f1717e60-7a35-4d7f-b754-5cd004ce71a2</UserSecretsId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Properties\**" />
+    <EmbeddedResource Remove="Properties\**" />
+    <None Remove="Properties\**" />
+  </ItemGroup>
 
 <ItemGroup>
   <Reference Include="Microsoft.CSharp" />
 </ItemGroup>
 
 <ItemGroup>
-  <Folder Include="Properties\" />
-</ItemGroup>
-
-<ItemGroup>
-  <PackageReference Include="Newtonsoft.Json" version="11.0.2" />
+  <PackageReference Include="Newtonsoft.Json" version="13.0.3" />
   <PackageReference Include="EnterpriseLibrary.SemanticLogging" Version="2.0.1406.1" />
-  <PackageReference Include="xunit" Version="1.9.2" />
-  <PackageReference Include="xunit.runner.visualstudio" Version="2.0.0" />
+  <PackageReference Include="xunit" Version="2.4.2" />
+  <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+    <PrivateAssets>all</PrivateAssets>
+    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+  </PackageReference>
 </ItemGroup>
 
 <ItemGroup>
