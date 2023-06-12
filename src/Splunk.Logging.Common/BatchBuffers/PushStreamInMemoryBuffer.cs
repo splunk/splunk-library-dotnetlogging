@@ -50,8 +50,10 @@ namespace Splunk.Logging.BatchBuffers
             {
                 this.writeContent = writeContent;
                 this.knownLength = knownLength;
-                Headers.ContentType = new MediaTypeHeaderValue(mediaType);
-                Headers.ContentType.CharSet = "utf-8";
+                Headers.ContentType = new MediaTypeHeaderValue(mediaType)
+                {
+                    CharSet = "utf-8"
+                };
             }
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)

@@ -6,7 +6,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c10dd702-477e-4a55-ae4b-acc96cc975ed" name="Changes" comment="Serialize as they come in into a list. Minimal LOH allocation for messages &lt; 85kb.">
-      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/TemporaryFileBatchBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/TemporaryFileBatchBuffer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
