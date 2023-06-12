@@ -34,8 +34,10 @@ namespace Splunk.Logging.BatchBuffers
         {
             writer.Flush();
             writer.Close();
-            var mediaTypeHeaderValue = new MediaTypeHeaderValue(mediaType);
-            mediaTypeHeaderValue.CharSet = "utf-8";
+            var mediaTypeHeaderValue = new MediaTypeHeaderValue(mediaType)
+            {
+                CharSet = "utf-8"
+            };
             return new StreamContent(File.OpenRead($"{TempDir}{filePath}"))
             {
                 Headers =
