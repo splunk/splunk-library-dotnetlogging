@@ -13,13 +13,7 @@ namespace Splunk.Logging.BatchBuffers
 {
     public class PushStreamInMemoryBuffer : IBuffer
     {
-        private readonly List<HttpEventCollectorEventInfo> events;
         private readonly List<byte[]> serializedItems = new List<byte[]>();
-
-        public PushStreamInMemoryBuffer(List<HttpEventCollectorEventInfo> events)
-        {
-            this.events = events;
-        }
 
         public void Append(HttpEventCollectorEventInfo serializedEventInfo)
         {
@@ -57,6 +51,7 @@ namespace Splunk.Logging.BatchBuffers
                 this.writeContent = writeContent;
                 this.knownLength = knownLength;
                 Headers.ContentType = new MediaTypeHeaderValue(mediaType);
+                Headers.ContentType.CharSet = "utf-8";
             }
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)

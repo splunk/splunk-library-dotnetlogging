@@ -110,7 +110,6 @@ namespace Splunk.Logging
         {
             StringBuilderBuffer,
             PushStreamInMemoryBuffer,
-            OriginalBuffer,
             TempFilesBuffer
         };
 
@@ -164,7 +163,7 @@ namespace Splunk.Logging
             int batchInterval, int batchSizeBytes, int batchSizeCount,
             HttpEventCollectorMiddleware middleware,
             HttpEventCollectorFormatter formatter = null,
-            BufferMode bufferMode = BufferMode.OriginalBuffer)
+            BufferMode bufferMode = BufferMode.StringBuilderBuffer)
         {
             this.serializer = new JsonSerializer();
             serializer.NullValueHandling = NullValueHandling.Ignore;
@@ -350,11 +349,9 @@ namespace Splunk.Logging
             this.eventsBatch = new List<HttpEventCollectorEventInfo>();
             this.serializedEventsBatch = bufferMode == BufferMode.StringBuilderBuffer
                 ? new StringBuilderBuffer()
-                : bufferMode == BufferMode.OriginalBuffer
-                    ? new StringBuilderOriginalBatchBuffer()
-                    : bufferMode == BufferMode.PushStreamInMemoryBuffer
-                        ? (IBuffer)new PushStreamInMemoryBuffer(eventsBatch)
-                        : new TemporaryFileBatchBuffer();
+                : bufferMode == BufferMode.PushStreamInMemoryBuffer
+                    ? (IBuffer)new PushStreamInMemoryBuffer()
+                    : new TemporaryFileBatchBuffer();
         }
 
         private void FlushInternalSequentialMode(

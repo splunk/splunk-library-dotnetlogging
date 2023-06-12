@@ -8,7 +8,7 @@ namespace Splunk.Logging.BatchBuffers
 {
     public class TemporaryFileBatchBuffer : IBuffer
     {
-        private static readonly string tempDir = Path.GetTempPath();
+        private static readonly string TempDir = Path.GetTempPath();
         private readonly string filePath;
         private readonly JsonSerializer serializer;
         private readonly TextWriter writer;
@@ -18,7 +18,7 @@ namespace Splunk.Logging.BatchBuffers
         {
             filePath = Path.GetFileName(Path.GetTempFileName());
             serializer = JsonSerializer.Create();
-            fileStream = File.OpenWrite($"{tempDir}{filePath}");
+            fileStream = File.OpenWrite($"{TempDir}{filePath}");
             writer = new StreamWriter(fileStream);
         }
 
@@ -34,11 +34,13 @@ namespace Splunk.Logging.BatchBuffers
         {
             writer.Flush();
             writer.Close();
-            return new StreamContent(File.OpenRead($"{tempDir}{filePath}"))
+            var mediaTypeHeaderValue = new MediaTypeHeaderValue(mediaType);
+            mediaTypeHeaderValue.CharSet = "utf-8";
+            return new StreamContent(File.OpenRead($"{TempDir}{filePath}"))
             {
                 Headers =
                 {
-                    ContentType = new MediaTypeHeaderValue(mediaType)
+                    ContentType = mediaTypeHeaderValue
                 }
             };
         }
@@ -53,7 +55,7 @@ namespace Splunk.Logging.BatchBuffers
             fileStream?.Dispose();
             try
             {
-                File.Delete($"{tempDir}{filePath}");
+                File.Delete($"{TempDir}{filePath}");
             }
             catch (Exception)
             {

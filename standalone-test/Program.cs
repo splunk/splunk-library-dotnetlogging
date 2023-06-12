@@ -33,7 +33,7 @@ namespace standalone_test
                 0,
                 1000,
                 middleware.Plugin,
-                bufferMode: HttpEventCollectorSender.BufferMode.OriginalBuffer);
+                bufferMode: HttpEventCollectorSender.BufferMode.StringBuilderBuffer);
 
             ecSender.OnError += o => Console.WriteLine(o.Message);
 

@@ -5,9 +5,12 @@
     <projectFile>standalone-test/standalone-test.csproj</projectFile>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c10dd702-477e-4a55-ae4b-acc96cc975ed" name="Changes" comment="Added some alternative buffers each which has a sweet spot compared to the original.">
+    <list default="true" id="c10dd702-477e-4a55-ae4b-acc96cc975ed" name="Changes" comment="Serialize as they come in into a list. Minimal LOH allocation for messages &lt; 85kb.">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Splunk.Logging/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Splunk.Logging/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/StringBuilderOriginalBatchBuffer.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/TemporaryFileBatchBuffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/TemporaryFileBatchBuffer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/standalone-test/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/standalone-test/Program.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -20,6 +23,7 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/16bc693bb84a493b8a40c4959d21832130b48/71/c41e1793/ByteArrayContent.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/16bc693bb84a493b8a40c4959d21832130b48/be/fa813f2b/StringContent.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/16bc693bb84a493b8a40c4959d21832130b48/d9/620d0f15/HttpContent.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/4b76c3e709534801a173f34a1d6b3dfc522790/2c/bff1d206/StringBuilder.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/4b76c3e709534801a173f34a1d6b3dfc522790/6f/a89693fe/Task.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/4b76c3e709534801a173f34a1d6b3dfc522790/cb/2d7a2a92/StreamWriter.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/93a8f82184b4439ca5abff025375fe32564da0/0f/54e13eef/Monitor.cs" root0="SKIP_HIGHLIGHTING" />
@@ -32,21 +36,7 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/25bd4cdc378ef3dbcfaa376bcc2a7aaa4146643db3c561171cac7aad42927/MemoryStream.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/28a33a5ee03cd147245077d67a69eb0379acc211fe725311340a48f8298a0/StreamContent.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/874bbdf2aa6d53d0b6c8136eb34dfdba6545f3b183035c4b2ce2aa1845941d/TextWriter.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/BatchBuffers/IBuffer.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/PushStreamInMemoryBuffer.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/src/Splunk.Logging.Common/HttpEventCollectorSender.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/standalone-test/Program.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/test/unit-tests/TestHttpEventCollector.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/code/github/splunk/splunk-library-dotnetlogging/test/unit-tests/TestHttpEventCollector.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -57,24 +47,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "XThreadsFramesViewSplitterKey": "0.53677934",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "SolutionBuilderGeneralOptionsPage",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;XThreadsFramesViewSplitterKey&quot;: &quot;0.53677934&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;SolutionBuilderGeneralOptionsPage&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "rider.external.source.directories": [
-      "C:\\Users\\graemefoster\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\DecompilerCache",
-      "C:\\Users\\graemefoster\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\SourcesCache",
-      "C:\\Users\\graemefoster\\AppData\\Local\\Symbols\\src"
+  &quot;keyToStringList&quot;: {
+    &quot;rider.external.source.directories&quot;: [
+      &quot;C:\\Users\\graemefoster\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\DecompilerCache&quot;,
+      &quot;C:\\Users\\graemefoster\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\SourcesCache&quot;,
+      &quot;C:\\Users\\graemefoster\\AppData\\Local\\Symbols\\src&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected=".NET Project.standalone-test">
     <configuration name="examples" type="DotNetProject" factoryName=".NET Project">
       <option name="EXE_PATH" value="" />
@@ -171,19 +161,6 @@
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
-        <line-breakpoint enabled="true" type="DotNet Breakpoints">
-          <url>file://$PROJECT_DIR$/src/Splunk.Logging.Common/BatchBuffers/TemporaryFileBatchBuffer.cs</url>
-          <line>55</line>
-          <properties documentPath="C:\code\github\splunk\splunk-library-dotnetlogging\src\Splunk.Logging.Common\BatchBuffers\TemporaryFileBatchBuffer.cs" initialLine="55" containingFunctionPresentation="method 'Dispose'">
-            <startOffsets>
-              <option value="1591" />
-            </startOffsets>
-            <endOffsets>
-              <option value="1627" />
-            </endOffsets>
-          </properties>
-          <option name="timeStamp" value="57" />
-        </line-breakpoint>
         <line-breakpoint enabled="true" type="DotNet Breakpoints">
           <url>file://$PROJECT_DIR$/test/unit-tests/TestHttpEventCollector.cs</url>
           <line>534</line>
